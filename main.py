@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     # Create Processes
     entry_reader = Process(target=read_embl, args=(input_file, entry_queue,))
-    graph_gen = [Process(target=generate_graph, args=(entry_queue, graph_queue,)) for _ in range(1)]
+    graph_gen = [Process(target=generate_graph, args=(entry_queue, graph_queue,)) for _ in range(3)]
     prot_var_gen = [Process(target=get_next_variant, args=(graph_queue, prot_variation_queue,)) for _ in range(3)]
     
 
@@ -37,7 +37,8 @@ if __name__ == "__main__":
     while True: 
         
         try:
-            (prot, count) = prot_variation_queue.get(timeout=1)
+            # (prot, count) = prot_variation_queue.get(timeout=60)
+            (prot, count) = prot_variation_queue.get()
             t.append( (prot, count) )
 
         except Exception:

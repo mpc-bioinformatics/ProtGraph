@@ -1,6 +1,6 @@
 
 import igraph
-
+from Bio.SeqFeature import UncertainPosition, UnknownPosition
 
 
 def _execute_init_met(graph, init_met_feature):
@@ -16,10 +16,6 @@ def _execute_init_met(graph, init_met_feature):
     # Filtering is important, since we may skip an aminoacid of an already cleaved protein
     met_aas = [x for x in pos_first_aas if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["position"] == 1]
 
-    if len(met_aas) > 1:
-        # TODO  CHECK if it works
-        print("TODO Check Working of INI_MET with multiple entries")
-
     # Get possible features 
     features = [graph.es.select(_source=start, _target=x)["qualifiers"] for x in met_aas]
     # Get the next nodes which should be after them
@@ -28,15 +24,10 @@ def _execute_init_met(graph, init_met_feature):
     # Get current number of edges
     cur_count = graph.ecount()
 
-    # Get qualifier info
-    qualifiers = init_met_feature.qualifiers
-    if hasattr(init_met_feature, "id"):
-        qualifiers["id"] = init_met_feature.id
-
 
     # Generate the edges list
     edge_list = [(start, y) for x in targets for y in x]
-    qualifiers_list = [[qualifiers, *features[x_idx][y_idx]] for x_idx, x in enumerate(targets) for y_idx, _ in enumerate(x)]
+    qualifiers_list = [[init_met_feature, *features[x_idx][y_idx]] for x_idx, x in enumerate(targets) for y_idx, _ in enumerate(x)]
 
     # Add new edges (bulk)
     graph.add_edges(edge_list)
@@ -64,14 +55,11 @@ def get_isoform_dict(comments, accession):
                 if key.lower() == "named isoforms":
                     num_of_isoforms = int(value)
 
-                
-
                 reference_info = ""
                 if "{" in value:
                     idx = value.index("{")
                     value = value[:idx].strip()
                     reference_info = value[idx:]
-
 
                 offset = 1
                 if key.lower() == "name":
@@ -82,6 +70,12 @@ def get_isoform_dict(comments, accession):
                         assert iso_key.lower() == "isoid"
                     seq_key, seq_value = entries[e_idx+offset + 1].strip().split("=")
                     assert seq_key.lower() == "sequence"
+
+
+                    if "," in iso_value: # BUG/Feature in embl.  Some IDs are not unique (see e.g. P12821-3, P22966-1)
+                        # We simply take the first occurence
+                        iso_value = iso_value.split(",", 1)[0].strip()
+
                     d[value] = (iso_value, [x.strip() for x in seq_value.split(",")], reference_info)
                     # if "Displayed" in d[value][1]: # Copy original accession also into isoforms
                     #     d[accession] = (iso_value, [x.strip() for x in seq_value.split(",")], reference_info)
@@ -106,6 +100,7 @@ def _generate_canonical_graph(sequence: str, acc: str):
     # Add position attributes to nodes as well as from which accesion they originate
     graph.vs["position"] = list(range(len(sequence) + 2))
     graph.vs["accession"] = [None, *[acc]*len(sequence), None]
+    graph.vs["isoform_accession"] = [None, *[None]*len(sequence), None]
 
     # Add Information about the Features used
     graph.es["qualifiers"] = [[] for _ in range(len(sequence) + 2)]
@@ -113,15 +108,38 @@ def _generate_canonical_graph(sequence: str, acc: str):
     return graph
 
 
+
+def _combine_vertices(list_a, list_b):
+    out_d = {}
+
+    for a in list_a:
+        if a["isoform_accession"] not in out_d:
+            out_d[a["isoform_accession"]] = dict(inn=[a])
+        else: 
+            print("Key is multiple times in it") # TODO we cannot simply associate via accession!?!?
+    for b in list_b:
+        if b["isoform_accession"] not in out_d:
+            out_d[b["isoform_accession"]] = dict(out=[b])
+        else:
+            if "out" not in out_d[b["isoform_accession"]]:
+                out_d[b["isoform_accession"]]["out"] = [b]
+            else:    
+                out_d[b["isoform_accession"]]["out"].append(b)
+            if len(out_d[b["isoform_accession"]]) > 2:
+                print("multiple time??")
+
+    k = list(out_d.items())
+    a_s = [x[1]["inn"] if "inn" in x[1] else [] for x in k]
+    b_s = [x[1]["out"] if "out" in x[1] else [] for x in k]
+
+    return a_s, b_s
+
+
+
+
 def _execute_variant(graph, variant_feature):
     text = variant_feature.qualifiers["note"] # check if missing or if we add another node
 
-
-    if variant_feature.ref is not None:
-        print("TODO: Protein Isoform {} with VARIANT: {} is currently ignored".format(variant_feature.ref, variant_feature.id))
-        return # TODO we need to handle isoforms somehow here!
-        # Luckily it gives us such information by setting the ref attribute
-        
 
 
     # TODO what about nodes which are sequentielly replaced
@@ -130,18 +148,36 @@ def _execute_variant(graph, variant_feature):
     if text.lower().startswith("missing"):
         # A sequence is missing! Just append an edge and its information
         # NOTE: Shifted by 1 due to the __start__ node at 0
-        aa_before = variant_feature.location.start + 0
-        aa_after = variant_feature.location.end + 1
-        graph.add_edges( [(aa_before, aa_after)] )
+        aa_before = variant_feature.location.start + 1
+        aa_after = variant_feature.location.end + 0
 
-        # Add Information about the new edge (we are here using a variant)
-        qualifiers = variant_feature.qualifiers # Get information
-        if hasattr(variant_feature, "id"):
-            qualifiers["id"] = variant_feature.id
-        graph.es[-1]["qualifiers"] = qualifiers # add them to the last added edge
+        if variant_feature.ref is None:
+            vertices_before_raw = list(graph.vs.select(position=aa_before))
+            vertices_after_raw = list(graph.vs.select(position=aa_after))
+        else: 
+            vertices_before_raw = list(graph.vs.select(isoform_position=aa_before, isoform_accession=variant_feature.ref))
+            vertices_after_raw = list(graph.vs.select(isoform_position=aa_after, isoform_accession=variant_feature.ref))
+
+        if len(vertices_before_raw) == 0 or len(vertices_after_raw) == 0:
+            print("fdfd")
+
+        vertices_before, vertices_after = _combine_vertices(vertices_before_raw, vertices_after_raw)
+
+        # Association via combine Vertices OK ?? TODO
+        edge_list = []
+        for aa_in, aa_out in zip(vertices_before, vertices_after):
+            for aa_in_in in aa_in:
+                for aa_in_in_in in list(graph.es.select(_target=aa_in_in)) :
+                    for aa_out_out in aa_out:
+                        for aa_out_out_out in list(graph.es.select(_source=aa_out_out)) :
+                            edge_list.append( ((aa_in_in_in.source, aa_out_out_out.target), [*aa_in_in_in["qualifiers"], variant_feature]) )
+
+        # Bulk add of edges
+        cur_edges = graph.ecount()
+        graph.add_edges( [x[0] for x in edge_list] )
+        graph.es[cur_edges:]["qualifiers"] = [x[1] for x in edge_list]
 
     else:
-
         # Get   X -> Y   Information
         idx = text.find("(")
         if idx != -1:
@@ -153,37 +189,59 @@ def _execute_variant(graph, variant_feature):
 
         # Get start and end position
         # NOTE: Shifted by 1 due to the __start__ node at 0
-        aa_before = variant_feature.location.start + 0
-        aa_after = variant_feature.location.end + 1
+        aa_before = variant_feature.location.start + 1
+        aa_after = variant_feature.location.end + 0
 
 
-        # Append new node in graph and mapping
+        # Get list of all aa before and after
+        if variant_feature.ref is None:
+            vertices_before_raw = list(graph.vs.select(position=aa_before))
+            vertices_after_raw = list(graph.vs.select(position=aa_after))
+        else: 
+            vertices_before_raw = list(graph.vs.select(isoform_position=aa_before, isoform_accession=variant_feature.ref))
+            vertices_after_raw = list(graph.vs.select(isoform_position=aa_after, isoform_accession=variant_feature.ref))
 
-        # Case for one or multiple amino acids TODO
-        # Add each individual amino acid as a node
-        y_idcs = []
-        for entry in y:
-            vertex = graph.add_vertex()
-            graph.vs[vertex.index]["aminoacid"] = entry
-            # TODO add position and acc
-            y_idcs.append(vertex.index)
+        if len(vertices_before_raw) == 0 or len(vertices_after_raw) == 0:
+            print("fdfd")
 
-        # Add edges between them:
-        for idx, n in enumerate(y_idcs[:-1]):
-            graph.add_edges( [(n, y_idcs[idx+1])] )
+        vertices_before, vertices_after = _combine_vertices(vertices_before_raw, vertices_after_raw)
 
+        # Association via combine Vertices OK ?? TODO
+        for aa_in, aa_out in zip(vertices_before, vertices_after):
 
+            # Append new node in graph and mapping
+            # Case for one or multiple amino acids TODO
+            # Add each individual amino acid as a node
+            y_idcs = []
+            for entry in y:
+                vertex = graph.add_vertex()
+                graph.vs[vertex.index]["aminoacid"] = entry
+                # TODO add position and acc
+                y_idcs.append(vertex.index)
 
+            # Add edges between them:
+            for idx, n in enumerate(y_idcs[:-1]):
+                graph.add_edges( [(n, y_idcs[idx+1])] )
 
+            # Get first node and last node
+            first_node, last_node = y_idcs[0], y_idcs[-1]
 
-        first_node, last_node = y_idcs[0], y_idcs[-1]
-        graph.add_edges( [(aa_before, first_node), (last_node, aa_after)] )
+            # Add edges to the original protein
+            edge_list = []
+            for aa_in_in in aa_in:
+                for aa_in_in_in in list(graph.es.select(_target=aa_in_in)) :
+                    edge_list.append( ((aa_in_in_in.source, first_node), [*aa_in_in_in["qualifiers"], variant_feature]) )
+            for aa_out_out in aa_out:
+                for aa_out_out_out in list(graph.es.select(_source=aa_out_out)) :
+                    edge_list.append( ((last_node, aa_out_out_out.target), []) )
 
+            # Bulk add of edges
+            cur_edges = graph.ecount()
+            graph.add_edges( [x[0] for x in edge_list] )
+            graph.es[cur_edges:]["qualifiers"] = [x[1] for x in edge_list]
 
-        qualifiers = variant_feature.qualifiers
-        if hasattr(variant_feature, "id"):
-            qualifiers["id"] = variant_feature.id
-        graph.es[-2]["qualifiers"] = qualifiers 
+            
+
 
 
 
@@ -191,13 +249,10 @@ def _execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displaye
 
     execute_isoforms = {}
 
-    # if len(var_seqs_features) < 3:
-    #     return
-
     for f in var_seqs_features:
         
         if "note" not in f.qualifiers:
-            print("Some feature tables do not contain information about the all isoforms for {}".format(displayed_accession))
+            print("Some feature tables do not contain information about all isoforms for {}".format(displayed_accession))
             return
 
         # get isoform information
@@ -250,10 +305,6 @@ def _execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displaye
         graph.es[-2:]["qualifiers"] = [qualifiers, []]
 
 
-
-
-
-
 def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
 
     sorted_features = sorted(feature_list, key= lambda x: x.location.start)
@@ -289,8 +340,57 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
     return sequence, orig_positions, list(range(1, len(sequence)+1))
 
 
+def _execute_signal(graph, signal_feature):
+
+    if isinstance(signal_feature.location.end, UnknownPosition):
+        # The Position of the end is not known. Therefore we skip
+        # this entry simply 
+        return
 
 
+    # Get end node
+    [__stop_node__]  = graph.vs.select(aminoacid="__end__")
+
+    # get start and end position of signal peptide
+    start_position, end_position = signal_feature.location.start + 1, signal_feature.location.end + 0
+
+
+
+    # Get all nodes with position start_position
+    all_start_points = list(graph.vs.select(position=start_position))
+
+    all_end_points = [list(graph.vs.select(isoform_accession=x["isoform_accession"], position=end_position)) for x in all_start_points]
+    # Check if only one end point exists for each start
+    for x in all_end_points:
+        if len(x) > 1:
+            print("WARNING, there are multiple defined ENDPOINTS!!")
+
+
+    # TODO should the signal peptide be exactly the same as in canonical? Or can we leave it as is?
+    # Should we check this? If so: do this here!!
+    # TODO can we associate the end points with the start points, according to its index?
+
+    # create information list
+    all_edges = []
+    for s, e in zip(all_start_points, all_end_points):
+        for ee in e:
+        
+            edges_in = list(graph.es.select(_target=s))
+            edges_out = list(graph.es.select(_source=ee))
+
+            for ei in edges_in:
+                for eo in edges_out:
+                    all_edges.append(( (ei.source_vertex, eo.target_vertex), [*ei["qualifiers"], signal_feature] ) )
+
+            
+            # Special case the end can go directly to the end node
+            all_edges.append(( (ee, __stop_node__), [signal_feature] ) )
+
+
+    # Bulk adding edges
+    cur_edges = graph.ecount()
+    graph.add_edges([x[0] for x in all_edges])
+    graph.es[cur_edges:]["qualifiers"] = [x[1] for x in all_edges]
 
 
 
@@ -298,55 +398,53 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
 # TODO parse note Missing or replace information! via method!
 
 def generate_graph(entry_queue, graph_queue):
-
-    note_dict = {}
-    iso_dict = {}
-
     while True:
 
+        # Get next item
         try: 
             entry = entry_queue.get(timeout=1)
         except Exception:
-            pass
+            continue
 
 
+        # print(entry.accessions[0])
+
+        # Sort features according to their type
+        sorted_features = {}
+        for f in entry.features:
+            if f.type not in sorted_features:
+                sorted_features[f.type] = [f]
+            else: 
+                sorted_features[f.type].append(f)
+
+
+
+        # Get Isoform information
         isoforms, num_of_isoforms = get_isoform_dict(entry.comments, entry.accessions[0])
 
-        note_dict[entry.accessions[0]] = num_of_isoforms
-        iso_dict[entry.accessions[0]] = isoforms
-
-
-        # TODO lists?!?
+        # Generate canonical graph (Initialization)
         graph = _generate_canonical_graph(entry.sequence, entry.accessions[0])
 
 
-        # TODO var seqs (isoforms) need to be executed at once!
-        var_seqs = []
-        for f in entry.features:
-            if f.type == "VAR_SEQ":
-                var_seqs.append(f)
-        _execute_var_seq(isoforms, graph, entry.sequence, var_seqs, entry.accessions[0])
+        # VAR_SEQ (isoforms) need to be executed at once and before all other variations
+        if "VAR_SEQ" in sorted_features:
+            _execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
 
-
-
-
-        for f in entry.features:
-
-            if f.type == "INIT_MET" and False: # NOTE: TODO DONE? 
+        if "INIT_MET" in sorted_features: # NOTE: TODO DONE? 
+            for f in sorted_features["INIT_MET"]:
                 _execute_init_met(graph, f)
-                pass
-            
 
+        if "SIGNAL" in sorted_features: # NOTE: TODO DONE? 
+            for f in sorted_features["SIGNAL"]:
+                _execute_signal(graph, f)
 
-
-                pass
-
-            if f.type == "VARIANT" and False: # TODO Debugging skip
-                # TODO ISOFORMS BEFORE VARIANTS! (needed!)
-
-                # TODO make it easier than executing each one seperately?
+        if "VARIANT" in sorted_features: # NOTE: TODO DONE? 
+            for f in sorted_features["VARIANT"]:
                 _execute_variant(graph, f)
+                # TODO not working anymore!!
 
+
+        # Add generated Graph into the next Queue
         graph_queue.put(graph)
 
 
