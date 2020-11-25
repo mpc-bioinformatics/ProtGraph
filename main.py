@@ -37,9 +37,9 @@ if __name__ == "__main__":
     while True: 
         
         try:
-            # (prot, count) = prot_variation_queue.get(timeout=60)
-            (prot, count) = prot_variation_queue.get()
-            t.append( (prot, count) )
+            entry = prot_variation_queue.get(timeout=90)
+            # (prot, count) = prot_variation_queue.get()
+            t.append( entry)
 
         except Exception:
             pass
