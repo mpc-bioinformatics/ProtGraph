@@ -15,7 +15,12 @@ def _find_all_paths(graph, start, end):
         if start == end and len(path) > 0:              
             yield path
 
+# [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
+# [__stop_node__]  = graph_entry.vs.select(aminoacid="__end__")
 
+# TODO we currently only count all possible paths
+# TODO exclude currently !!!! NOTE DL this takes too long!
+# num = _get_path_count(graph_entry,  __start_node__.index, __stop_node__.index)
 
 def _get_path_count(graph, start, end):
     counter = 0
@@ -96,12 +101,7 @@ def get_next_variant(graph_queue, prot_variant_queue):
         _digest_via_trypsin(graph_entry)
 
 
-        # [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
-        # [__stop_node__]  = graph_entry.vs.select(aminoacid="__end__")
 
-        # TODO we currently only count all possible paths
-        # TODO exclude currently !!!! NOTE DL this takes too long!
-        # num = _get_path_count(graph_entry,  __start_node__.index, __stop_node__.index)
 
 
 
