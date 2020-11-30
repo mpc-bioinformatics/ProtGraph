@@ -63,7 +63,7 @@ def get_isoform_dict(comments, accession):
 
                 offset = 1
                 if key.lower() == "name":
-                    iso_key, iso_value = entries[e_idx+offset].strip().split("=")
+                    iso_key, iso_value = entries[e_idx+offset].strip().split("=", 1) # TODO There are comma seperated Synonyms!? see ADAM22=G07, 22g(D26D27)+29.3
                     if not iso_key.lower() == "isoid":
                         offset = 2
                         iso_key, iso_value = entries[e_idx+offset].strip().split("=")
