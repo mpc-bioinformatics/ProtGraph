@@ -99,8 +99,10 @@ def _generate_canonical_graph(sequence: str, acc: str):
 
     # Add position attributes to nodes as well as from which accesion they originate
     graph.vs["position"] = list(range(len(sequence) + 2))
-    graph.vs["accession"] = [None, *[acc]*len(sequence), None]
+    graph.vs["accession"] = [acc, *[acc]*len(sequence), acc] # TODO is this okay for every entry? to set them to acc
     graph.vs["isoform_accession"] = [None, *[None]*len(sequence), None]
+    graph.vs["isoform_position"] = [None, *[None]*len(sequence), None] # Position acording to the isoform
+
 
     # Add Information about the Features used
     graph.es["qualifiers"] = [[] for _ in range(len(sequence) + 2)]
@@ -184,7 +186,7 @@ def _execute_variant(graph, variant_feature):
             text = text[:idx]
         xy = text.split("->")
         assert len(xy) == 2
-        y = xy[1].strip()
+        y = xy[1].strip().replace(" ", "")
         
 
         # Get start and end position
@@ -208,6 +210,10 @@ def _execute_variant(graph, variant_feature):
 
         # Association via combine Vertices OK ?? TODO
         for aa_in, aa_out in zip(vertices_before, vertices_after):
+            if len(aa_out) == 0 or len(aa_in) == 0:
+                # Skip this entry, since we do not have complete information
+                # -> Not possible to link either start or end or both
+                continue 
 
             # Append new node in graph and mapping
             # Case for one or multiple amino acids TODO
@@ -216,7 +222,8 @@ def _execute_variant(graph, variant_feature):
             for entry in y:
                 vertex = graph.add_vertex()
                 graph.vs[vertex.index]["aminoacid"] = entry
-                # TODO add position and acc
+                graph.vs[vertex.index]["accession"] = graph.vs[1]["accession"]
+                # TODO add position??
                 y_idcs.append(vertex.index)
 
             # Add edges between them:
@@ -228,6 +235,7 @@ def _execute_variant(graph, variant_feature):
 
             # Add edges to the original protein
             edge_list = []
+            
             for aa_in_in in aa_in:
                 for aa_in_in_in in list(graph.es.select(_target=aa_in_in)) :
                     edge_list.append( ((aa_in_in_in.source, first_node), [*aa_in_in_in["qualifiers"], variant_feature]) )
@@ -330,8 +338,7 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
                 text = text[:idx]
             xy = text.split("->")
             assert len(xy) == 2
-            y = xy[1].strip()
-
+            y = xy[1].strip().replace(" ", "")
             # Replacing sequence!
             sequence = sequence[:f.location.start] + y + sequence[f.location.end:]
             orig_positions = orig_positions[:f.location.start] + [None]*len(y) + orig_positions[f.location.end:]
@@ -399,15 +406,12 @@ def _execute_signal(graph, signal_feature):
 
 def generate_graph(entry_queue, graph_queue):
     while True:
-
         # Get next item
         try: 
             entry = entry_queue.get(timeout=1)
         except Exception:
             continue
 
-
-        # print(entry.accessions[0])
 
         # Sort features according to their type
         sorted_features = {}
@@ -416,7 +420,6 @@ def generate_graph(entry_queue, graph_queue):
                 sorted_features[f.type] = [f]
             else: 
                 sorted_features[f.type].append(f)
-
 
 
         # Get Isoform information
@@ -441,7 +444,6 @@ def generate_graph(entry_queue, graph_queue):
         if "VARIANT" in sorted_features: # NOTE: TODO DONE? 
             for f in sorted_features["VARIANT"]:
                 _execute_variant(graph, f)
-                # TODO not working anymore!!
 
 
         # Add generated Graph into the next Queue

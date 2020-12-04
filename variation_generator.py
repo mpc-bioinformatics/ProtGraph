@@ -55,8 +55,8 @@ def _digest_via_trypsin(graph):
     # Digest the graph into smaller parts
     # Explicitly we add 
 
-    trypsin_in = [(__start_node__, k.target) for k in k_s_edges_new] # Nodes which should have an edge to start
-    trypsin_out = [(k.source, __end_node__) for k in k_s_edges_new] # Node which should have an edge to end
+    trypsin_in = [(__start_node__, k.target) for k in k_s_edges_new + r_s_edges_new] # Nodes which should have an edge to start
+    trypsin_out = [(k.source, __end_node__) for k in k_s_edges_new + r_s_edges_new] # Node which should have an edge to end
 
 
     #  Mark digested edges as cleaved
@@ -70,10 +70,43 @@ def _digest_via_trypsin(graph):
 
 
 
+def get_distance_to_end(graph):
+    print("test")
 
 
 
+def _get_mass_dict():
+    return dict(G=(57.021463735, 57.05132),
+        A=(71.037113805, 71.0779),
+        S=(87.032028435, 87.0773),
+        P=(97.052763875, 97.11518),
+        V=(99.068413945, 99.13106),
+        T=(101.047678505, 101.10388),
+        C=(103.009184505, 103.1429),
+        L=(113.084064015, 113.15764),
+        I=(113.084064015, 113.15764),
+        N=(114.042927470, 114.10264),
+        D=(115.026943065, 115.0874),
+        Q=(128.058577540, 128.12922),
+        K=(128.094963050, 128.17228),
+        E=(129.042593135, 129.11398),
+        M=(131.040484645, 131.19606),
+        H=(137.058911875, 137.13928),
+        F=(147.068413945, 147.17386),
+        U=(150.953633405, 150.3079),
+        R=(156.101111050, 156.18568),
+        Y=(163.063328575, 163.17326),
+        W=(186.079312980, 186.2099),
+        O=(237.147726925, 237.29816),
 
+        J=(113.084064015, 113.1594),
+        X=(0.0, 0.0), # Unknown Amino Acid
+        Z=(128.55059, 128.6231),
+        B=(114.53495, 114.5962),
+
+        __start__=(0,0),
+        __end__=(0,0)
+    )
 
 
 
@@ -81,32 +114,19 @@ def _digest_via_trypsin(graph):
 def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
     # cutoff, the maximal length of paths
 
+    # TODO we digest here only!
 
+    # get weight dict
+    # d["AMINOACID"][0] -> Mono Mass
+    # d["AMINOACID"][1] -> Avrg Mass
+    mass_dict = _get_mass_dict()
 
-
-    # TODO remove this!
-    # k = []
-    # supergraph = igraph.Graph(directed=True) 
 
     while True:
         try: 
             graph_entry = graph_queue.get(timeout=180)
         except Exception:
             continue
-
-        
-            
-        ### TODO for generating a graph containing all proteins
-        # TODO REMOVE THIS!!
-        # supergraph = supergraph + graph_entry
-        # k.append(graph_entry)
-
-        # supergraph = igraph.Graph(directed=True) 
-        # for entry in k:
-        #     supergraph += entry
-        # supergraph.write_dot("supergraph.dot")
-        ###
-
 
         ## TODO Remove_
         # Use this if gephi is stuck on initializing graph
@@ -120,10 +140,246 @@ def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
         # graph_entry.write_dot("protein_graph/" + acc + ".dot")
 
 
-        # TODO before and after digest!!!?!?
-
         # Do a digestion via Trypsin (currently only this case)
         _digest_via_trypsin(graph_entry)
+
+
+
+        #####################
+        # Optimize and summarize chains of nodes
+
+        # Get Chains by iterating over DAG
+        chain = []
+        for e in graph_entry.vs[:]:
+            if e.outdegree() == 1 and e.indegree() == 1: # TODO correct?
+                prev_node = e.neighbors(mode="IN")[0]
+                if prev_node.outdegree() == 1:
+                    chain.append( (prev_node.index, e.index) )
+
+        # Chain those elements together
+        complete_chain = []
+        for ele in chain:
+            idx = None
+            for cc_idx, cc in enumerate(complete_chain):
+                if cc[-1] == ele[0]:
+                    idx = cc_idx
+            
+            if idx == None:
+                complete_chain.append([ele[0], ele[1]])
+            else:
+                complete_chain[idx].append(ele[1])
+
+
+
+        # Generate intermediate Graph Mapping 
+
+        # Special case exclude start and ending:
+        [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
+        [__end_node__] = graph_entry.vs.select(aminoacid="__end__")
+        complete_chain = [[y for y in x if y != __start_node__.index and y != __end_node__.index] for x in complete_chain]
+
+        # Contains [(IDCS, VERTICES, OUT_EDGES)] all attributes in tuple as list
+        merge_list = [] 
+        for c in complete_chain:
+            vs = []
+            es = []
+            first_node = None
+            for x in c:
+                vs.append(graph_entry.vs[x].attributes())
+                es.append(graph_entry.vs[x].out_edges()[0])
+                outs = graph_entry.vs[x].neighbors(mode="IN")
+                if outs[0].index not in c:
+                    first_node = x
+
+
+            merge_list.append((first_node, c + [], vs, es))
+
+
+
+        # Sort them accordingly forom beginning and concat the attributes
+        merged_nodes = []
+        for first_node, idcs, vertices, edges in merge_list:
+
+            # Create sorted list of edges and nodes (since we may still have some inconsistencies?!? TODO check!? )
+            sorted_edges = []
+            sorted_nodes = []
+            while first_node in idcs:
+                fn_idx = idcs.index(first_node)
+                sorted_edges.append(edges[fn_idx])
+                sorted_nodes.append(vertices[fn_idx])
+                first_node = sorted_edges[-1].target
+            ### Special case retrieve information of last node also 
+            last_node = sorted_edges[-1].source
+            if sorted_edges[-1].target_vertex.indegree() == 1 and sorted_edges[-1].target_vertex["aminoacid"] == "__end__":
+                last_node = sorted_edges[-1].target
+                sorted_nodes.append(sorted_edges[-1].target_vertex.attributes())
+            
+            # TODO check if only one element:
+            iso_set = set([x["isoform_accession"] for x in sorted_nodes if x["isoform_accession"] is not None])
+            acc_set = set([x["accession"] for x in sorted_nodes  if x["accession"] is not None])
+
+            if len(acc_set) > 1:
+                print("DEBUG ME")
+            if len(iso_set) > 1:
+                print("DEBUG ME") 
+
+            #  Merged Node atributes # TODO
+            m_accession = acc_set.pop() if len(acc_set) == 1 else None # Should only Contain 1 Element
+            m_isoform_accession = iso_set.pop() if len(iso_set) == 1 else None # Should only Contain 1 Element
+            m_position = sorted_nodes[0]["position"]
+            m_isoform_position = sorted_nodes[0]["isoform_position"]
+            m_aminoacid = "".join([x["aminoacid"] for x in sorted_nodes])
+
+            #  Merges Edges Attributes # TODO
+
+            cle_set = set([x.attributes()["cleaved"] for x in sorted_edges if x.attributes()["cleaved"] is not None])
+            if len(acc_set) > 1:
+                print("DEBUG ME")
+
+            m_cleaved = cle_set.pop() if len(cle_set) == 1 else None # Should be None # TODO
+            m_qualifiers = [y for x in sorted_edges if x.attributes()["qualifiers"] is not None for y in x.attributes()["qualifiers"]]
+
+
+            # Generate new Node/Edge attrs
+            new_node_attrs = dict(
+                accession=m_accession, isoform_accession=m_isoform_accession, position=m_position,
+                isoform_position=m_isoform_position,  aminoacid=m_aminoacid
+            )
+            new_edge_attrs = dict(
+                cleaved=m_cleaved,
+                qualifiers=m_qualifiers
+            )
+
+            idcs_to_remove = idcs
+            if last_node not in idcs_to_remove:
+                idcs_to_remove.append(last_node)
+            # save merged information back to list
+            merged_nodes.append([
+                idcs_to_remove, # Nodes idcs which needs to be removed
+                [x.index for x in sorted_edges], # Edges which needs to be removed
+                sorted_edges[0].source, # first Node idx where the edges into it needs to be modified
+                last_node, # last Node idx where the edge outgoing needs to be modified
+                new_node_attrs, # the attributes of the supernode
+                new_edge_attrs, # the attributes of the edge ingoing from the supernode (appending at the end!)
+
+            ])
+
+
+        
+        ### Modifiy the graph by adding the new nodes
+        ### adding saved edges to the supernode
+        ###
+        ### removing the edges first in supernode
+        ### removing the edges at beginning of supernode (saving them for later)
+        ### removing the edges at end of supernode (saving them for later)
+        ### removing the nodes in supernode
+        
+        
+        # 1. add all supernodes and its attributes!
+        cur_node_count = graph_entry.vcount()
+        graph_entry.add_vertices(len(merged_nodes))
+        graph_entry.vs[cur_node_count:]["accession"] =  [x[4]["accession"] for x in merged_nodes]
+        graph_entry.vs[cur_node_count:]["isoform_accession"] =  [x[4]["isoform_accession"] for x in merged_nodes]
+        graph_entry.vs[cur_node_count:]["position"] =  [x[4]["position"] for x in merged_nodes]
+        graph_entry.vs[cur_node_count:]["isoform_position"] =  [x[4]["isoform_position"] for x in merged_nodes]
+        graph_entry.vs[cur_node_count:]["aminoacid"] =  [x[4]["aminoacid"] for x in merged_nodes]
+
+        supernode_idcs = list(range(cur_node_count, cur_node_count + len(merged_nodes)))
+
+
+        # 2. Get all edges connected to supernode and them appropiately!
+        for supernode_idx, (_, _, first_n, last_n, _, edge_attr) in zip(supernode_idcs, merged_nodes):
+            # Get all in edges
+            in_e_new_attrs = []
+            for in_e in graph_entry.vs[first_n].in_edges():
+                attrs = in_e.attributes()
+                if attrs["qualifiers"] == None:
+                    attrs["qualifiers"] = edge_attr["qualifiers"]
+                else:
+                    attrs["qualifiers"] = attrs["qualifiers"] + edge_attr["qualifiers"]
+                in_e_new_attrs.append( ((in_e.source, supernode_idx), attrs ) )
+
+            # Get all out edges
+            out_e_new_attrs = []
+            for out_e in graph_entry.vs[last_n].out_edges():
+                attrs = out_e.attributes()
+                out_e_new_attrs.append( ((supernode_idx, out_e.target), attrs)  )
+
+            # Add them to the graph
+            e_count = graph_entry.ecount()
+            graph_entry.add_edges([x[0] for x in in_e_new_attrs + out_e_new_attrs])
+            graph_entry.es[e_count:]["qualifiers"] = [x[1]["qualifiers"] for x in in_e_new_attrs + out_e_new_attrs]
+
+
+        # 3. remove all edges (then nodes)        
+        all_nodes_to_remove = [y for x in merged_nodes for y in x[0]]
+        all_edges_to_remove = [y for x in merged_nodes for y in x[1]]
+        graph_entry.delete_edges(all_edges_to_remove)
+        graph_entry.delete_vertices(all_nodes_to_remove)
+
+
+
+        
+        #####################
+        # TODO check DAG in and outdegree specifically!!!
+
+        if not graph_entry.is_dag():
+            print("DEBUG ME")
+        if graph_entry.indegree().count(0) != 1:
+            print("DEBUG ME")
+        if graph_entry.outdegree().count(0) != 1:
+            print("DEBUG ME")
+
+        #####################
+
+        # mono_masses = [mass_dict[x.target_vertex["aminoacid"]][0] for x in graph_entry.es[:]]
+        # avrg_masses = [mass_dict[x.target_vertex["aminoacid"]][1] for x in graph_entry.es[:]]
+        mono_masses = [sum([mass_dict[y][0] for y in x.target_vertex["aminoacid"].replace("__start__", "").replace("__end__", "") ]) for x in graph_entry.es[:]]
+        avrg_masses = [sum([mass_dict[y][1] for y in x.target_vertex["aminoacid"].replace("__start__", "").replace("__end__", "") ]) for x in graph_entry.es[:]]
+
+
+        
+
+
+        graph_entry.es[:]["mono_weight"] = mono_masses
+        graph_entry.es[:]["avrg_weight"] = avrg_masses
+
+
+        graph_entry.vs[:]["mono_end_weight"] = float("inf")
+        graph_entry.vs[:]["avrg_end_weight"] = float("inf")
+        graph_entry.vs.select(aminoacid="__end__")["mono_end_weight"] = 0
+        graph_entry.vs.select(aminoacid="__end__")["avrg_end_weight"] = 0
+
+        # Get distance to end ("all pair shrotest path manner")
+        sorted_nodes = graph_entry.topological_sorting(mode="IN")
+
+        # Doing it for mono mass
+        for node in sorted_nodes:
+            for edge in graph_entry.es.select(_target=node):
+                temp_weight = edge.target_vertex["mono_end_weight"] + edge["mono_weight"]
+                if graph_entry.vs[edge.source]["mono_end_weight"] > temp_weight:
+                    graph_entry.vs[edge.source]["mono_end_weight"] = temp_weight
+
+        # Doing it for avrg mass
+        for node in sorted_nodes:
+            for edge in graph_entry.es.select(_target=node):
+                temp_weight = edge.target_vertex["avrg_end_weight"] + edge["avrg_weight"]
+                if graph_entry.vs[edge.source]["avrg_end_weight"] > temp_weight:
+                    graph_entry.vs[edge.source]["avrg_end_weight"] = temp_weight
+
+
+
+
+        #### drag the end_weights to the edges
+        mono_end_masses = [x.target_vertex["mono_end_weight"] for x in graph_entry.es[:]]
+        avrg_end_masses = [x.target_vertex["avrg_end_weight"] for x in graph_entry.es[:]]
+        graph_entry.es[:]["mono_end_weight"] = mono_end_masses
+        graph_entry.es[:]["avrg_end_weight"] = avrg_end_masses
+
+
+
+
+        #####################
 
         # writing a dot file for each graph
         # graph_entry.es[:]["qualifiers"] = [",".join([k.type for k in x["qualifiers"]]) if x["qualifiers"] is not None and len(x["qualifiers"]) != 0 else "" for x in list(graph_entry.es[:]) ]
@@ -136,13 +392,14 @@ def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
 
 
 
-        [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
-        [__end_node__] = graph_entry.vs.select(aminoacid="__end__")
+        # [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
+        # [__end_node__] = graph_entry.vs.select(aminoacid="__end__")
         # all_paths = graph_entry.get_all_simple_paths(__start_node__, to=__end_node__, cutoff=cutoff)
 
-        all_paths_count = _get_path_count(graph_entry, __start_node__, __end_node__, cutoff)
+        # all_paths_count = _get_path_count(graph_entry, __start_node__, __end_node__, cutoff)
 
 
 
         # TODO we return the number of possible subgraphs (without the counting of possible variations!)
-        prot_variant_queue.put(    (  graph_entry.vs[1]["accession"], all_paths_count )    )
+        # prot_variant_queue.put(    (  graph_entry.vs[1]["accession"], None )    )
+        prot_variant_queue.put(  graph_entry   )
