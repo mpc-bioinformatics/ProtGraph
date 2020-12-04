@@ -210,9 +210,10 @@ def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
                 first_node = sorted_edges[-1].target
             ### Special case retrieve information of last node also 
             last_node = sorted_edges[-1].source
-            if sorted_edges[-1].target_vertex.indegree() == 1 and sorted_edges[-1].target_vertex["aminoacid"] == "__end__":
-                last_node = sorted_edges[-1].target
-                sorted_nodes.append(sorted_edges[-1].target_vertex.attributes())
+            if sorted_edges[-1].target_vertex.indegree() == 1:
+                if sorted_edges[-1].target_vertex["aminoacid"] != "__end__":
+                    last_node = sorted_edges[-1].target
+                    sorted_nodes.append(sorted_edges[-1].target_vertex.attributes())
             
             # TODO check if only one element:
             iso_set = set([x["isoform_accession"] for x in sorted_nodes if x["isoform_accession"] is not None])
