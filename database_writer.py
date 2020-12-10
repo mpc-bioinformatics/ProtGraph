@@ -10,7 +10,11 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-import pyorient
+import pyorient 
+
+
+import redis
+from redisgraph import Node, Edge, Graph, Path
 
 
 import psycopg2
@@ -18,25 +22,25 @@ import psycopg2
 
 # todo check if graph is dag and only has one starting and end pooint (via degree)
 
-class Node(Base):
-    __tablename__ = "nodes"
-    id = Column(BigInteger, primary_key=True)
-    accession = Column(String)
-    aminoacid = Column(String)
-    attributes = Column(JSON)
+# class Node(Base):
+#     __tablename__ = "nodes"
+#     id = Column(BigInteger, primary_key=True)
+#     accession = Column(String)
+#     aminoacid = Column(String)
+#     attributes = Column(JSON)
 
-    def __repr__(self):
-       return "<Node(accession='{}', aminoacid='{}', attributes='{}')>".format(self.accession, self.aminoacid, self.attributes)
+#     def __repr__(self):
+#        return "<Node(accession='{}', aminoacid='{}', attributes='{}')>".format(self.accession, self.aminoacid, self.attributes)
 
-class Edge(Base):
-    __tablename__ = "edges"
-    id = Column(BigInteger, primary_key=True)
-    accession = Column(String)
-    aminoacid = Column(String)
-    attributes = Column(JSON)
+# class Edge(Base):
+#     __tablename__ = "edges"
+#     id = Column(BigInteger, primary_key=True)
+#     accession = Column(String)
+#     aminoacid = Column(String)
+#     attributes = Column(JSON)
 
-    def __repr__(self):
-       return "<Node(accession='{}', aminoacid='{}', attributes='{}')>".format(self.accession, self.aminoacid, self.attributes)
+#     def __repr__(self):
+#        return "<Node(accession='{}', aminoacid='{}', attributes='{}')>".format(self.accession, self.aminoacid, self.attributes)
 
 
 
@@ -59,39 +63,87 @@ def _get_qualifiers(list_of_qs):
 def insert_to_database(digested_graphs_queue, output_query):
 
 
+
+
+    # Version for Redis Graph Local installation
+
+    r = redis.Redis(host="localhost", port=6379)
+
+    keys1 = [] # ["accession", "aminoacid", "avrg_end_weight", "mono_end_weight"]
+    keys2 = [] # ["avrg_end_weight", "avrg_weight", "mono_end_weight", "mono_weight"]
+
+
+
     while True:
         try: 
             graph_entry = digested_graphs_queue.get(timeout=180)
         except Exception:
             continue
 
+        redis_graph = Graph("proteins", r)
 
-        # Batch Version
-        client = pyorient.OrientDB("localhost", 2424)
-        client.set_session_token(True)
-        session_id = client.connect("root", "root")
-        client.db_open("graph", "root", "root")
+
+ 
+
+        # redis_nodes = [
+        #     Node( label = "node", properties = x.attributes() ) for x in graph_entry.vs[:]
+        # ]
+        redis_nodes = [ # Excluding most attributes due to having None inside of them (causing errors)
+            Node( label = "node", properties = {key:value for key, value in x.attributes().items() if key in keys1} ) for x in graph_entry.vs[:]
+        ]
+        for x in redis_nodes:
+            redis_graph.add_node(x)
+        
+        # redis_edges = [
+        #     Edge( redis_nodes[x.source], "edge", redis_nodes[x.target], properties = x.attributes() )  for x in graph_entry.es[:]
+        # ]
+        redis_edges = [
+            Edge( redis_nodes[x.source], "edge", redis_nodes[x.target], properties = {key:value for key, value in x.attributes().items() if key in keys2} )  for x in graph_entry.es[:]
+        ]
+        for x in redis_edges:
+            redis_graph.add_edge(x)
+
+        p = redis_graph.commit()
+
+
+
+
+
+
+    ### BATCH VERSION OF  Orient DB
+    # while True:
+    #     try: 
+    #         graph_entry = digested_graphs_queue.get(timeout=180)
+    #     except Exception:
+    #         continue
+
+
+    #     # Batch Version
+    #     client = pyorient.OrientDB("localhost", 2424)
+    #     client.set_session_token(True)
+    #     session_id = client.connect("root", "root")
+    #     client.db_open("graph", "root", "root")
 
         
-        batch_cmd = ["begin;\n"]
-        batch_main_nodes = ["let e{} = create vertex V content {};\n".format(x, json.dumps(y.attributes())) for x, y in enumerate(graph_entry.vs[:])]
+    #     batch_cmd = ["begin;\n"]
+    #     batch_main_nodes = ["let e{} = create vertex V content {};\n".format(x, json.dumps(y.attributes())) for x, y in enumerate(graph_entry.vs[:])]
         
 
-        nodes_ids = ["$e" + str(x) for x in range(graph_entry.vcount())]
-        sources_nodes = [nodes_ids[x.source] for x in graph_entry.es[:]]
-        target_nodes  = [nodes_ids[x.target] for x in graph_entry.es[:]]
-        content = [x.attributes() for x in graph_entry.es[:]]
-        content_updated_qualifiers = [_get_qualifiers(c["qualifiers"]) for c in content]
-        for x, y in zip(content, content_updated_qualifiers):
-            x["qualifiers"] = y
+    #     nodes_ids = ["$e" + str(x) for x in range(graph_entry.vcount())]
+    #     sources_nodes = [nodes_ids[x.source] for x in graph_entry.es[:]]
+    #     target_nodes  = [nodes_ids[x.target] for x in graph_entry.es[:]]
+    #     content = [x.attributes() for x in graph_entry.es[:]]
+    #     content_updated_qualifiers = [_get_qualifiers(c["qualifiers"]) for c in content]
+    #     for x, y in zip(content, content_updated_qualifiers):
+    #         x["qualifiers"] = y
         
-        batch_main_edges = ["create edge E from {} to {} content {};".format(x, y, json.dumps(z)) for x, y, z in zip(sources_nodes, target_nodes, content)]
-        batch_end = ["commit retry 100;\n"]
+    #     batch_main_edges = ["create edge E from {} to {} content {};".format(x, y, json.dumps(z)) for x, y, z in zip(sources_nodes, target_nodes, content)]
+    #     batch_end = ["commit retry 100;\n"]
 
-        results = client.batch( "".join(batch_cmd + batch_main_nodes + batch_main_edges + batch_end ))
+    #     results = client.batch( "".join(batch_cmd + batch_main_nodes + batch_main_edges + batch_end ))
 
 
-        output_query.put(1)
+    #     output_query.put(1)
         # To get Information of how many edges and Nodes are in the database
         #
         # Select ( SELECT COUNT(*) FROM V ) AS count1, ( SELECT COUNT(*) FROM E ) AS count2
