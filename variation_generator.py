@@ -380,8 +380,39 @@ def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
 
 
 
-        #####################
+        #########################
 
+
+        ### Get the Number of all possible simple Paths!
+
+        # First get top sort
+        sorted_nodes = graph_entry.topological_sorting()
+
+        # Get Number of Variable Paths (Init to 0)
+        var_paths = [0]*graph_entry.vcount()
+        first = sorted_nodes[0]
+        var_paths[first] = 1 # Path to itself is zero! For convenience we set it to one 
+        for v in graph_entry.neighbors(first, mode="OUT"):
+            var_paths[v] = 1
+        
+        # Iterative approach look how many paths are possible from preve to itself
+        for v in sorted_nodes[1:]:
+            summed = 0
+            for v_prev in graph_entry.neighbors(v, mode="IN"):
+                summed += var_paths[v_prev]
+
+            var_paths[v] = summed
+
+        var_paths[first] = 0 # Path to itself is zero!
+        num_of_paths = var_paths[sorted_nodes[-1]] # This contains the number of Paths
+
+
+
+
+
+
+
+        ######################################
         # writing a dot file for each graph
         # graph_entry.es[:]["qualifiers"] = [",".join([k.type for k in x["qualifiers"]]) if x["qualifiers"] is not None and len(x["qualifiers"]) != 0 else "" for x in list(graph_entry.es[:]) ]
         # e = graph_entry.ecount()
@@ -403,4 +434,4 @@ def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
 
         # TODO we return the number of possible subgraphs (without the counting of possible variations!)
         # prot_variant_queue.put(    (  graph_entry.vs[1]["accession"], None )    )
-        prot_variant_queue.put(  graph_entry   )
+        prot_variant_queue.put(  (graph_entry, num_of_paths)   )
