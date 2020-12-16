@@ -67,43 +67,44 @@ def insert_to_database(digested_graphs_queue, output_query):
 
     # Version for Redis Graph Local installation
 
-    r = redis.Redis(host="localhost", port=6379)
+    # r = redis.Redis(host="localhost", port=6379)
 
-    keys1 = [] # ["accession", "aminoacid", "avrg_end_weight", "mono_end_weight"]
-    keys2 = [] # ["avrg_end_weight", "avrg_weight", "mono_end_weight", "mono_weight"]
+    # keys1 = ["accession", "aminoacid", "avrg_end_weight", "mono_end_weight"]
+    # keys2 = ["avrg_end_weight", "avrg_weight", "mono_end_weight", "mono_weight"]
 
 
+    # while True:
+    #     try: 
+    #         graph_entry = digested_graphs_queue.get(timeout=180)
+    #     except Exception:
+    #         continue
 
-    while True:
-        try: 
-            graph_entry = digested_graphs_queue.get(timeout=180)
-        except Exception:
-            continue
-
-        redis_graph = Graph("proteins", r)
+    #     redis_graph = Graph("proteins", r)
 
 
  
 
-        # redis_nodes = [
-        #     Node( label = "node", properties = x.attributes() ) for x in graph_entry.vs[:]
-        # ]
-        redis_nodes = [ # Excluding most attributes due to having None inside of them (causing errors)
-            Node( label = "node", properties = {key:value for key, value in x.attributes().items() if key in keys1} ) for x in graph_entry.vs[:]
-        ]
-        for x in redis_nodes:
-            redis_graph.add_node(x)
+    #     # redis_nodes = [
+    #     #     Node( label = "node", properties = x.attributes() ) for x in graph_entry.vs[:]
+    #     # ]
+    #     redis_nodes = [ # Excluding most attributes due to having None inside of them (causing errors)
+    #         Node( label = "node", properties = {key:value for key, value in x.attributes().items() if key in keys1} ) for x in graph_entry.vs[:]
+    #     ]
+    #     for x in redis_nodes:
+    #         redis_graph.add_node(x)
         
-        # redis_edges = [
-        #     Edge( redis_nodes[x.source], "edge", redis_nodes[x.target], properties = x.attributes() )  for x in graph_entry.es[:]
-        # ]
-        redis_edges = [
-            Edge( redis_nodes[x.source], "edge", redis_nodes[x.target], properties = {key:value for key, value in x.attributes().items() if key in keys2} )  for x in graph_entry.es[:]
-        ]
-        for x in redis_edges:
-            redis_graph.add_edge(x)
+    #     # redis_edges = [
+    #     #     Edge( redis_nodes[x.source], "edge", redis_nodes[x.target], properties = x.attributes() )  for x in graph_entry.es[:]
+    #     # ]
+    #     redis_edges = [
+    #         Edge( redis_nodes[x.source], "edge", redis_nodes[x.target], properties = {key:value for key, value in x.attributes().items() if key in keys2} )  for x in graph_entry.es[:]
+    #     ]
+    #     for x in redis_edges:
+    #         redis_graph.add_edge(x)
 
-        p = redis_graph.commit()
+    #     p = redis_graph.commit()
+
+    #     output_query.put(1)
 
 
 
@@ -178,89 +179,89 @@ def insert_to_database(digested_graphs_queue, output_query):
 
 
     ### psycopg2 
-    # conn = psycopg2.connect(host="127.0.0.1", port=5433, user="postgres", password="developer", dbname="node_edges")
-    # cur = conn.cursor()
+    conn = psycopg2.connect(host="127.0.0.1", port=5433, user="postgres", password="developer", dbname="node_edges")
+    cur = conn.cursor()
 
 
-    # # create nodes
-    # cur.execute("""
-    #     create table if not exists nodes (
-    #         id BIGSERIAL PRIMARY KEY,
-    #         accession VARCHAR(20) NOT NULL,
-    #         aminoacid VARCHAR(10) NOT NULL,
-    #         attributes JSON NOT NULL
-    #     );""")
-    # conn.commit()
+    # create nodes
+    cur.execute("""
+        create table if not exists nodes (
+            id BIGSERIAL PRIMARY KEY,
+            accession TEXT NOT NULL,
+            aminoacid VARCHAR(10) NOT NULL,
+            attributes JSON NOT NULL
+        );""")
+    conn.commit()
 
 
-    # # Create edges
-    # cur.execute("""
-    #     create table if not exists edges (
-    #         id BIGSERIAL PRIMARY KEY,
-    #         source BIGINT references nodes(id),
-    #         target BIGINT references nodes(id),
-    #         mono_weight double precision NOT NULL,  
-    #         mono_end_weight double precision NOT NULL, 
-    #         avrg_weight double precision NOT NULL,  
-    #         avrg_end_weight double precision NOT NULL, 
-    #         attributes JSON NOT NULL
-    #     );""")
-    # conn.commit()
+    # Create edges
+    cur.execute("""
+        create table if not exists edges (
+            id BIGSERIAL PRIMARY KEY,
+            source BIGINT references nodes(id),
+            target BIGINT references nodes(id),
+            mono_weight BIGINT NOT NULL,  
+            mono_end_weight BIGINT NOT NULL, 
+            avrg_weight BIGINT NOT NULL,  
+            avrg_end_weight BIGINT NOT NULL, 
+            attributes JSON NOT NULL
+        );""")
+    conn.commit()
 
 
-    # while True:
-    #     try: 
-    #         graph_entry = digested_graphs_queue.get(timeout=180)
-    #     except Exception:
-    #         continue
+    while True:
+        try: 
+            graph_entry, num_of_paths = digested_graphs_queue.get(timeout=180)
+        except Exception:
+            continue
 
-    #     # Generate Key list for json
-    #     json_keys = [x for x in graph_entry.vs[0].attribute_names() if not( x == "accession" or x == "aminoacid" )]
+        # Generate Key list for json
+        json_keys = [x for x in graph_entry.vs[0].attribute_names() if not( x == "accession" or x == "aminoacid" )]
 
-    #     # Generate Node Object
-    #     db_nodes = [(x["accession"], x["aminoacid"], json.dumps({y: x[y] for y in json_keys})) for x in graph_entry.vs[:]]
+        # Generate Node Object
+        db_nodes = [(x["accession"], x["aminoacid"], json.dumps({y: x[y] for y in json_keys})) for x in graph_entry.vs[:]]
 
-    #     # Insert all nodes (bulk)
+        # Insert all nodes (bulk)
         
         
         
         
         
         
-    #     statement = "INSERT INTO nodes(accession, aminoacid, attributes) VALUES " + ",".join(["(%s,%s,%s)"]*len(db_nodes)) + " RETURNING id"
-    #     db_nodes_falttened = [y for x in db_nodes for y in x]
-    #     cur.execute(cur.mogrify(statement, db_nodes_falttened))
+        statement = "INSERT INTO nodes(accession, aminoacid, attributes) VALUES " + ",".join(["(%s,%s,%s)"]*len(db_nodes)) + " RETURNING id"
+        db_nodes_falttened = [y for x in db_nodes for y in x]
+        cur.execute(cur.mogrify(statement, db_nodes_falttened))
 
 
 
-    #     node_ids_bulk = cur.fetchall()
+        node_ids_bulk = cur.fetchall()
 
 
-    #     # parse ids and map nodes to these
-    #     node_ids = [x[0] for x in node_ids_bulk]
-
-
-
-
-    #     sources = [node_ids[x.source] for x in graph_entry.es[:]]
-    #     targets = [node_ids[x.target] for x in graph_entry.es[:]]
-    #     mono_weights = graph_entry.es[:]["mono_weight"]
-    #     end_mono_weights = graph_entry.es[:]["mono_end_weight"]
-    #     avrg_weights = graph_entry.es[:]["avrg_weight"]
-    #     end_avrg_weights = graph_entry.es[:]["avrg_end_weight"]
-    #     attributes = [json.dumps(_get_qualifiers(x["qualifiers"])) for x in graph_entry.es[:]]
-
-
-    #     cur.executemany("""INSERT INTO edges(source, target, mono_weight, mono_end_weight, avrg_weight, avrg_end_weight, attributes) VALUES 
-    #     (%s, %s, %s, %s, %s, %s, %s)
-    #     ;""", zip(sources, targets, mono_weights, end_mono_weights, avrg_weights, end_avrg_weights, attributes))
+        # parse ids and map nodes to these
+        node_ids = [x[0] for x in node_ids_bulk]
 
 
 
-    #     conn.commit()
+
+        sources = [node_ids[x.source] for x in graph_entry.es[:]]
+        targets = [node_ids[x.target] for x in graph_entry.es[:]]
+        mono_weights = graph_entry.es[:]["mono_weight"]
+        end_mono_weights = graph_entry.es[:]["mono_end_weight"]
+        avrg_weights = graph_entry.es[:]["avrg_weight"]
+        end_avrg_weights = graph_entry.es[:]["avrg_end_weight"]
+        attributes = [json.dumps(_get_qualifiers(x["qualifiers"])) for x in graph_entry.es[:]]
 
 
-    #     output_query.put(node_ids)
+        cur.executemany("""INSERT INTO edges(source, target, mono_weight, mono_end_weight, avrg_weight, avrg_end_weight, attributes) VALUES 
+        (%s, %s, %s, %s, %s, %s, %s)
+        ;""", zip(sources, targets, mono_weights, end_mono_weights, avrg_weights, end_avrg_weights, attributes))
+
+
+
+        conn.commit()
+
+
+        output_query.put( (graph_entry.vs[1]["accession"], num_of_paths) )
 
 
 

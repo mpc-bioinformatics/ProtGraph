@@ -408,7 +408,7 @@ def generate_graph(entry_queue, graph_queue):
     while True:
         # Get next item
         try: 
-            entry = entry_queue.get(timeout=1)
+            entry = entry_queue.get(timeout=60)
         except Exception:
             continue
 
