@@ -1,5 +1,7 @@
 import igraph
 
+from digestion import digest
+
 def _find_all_paths(graph, start, end, cutoff):
     # Maybe in C or CPP ? Optimize this, it is not fast enough!
     # Generator for all possible paths
@@ -116,7 +118,7 @@ def _get_mass_dict():
 
 
 
-def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
+def get_next_variant(graph_queue, cutoff=60):
     # cutoff, the maximal length of paths
 
     # TODO we digest here only!
@@ -146,7 +148,9 @@ def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
 
 
     # Do a digestion via Trypsin (currently only this case)
-    _digest_via_trypsin(graph_entry)
+    # TODO parameter is missing!
+    digest(graph_entry, "trypsin")
+    # _digest_via_trypsin(graph_entry)
 
 
 
@@ -439,4 +443,4 @@ def get_next_variant(graph_queue, prot_variant_queue, cutoff=60):
 
     # TODO we return the number of possible subgraphs (without the counting of possible variations!)
     # prot_variant_queue.put(    (  graph_entry.vs[1]["accession"], None )    )
-    prot_variant_queue.put(  (graph_entry, num_of_paths)   )
+    # prot_variant_queue.put(  (graph_entry, num_of_paths)   )

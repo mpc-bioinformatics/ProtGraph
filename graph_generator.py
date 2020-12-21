@@ -40,7 +40,7 @@ def _execute_init_met(graph, init_met_feature):
     graph.es[cur_count:]["qualifiers"] = qualifiers_list 
     
 
-def get_isoform_dict(comments, accession):
+def _get_isoforms_of_entry(comments, accession):
     ''' Get all Isoforms from Comment Section '''
     # TODO/DEBUG for Protein Q9QXS1, since there are only problems with this Protein!
     # TODO comment make nice and quick
@@ -402,59 +402,86 @@ def _execute_signal(graph, signal_feature):
 
 
 
+def _sort_entry_features(entry):
+    sorted_features = dict()
+    for f in entry.features:
+        if f.type not in sorted_features:
+            sorted_features[f.type] = [f]
+        else: 
+            sorted_features[f.type].append(f)
+    
+    return sorted_features
+
+
+def _include_ft_information(entry, graph, kwargs):
+    ''' Returns num of possible isoforms (on the fly) TODO ''' 
+    # Sort features of entry according to their type into a dict
+    sorted_features = _sort_entry_features(entry)
+
+    # VAR_SEQ (isoforms) need to be executed at once and before all other variations
+    # since those can be referenced by others
+    num_of_isoforms = 0 if not kwargs["skip_isoforms"] else None
+    if "VAR_SEQ" in sorted_features and not kwargs["skip_isoforms"]:
+        # Get isoform information of entry as a dict
+        isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
+        _execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
+
+    if "INIT_MET" in sorted_features and not kwargs["skip_init_met"]: # NOTE: TODO DONE? 
+        for f in sorted_features["INIT_MET"]:
+            _execute_init_met(graph, f)
+
+    if "SIGNAL" in sorted_features and not kwargs["skip_signal"]: # NOTE: TODO DONE? 
+        for f in sorted_features["SIGNAL"]:
+            _execute_signal(graph, f)
+
+    if "VARIANT" in sorted_features and not kwargs["skip_variants"]: # NOTE: TODO DONE? 
+        for f in sorted_features["VARIANT"]:
+            _execute_variant(graph, f)
+
+    return num_of_isoforms
 
 # TODO parse note Missing or replace information! via method!
-
-def generate_graph(entry_queue, graph_queue, **kwargs):
+def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
     ''' TODO
         
+        describe kwargs and it is a consumer until a graph is generated and digested TODO
     '''
-    # Configuration_params
 
 
     while True:
-        # Get next item
-        try: 
-            entry = entry_queue.get(timeout=60)
-        except Exception:
-            continue
+        # Get next entry
+        entry = entry_queue.get()
+
+        # Stop if entry is Nonde
+        if entry == None:
+            # --> Stop Condition of Process
+            break
 
 
-        # Sort features according to their type
-        sorted_features = {}
-        for f in entry.features:
-            if f.type not in sorted_features:
-                sorted_features[f.type] = [f]
-            else: 
-                sorted_features[f.type].append(f)
+        ### Beginning of Graph-Generation
+        ### We also collect interesting information here!
 
-
-        # Get Isoform information
-        isoforms, num_of_isoforms = get_isoform_dict(entry.comments, entry.accessions[0])
-
-        # Generate canonical graph (Initialization)
+        # Generate canonical graph (initialization of the graph)
         graph = _generate_canonical_graph(entry.sequence, entry.accessions[0])
 
+        # FT parsing and appending of Nodes and Edges into the graph
+        graph_ft_info = _include_ft_information(entry, graph, kwargs)
 
-        # VAR_SEQ (isoforms) need to be executed at once and before all other variations
-        if "VAR_SEQ" in sorted_features:
-            _execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
 
-        if "INIT_MET" in sorted_features: # NOTE: TODO DONE? 
-            for f in sorted_features["INIT_MET"]:
-                _execute_init_met(graph, f)
 
-        if "SIGNAL" in sorted_features: # NOTE: TODO DONE? 
-            for f in sorted_features["SIGNAL"]:
-                _execute_signal(graph, f)
-
-        if "VARIANT" in sorted_features: # NOTE: TODO DONE? 
-            for f in sorted_features["VARIANT"]:
-                _execute_variant(graph, f)
-
+        # TODO 
+        # persist_graph
 
         # Add generated Graph into the next Queue
         # graph_queue.put(graph)
         get_next_variant(graph, graph_queue)
+
+
+
+
+        # Returning Graph here TODO with information
+        # TODO add here graph persistance!!
+
+        graph_queue.put(  (graph_entry, graph_ft_info)   )
 
 
