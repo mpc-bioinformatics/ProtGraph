@@ -3,6 +3,10 @@ import igraph
 from Bio.SeqFeature import UncertainPosition, UnknownPosition
 
 
+
+# We execute this only in one process! TODO
+from variation_generator import get_next_variant
+
 def _execute_init_met(graph, init_met_feature):
     ''' DONE? NOTE This may contain flaws! '''
 
@@ -38,6 +42,7 @@ def _execute_init_met(graph, init_met_feature):
 
 def get_isoform_dict(comments, accession):
     ''' Get all Isoforms from Comment Section '''
+    # TODO/DEBUG for Protein Q9QXS1, since there are only problems with this Protein!
     # TODO comment make nice and quick
     d = {}
     num_of_isoforms = 0
@@ -72,14 +77,10 @@ def get_isoform_dict(comments, accession):
                     assert seq_key.lower() == "sequence"
 
 
-                    if "," in iso_value: # BUG/Feature in embl.  Some IDs are not unique (see e.g. P12821-3, P22966-1)
-                        # We simply take the first occurence
+                    if "," in iso_value: # BUG/Feature in embl. Some IDs are not unique (see e.g. P12821-3, P22966-1)
+                        # We simply take the first occurence 
                         iso_value = iso_value.split(",", 1)[0].strip()
-
                     d[value] = (iso_value, [x.strip() for x in seq_value.split(",")], reference_info)
-                    # if "Displayed" in d[value][1]: # Copy original accession also into isoforms
-                    #     d[accession] = (iso_value, [x.strip() for x in seq_value.split(",")], reference_info)
-                    #     # TODO can we then simply delete the QXXXXX-Y value in dict?
 
 
     return d, num_of_isoforms
@@ -404,7 +405,13 @@ def _execute_signal(graph, signal_feature):
 
 # TODO parse note Missing or replace information! via method!
 
-def generate_graph(entry_queue, graph_queue):
+def generate_graph(entry_queue, graph_queue, **kwargs):
+    ''' TODO
+        
+    '''
+    # Configuration_params
+
+
     while True:
         # Get next item
         try: 
@@ -447,6 +454,7 @@ def generate_graph(entry_queue, graph_queue):
 
 
         # Add generated Graph into the next Queue
-        graph_queue.put(graph)
+        # graph_queue.put(graph)
+        get_next_variant(graph, graph_queue)
 
 
