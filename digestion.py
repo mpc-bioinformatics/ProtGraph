@@ -1,7 +1,10 @@
 
 def digest(graph, enzyme: str):
-    ''' Select digestion method depending on enzyme '''
-    dict(
+    ''' Select digestion method depending on enzyme 
+    
+        Each digestion returns the number of cleaved edges (marked)
+    '''
+    return dict(
         skip=_digest_via_skip,
         trypsin=_digest_via_trypsin
         # Add more Enzymes if needed here!
@@ -10,7 +13,7 @@ def digest(graph, enzyme: str):
 
 def _digest_via_skip(graph):
     ''' Skipping digestion'''
-    pass
+    return 0
 
 
 def _digest_via_trypsin(graph):
@@ -20,8 +23,8 @@ def _digest_via_trypsin(graph):
         except when a P is followed (-> set as target).
         
         Additionally two new edges are added:
-        1: One edge from K or R to __end__ and
-        2: One edge from __start__ to the next nodes target
+        1: One edge from __start__ to the next nodes target (Beginning of a peptide)
+        2: One edge from K or R to __end__ and (Ending of a peptide)
 
         NOTE: Multiple edges can go in or out from K and R and are therefore also considered.
         Also, 'infinitly' many miscleavages are represented here!
@@ -52,3 +55,6 @@ def _digest_via_trypsin(graph):
 
     # Add the newly created edges to the graph
     graph.add_edges(trypsin_in + trypsin_out)
+
+    # Return the number of cleaved edges
+    return len(cleaved_idcs)

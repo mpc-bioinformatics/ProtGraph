@@ -7,6 +7,9 @@ from Bio.SeqFeature import UncertainPosition, UnknownPosition
 # We execute this only in one process! TODO
 from variation_generator import get_next_variant
 
+from digestion import digest
+from merge_aminoacids import merge_aminoacids
+
 def _execute_init_met(graph, init_met_feature):
     ''' DONE? NOTE This may contain flaws! '''
 
@@ -465,7 +468,16 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
         graph = _generate_canonical_graph(entry.sequence, entry.accessions[0])
 
         # FT parsing and appending of Nodes and Edges into the graph
-        graph_ft_info = _include_ft_information(entry, graph, kwargs)
+        # Number of isoforms are returned on the fly
+        num_of_isoforms = _include_ft_information(entry, graph, kwargs)
+
+        # Digest graph with enzyme (unlimited miscleavages)
+        num_of_cleavages = digest(graph, kwargs["digestion"]) 
+
+
+        # Merge (summarize) graph
+        merge_aminoacids(graph)
+
 
 
 
