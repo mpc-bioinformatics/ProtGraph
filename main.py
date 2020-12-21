@@ -77,8 +77,9 @@ def parse_args():
         skip_isoforms= args.skip_isoforms,
         skip_variants= args.skip_variants,
         skip_init_met= args.skip_init_met,
-        skip_signal  = args.skip_signal
+        skip_signal  = args.skip_signal,
 
+        digestion    = args.digestion
     )
 
 
@@ -90,10 +91,10 @@ if __name__ == "__main__":
     _, graph_gen_args, _ = parse_args()
 
 
-    entry_queue = Queue(15000)
-    graph_queue = Queue(15000)
-    prot_variation_queue = Queue(15000)
-    output_queue = Queue(15000)
+    entry_queue = Queue(100)
+    graph_queue = Queue(100)
+    prot_variation_queue = Queue(100)
+    output_queue = Queue(100)
 
 
 
