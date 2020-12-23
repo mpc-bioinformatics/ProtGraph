@@ -8,15 +8,15 @@ def merge_aminoacids(graph_entry):
 
         In essence this method does the following:
         E.G: 
-             M -v                    -> K
+             M -v                   ,-> K
                 A -> M -> I -> N -> O 
-             K -^                    -> P
+             K -^                   `-> P
             (9 Nodes, 8 Edges)
 
         can be summarized to:
-             M -v    -> K
+             M -v   ,-> K
                 AMINO 
-             K -^    -> P
+             K -^   `-> P
             (5 Nodes, 4 Edges)
 
 

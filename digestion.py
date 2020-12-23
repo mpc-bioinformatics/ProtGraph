@@ -17,7 +17,7 @@ def _digest_via_skip(graph):
 
 
 def _digest_via_trypsin(graph):
-    ''' Digestion via Trypsin
+    ''' Digestion via Trypsin.
 
         Each edge from a node with the aminoacid K or R as source gets cleaved (marked as TRUE) 
         except when a P is followed (-> set as target).
@@ -27,7 +27,7 @@ def _digest_via_trypsin(graph):
         2: One edge from K or R to __end__ and (Ending of a peptide)
 
         NOTE: Multiple edges can go in or out from K and R and are therefore also considered.
-        Also, 'infinitly' many miscleavages are represented here!
+        Also, 'infinitly' many miscleavages are represented!
     '''
 
     # Get start and end node

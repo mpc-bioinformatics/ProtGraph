@@ -9,6 +9,8 @@ from variation_generator import get_next_variant
 
 from digestion import digest
 from merge_aminoacids import merge_aminoacids
+from aa_masses_annotation import annotate_weights
+from graph_statistics import get_statistics
 
 def _execute_init_met(graph, init_met_feature):
     ''' DONE? NOTE This may contain flaws! '''
@@ -417,7 +419,7 @@ def _sort_entry_features(entry):
 
 
 def _include_ft_information(entry, graph, kwargs):
-    ''' Returns num of possible isoforms (on the fly) TODO ''' 
+    ''' Returns num of possible isoforms and others (on the fly) TODO ''' 
     # Sort features of entry according to their type into a dict
     sorted_features = _sort_entry_features(entry)
 
@@ -429,19 +431,26 @@ def _include_ft_information(entry, graph, kwargs):
         isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
         _execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
 
-    if "INIT_MET" in sorted_features and not kwargs["skip_init_met"]: # NOTE: TODO DONE? 
+    num_of_init_m = 0
+    if "INIT_MET" in sorted_features and not kwargs["skip_init_met"]:
+        num_of_init_m = len(sorted_features["INIT_MET"])
         for f in sorted_features["INIT_MET"]:
             _execute_init_met(graph, f)
 
-    if "SIGNAL" in sorted_features and not kwargs["skip_signal"]: # NOTE: TODO DONE? 
+    num_of_signal = 0
+    if "SIGNAL" in sorted_features and not kwargs["skip_signal"]:
+        num_of_signal = len(sorted_features["SIGNAL"])
         for f in sorted_features["SIGNAL"]:
             _execute_signal(graph, f)
 
-    if "VARIANT" in sorted_features and not kwargs["skip_variants"]: # NOTE: TODO DONE? 
+    num_of_variant = 0
+    if "VARIANT" in sorted_features and not kwargs["skip_variants"]:
+        num_of_variant = len(sorted_features["VARIANT"])
         for f in sorted_features["VARIANT"]:
             _execute_variant(graph, f)
 
-    return num_of_isoforms
+    return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant
+
 
 # TODO parse note Missing or replace information! via method!
 def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
@@ -468,25 +477,48 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
         graph = _generate_canonical_graph(entry.sequence, entry.accessions[0])
 
         # FT parsing and appending of Nodes and Edges into the graph
-        # Number of isoforms are returned on the fly
-        num_of_isoforms = _include_ft_information(entry, graph, kwargs)
+        # The amount of isoforms, etc.. can be retrieved on the fly
+        num_isoforms, num_initm, num_signal, num_variant = _include_ft_information(entry, graph, kwargs)
 
         # Digest graph with enzyme (unlimited miscleavages)
         num_of_cleavages = digest(graph, kwargs["digestion"]) 
 
+        # Merge (summarize) graph if wanted
+        if not kwargs["no_merge"]:
+            merge_aminoacids(graph)
 
-        # Merge (summarize) graph
-        merge_aminoacids(graph)
+        # Annotate weights for edges and nodes (maybe even the smallest weight possible to get to the end node)
+        annotate_weights(graph, **kwargs)
 
-
-
+        # Calculate statistics on the graph:
+        num_nodes, num_edges, num_paths = get_statistics(graph, **kwargs)
 
         # TODO 
         # persist_graph
 
-        # Add generated Graph into the next Queue
-        # graph_queue.put(graph)
-        get_next_variant(graph, graph_queue)
+
+        # Output statistics we gathered during processing
+        graph_queue.put(
+            (
+                entry.accessions[0], # Protein Accesion
+                num_isoforms,        # Number of Isoforms
+                num_initm,           # Number of Init_M (either 0 or 1)
+                num_signal,          # Number of Signal Peptides used (either 0 or 1 # TODO is this correct, or can it have more signal peptides?)
+                num_variant,         # Number of Variants applied to this protein
+                num_of_cleavages,    # Number of cleavages (marked edges) this protein has
+                num_nodes,           # Number of nodes for the Protein/Peptide Graph
+                num_edges,           # Number of edges for the Protein/Peptide Graph
+                num_paths            # Number of possible (non repeating paths) to the end of the Protein/Peptide. NOTE: This can contain repeating Peptides!
+            )
+        )
+
+
+
+
+        # TODO OLD CODE
+        # # Add generated Graph into the next Queue
+        # # graph_queue.put(graph)
+        # get_next_variant(graph, graph_queue)
 
 
 
@@ -494,6 +526,6 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
         # Returning Graph here TODO with information
         # TODO add here graph persistance!!
 
-        graph_queue.put(  (graph_entry, graph_ft_info)   )
+        
 
 
