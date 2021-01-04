@@ -15,8 +15,8 @@ Make sure you have `pipenv` and `pyenv` installed. (via `pacman` `apt` and alike
 
 First clone this project and enter its directory via: 
 ```shell
-git clone <project-url>
-cd <project-url>
+git clone git@github.com:mpc-bioinformatics/provar-db-graph-gen.git
+cd provar-db-graph-gen
 ```
 
 Now the dependencies (and possibly Python) need to be installed. This can be done with:
