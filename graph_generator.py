@@ -3,10 +3,7 @@ import igraph
 from Bio.SeqFeature import UncertainPosition, UnknownPosition
 
 
-
-# We execute this only in one process! TODO
-from variation_generator import get_next_variant
-
+# TODO comment and beautify this file!!!
 from digestion import digest
 from merge_aminoacids import merge_aminoacids
 from aa_masses_annotation import annotate_weights
@@ -124,7 +121,7 @@ def _combine_vertices(list_a, list_b):
         if a["isoform_accession"] not in out_d:
             out_d[a["isoform_accession"]] = dict(inn=[a])
         else: 
-            print("Key is multiple times in it") # TODO we cannot simply associate via accession!?!?
+            raise Exception("Key is multiple times in dict") # TODO we cannot simply associate via accession!?!?
     for b in list_b:
         if b["isoform_accession"] not in out_d:
             out_d[b["isoform_accession"]] = dict(out=[b])
@@ -134,7 +131,8 @@ def _combine_vertices(list_a, list_b):
             else:    
                 out_d[b["isoform_accession"]]["out"].append(b)
             if len(out_d[b["isoform_accession"]]) > 2:
-                print("multiple time??")
+                raise Exception("multiple Entries Found")# TODO we cannot simply associate via accession!?!?
+    # TODO Does these two cases ever happen? 
 
     k = list(out_d.items())
     a_s = [x[1]["inn"] if "inn" in x[1] else [] for x in k]
@@ -379,7 +377,7 @@ def _execute_signal(graph, signal_feature):
             print("WARNING, there are multiple defined ENDPOINTS!!")
 
 
-    # TODO should the signal peptide be exactly the same as in canonical? Or can we leave it as is?
+    # TODO should the signal peptide to be exactly the same as in canonical? Or can we leave it as is?
     # Should we check this? If so: do this here!!
     # TODO can we associate the end points with the start points, according to its index?
 
@@ -503,7 +501,7 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
                 entry.accessions[0], # Protein Accesion
                 num_isoforms,        # Number of Isoforms
                 num_initm,           # Number of Init_M (either 0 or 1)
-                num_signal,          # Number of Signal Peptides used (either 0 or 1 # TODO is this correct, or can it have more signal peptides?)
+                num_signal,          # Number of Signal Peptides used (either 0 or 1)
                 num_variant,         # Number of Variants applied to this protein
                 num_of_cleavages,    # Number of cleavages (marked edges) this protein has
                 num_nodes,           # Number of nodes for the Protein/Peptide Graph
@@ -512,19 +510,6 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
             )
         )
 
-
-
-
-        # TODO OLD CODE
-        # # Add generated Graph into the next Queue
-        # # graph_queue.put(graph)
-        # get_next_variant(graph, graph_queue)
-
-
-
-
-        # Returning Graph here TODO with information
-        # TODO add here graph persistance!!
 
         
 

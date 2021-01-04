@@ -1,298 +1,69 @@
+# WIP Graph-Generator for Proteins
+
+This project aims to efficiently generate graphs of proteins from [UniProt](https://www.uniprot.org/) `.dat` or `.txt` files.
+
+It does so by utilizing Biopython and igraph to generate directed acyclic graphs of Proteins 
 
 
-# Digestion of Complete uniprot yields roughly:
-23 132 890 796 Edges and
-8 675 257 837 Nodes
-
-
-# Old Content
-Example queries to retrieve paths from this datastructure (in postgres)
-
+[TODO IMAGE describing what happens from entry to graph]
 
 
 
-## Starting databae on Ubuntu
-> /usr/lib/postgresql/10/bin/postgres -D $(pwd)/.db/pgsql/data -h 127.0.0.1 -p 5433 -k $(pwd)/.db/pgsql/run
+## Setting up
 
+Make sure you have `pipenv` and `pyenv` installed. (via `pacman` `apt` and alike)
 
-## Get One Recursion Depth of a Path from ALL Proteins
-```sql
-	With cte_bfs(source, target, weight, paths) as
-	(
-	Select source, target, mono_weight, array[source, target]
-	from edges
-	where source = ANY (select id from nodes where nodes.aminoacid = '__start__')	
-	and mono_weight > 500 -- Which range of weight do we want!?
-	and mono_end_weight + edges.mono_weight < 1000 -- Usinng mono_end_weight do eliminate even more rows
-	 )
-	
-	Select cte_bfs.source, cte_bfs.target, cte_bfs.weight + edges.mono_weight as weight, cte_bfs.paths || edges.target as paths
-	from edges
-	join cte_bfs
-	on edges.source = cte_bfs.target
-	where cte_bfs.weight + edges.mono_weight > 500 -- Which range of weight do we want!?
-	and cte_bfs.weight + edges.mono_weight + edges.mono_end_weight< 1000
-	
+First clone this project and enter its directory via: 
+```shell
+git clone <project-url>
+cd <project-url>
 ```
 
+Now the dependencies (and possibly Python) need to be installed. This can be done with:
+> pipenv install
 
- This query below can retrieve them specific weight
+After everything is set up activate the environment via:
+> pipenv shell
 
-```sql
-with recursive cte_bfs(source, target, weight, paths ) as (
-	Select source, target, mono_weight, array[source, target]
-	from edges
-	where source = ANY (select id from nodes where nodes.aminoacid = '__start__')	
-	--and mono_weight > 5000 -- Which range of weight do we want!?
-	and mono_end_weight + edges.mono_weight < 6000 -- Usinng mono_end_weight do eliminate even more rows
-	
-	Union 
-	
-	Select cte_bfs.source, cte_bfs.target, 
-		cte_bfs.weight + edges.mono_weight as weight, cte_bfs.paths || edges.target as paths
-	from edges
-	join cte_bfs
-	on edges.source = cte_bfs.target
-	--where cte_bfs.weight + edges.mono_weight > 5000 -- Which range of weight do we want!?
-	where cte_bfs.weight + edges.mono_weight + edges.mono_end_weight< 6000 -- Same here to reduce the number of rows
-)
+You are now ready to use this project!
 
-Select * from cte_bfs
-where cte_bfs.weight > 5000
-and array_length(cte_bfs.paths, 1) = 4
-limit 1000
-```
 
-FINAL "OPTIMIZED" VERSION
-```sql
-explain analyze
+## Usage
+Currently, the entrypoint of this script is `main.py`. However, this may change in future.
 
-with recursive cte_bfs(source, target, weight, paths ) as (
-	Select source, target, mono_weight, array[source, target]
-	from edges
-	where source = ANY (select id from nodes where nodes.aminoacid = '__start__')	
-	--and mono_weight > 5000 -- Which range of weight do we want!?
-	and mono_end_weight + edges.mono_weight < 6000 -- Usinng mono_end_weight do eliminate even more rows
-	
-	Union 
-	
-	Select cte_bfs.source, cte_bfs.target, 
-		cte_bfs.weight + edges.mono_weight as weight, cte_bfs.paths || edges.target as paths
-	from edges
-	join cte_bfs
-	on edges.source = cte_bfs.target
-	--where cte_bfs.weight + edges.mono_weight > 5000 -- Which range of weight do we want!?
-	where cte_bfs.weight + edges.mono_weight + edges.mono_end_weight< 6000 -- Same here to reduce the number of rows
-)
 
-Select * from cte_bfs
-where cte_bfs.weight > 5000
-and array_length(cte_bfs.paths, 1) = 4
-```
+To see an overview of possible parameters and options use: `python main.py --help`
 
 ---
 
+Lets assume that `e_coli.txt` has been downloaded from Uniprot (as `.txt`)
 
-Get a path from to:
-```sql
-with recursive params as (
-  select 12009068::bigint as fromnode,
-         12009147::bigint as tonode
-),
-paths as (
-    select ARRAY[fromnode] pathnodes,
-           fromnode lastnode,
-           0::double precision sumdistance
-    from   params
-  union all
-    select     pathnodes || e.target,
-               e.target,
-               sumdistance + e.mono_weight
-    from       paths
-    join       edges e on e.source = lastnode
-    cross join params p
-    where      e.source <> p.tonode
-    and        e.target <> all(pathnodes)
-)
-select   pathnodes, sumdistance
-from     paths, params
-where    lastnode = tonode
-order by sumdistance desc
-limit 10
-```
-
-All Paths for Protein: P54296
-```sql
-with recursive params as (
-  select 12009068::bigint as fromnode,
-         12009147::bigint as tonode
-),
-paths as (
-    select ARRAY[fromnode] pathnodes,
-           fromnode lastnode,
-           0::double precision sumdistance
-    from   params
-  union all
-    select     pathnodes || e.target,
-               e.target,
-               sumdistance + e.mono_weight
-    from       paths
-    join       edges e on e.source = lastnode
-    cross join params p
-    where      e.source <> p.tonode
-    and        e.target <> all(pathnodes)
-)
-select   pathnodes, sumdistance
-from     paths, params
-where    lastnode = tonode
-order by sumdistance desc
-```
-
-# Complete Recursion do find arbitrary lenghts of paths 
-
-```sql
-with recursive cte_bfs(source, target, weight, paths ) as (
-	Select source, target, mono_weight, array[source, target]
-	from edges
-	where source = ANY (select id from nodes where nodes.aminoacid = '__start__')	
-	and mono_weight > 500 -- Which range of weight do we want!?
-	and mono_end_weight + edges.mono_weight < 1000 -- Usinng mono_end_weight do eliminate even more rows
-	
-	Union 
-	
-	Select cte_bfs.source, cte_bfs.target, 
-		cte_bfs.weight + edges.mono_weight as weight, cte_bfs.paths || edges.target as paths
-	from edges
-	join cte_bfs
-	on edges.source = cte_bfs.target
-	where cte_bfs.weight + edges.mono_weight > 500 -- Which range of weight do we want!?
-	and cte_bfs.weight + edges.mono_weight + edges.mono_end_weight< 1000 -- Same here to reduce the number of rows
-)
-
-Select * from cte_bfs
-
-```
+The Graphgeneration can be executed via: `python main.py e_coli.txt`. However, we do not see how long it takes to finish. We only see the number of processed proteins per second. This tool can provide an estimation, when providing the number of entries. Currently (as for 04.01.2021), the E-Coli dataset has 9434 entries. Executing `python main.py --num_of_entries 9434 e_coli.txt` will print this (you can also use `-n`).
 
 
-## Optimization Tricks
+It is also possible to add multiple files. The number of entries for each file then need to be summed: `python main.py -n 18868 e_coli.txt e_coli.txt`
 
-This will create an index for all proteins, where they start (for fast look up)
-> create index on nodes (id) where aminoacid = '__start__'
-> create index on nodes (id) where aminoacid = '__end__'
+
+If to many (or to few) processes are executed, then it can be adjusted via `--num_of_processes` or `-np`. E.G. `python main.py --num_of_processes 3 --num_of_entries 9434 e_coli.txt ` will use 4 (3 + 1 reading process) processes.
+
+
+To execute everything there can be, use the following: `python main.py -amew -aaew -cnp -n 9434 r_coli.dat`
+
+
+Proteins are digested by Trypsin (default). This can be changed by setting the `--digestion` to something else. See help information for more.
+
+
+--- 
+
+A statistics file will be generated during each run. This statistics file contains various information, which were gathered on the fly or computed (if specified). 
+
+## Missing Functionalities
+
+* Export to graph files in folder
+* Export to Postgres
+* Other Export functionalities!
 
 
 
 
 
-## Path with limiting max weight
-```sql
-with recursive params as (
-  select 12009068::bigint as fromnode, -- start node
-         12009147::bigint as tonode, -- end node
-		 80000.00::double precision as max_weight -- max weight of path ( here mono_weight )
-	
-),
-paths as (
-    select ARRAY[fromnode] pathnodes,
-           fromnode lastnode,
-           0::double precision sumdistance
-    from   params
-  union all
-    select     pathnodes || e.target,
-               e.target,
-               sumdistance + e.mono_weight
-    from       paths
-    join       edges e on e.source = lastnode
-    cross join params p
-    where      e.source <> p.tonode
-    and        e.target <> all(pathnodes) -- maybe can be removed, since we have here strict DAGs !?
-	and 	   sumdistance + e.mono_weight + e.mono_end_weight < p.max_weight -- Condition to only check for paths up to a weight
-)
-select   pathnodes, sumdistance
-from     paths, params
-where    lastnode = tonode
-order by sumdistance desc
-```
-
-
-## Traverse a Graph from end to start
-
-```sql
-WITH RECURSIVE traverse(id, depth) AS (
-        SELECT source, 124515142 FROM edges
-        WHERE target = ANY (select id from nodes where nodes.aminoacid = '__end__')
-    UNION ALL
-        SELECT edges.source, traverse.depth + 1 FROM edges
-        JOIN traverse
-        ON edges.source = traverse.id
-)
-SELECT id, depth FROM traverse
-ORDER BY depth DESC;
-```
-
-
-
-
-
-## UNTESTED 
-# All paths with max weight
-```sql
-with recursive params as ( -- GET ALL PATHS from ALL PROTEINS!
-	select n1.id as fromnode, n2.id as tonode, 300.00::double precision as max_weight
-	from nodes n1
-	join nodes n2 on n1.accession = n2.accession
-	where n1.aminoacid = '__start__'
-	and n2.aminoacid = '__end__'
-),
-paths as (
-    select ARRAY[fromnode] pathnodes,
-           fromnode lastnode,
-           0::double precision sumdistance
-    from   params
-  union all
-    select     pathnodes || e.target,
-               e.target,
-               sumdistance + e.mono_weight
-    from       paths
-    join       edges e on e.source = lastnode
-    cross join params p
-    where      e.source <> p.tonode
-    and        e.target <> all(pathnodes)
-	and 	   sumdistance + e.mono_weight + e.mono_end_weight < p.max_weight
-)
-select   pathnodes, sumdistance
-from     paths, params
-where    lastnode = tonode
-order by sumdistance desc
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Cypher and RedisGraph
-
-
-Get all paths (limit 3) where the mono weight is less than 300.0
-```cypher
-MATCH p = (n : node {aminoacid : '__start__'})-[e:edge*]->(t : node {aminoacid : '__end__'}) 
-WITH n, t, sum([edge IN relationships(p) | edge.mono_weight]) as s 
-WHERE s < 300.0 RETURN * limit 3
-```

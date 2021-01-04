@@ -3,18 +3,16 @@ from tqdm import tqdm
 import csv
 from Bio import SwissProt
 
-#TODO remove Exclude List!
 
-def read_embl(path_to_empls: list, totals: list, queue):
-    for input_file, total in zip(path_to_empls, totals):
+def read_embl(path_to_embls: list, num_of_entries: int, queue):
+    ''' Reads entries from a list of existing embl files '''
+    for input_f in path_to_embls:
+        # For each entry: try to read it and
+        # add it to the queue
+        try: 
+            entries = SwissProt.parse(input_f)
+            for entry in entries:
+                queue.put(entry)
+        except Exception as e: 
+            print("File '{}' could not be parsed and was excluded. Reason: {}".format(input_f, e))
 
-        # exclude_prots = "exclude.csv" # TODO REMOVE this
-        # with open(exclude_prots) as in_f:
-        #     csv_reader = csv.reader(in_f)
-        #     exclude_list = [x[0] for x in list(csv_reader)]
-
-        s = SwissProt.parse(input_file)
-        for entry in tqdm(s, total=total, mininterval=0.5, unit="proteins"):   
-            # if entry.accessions[0] in exclude_list: # TODO this removes all worst cases at least for VARIANT !!!
-            #     continue
-            queue.put(entry)

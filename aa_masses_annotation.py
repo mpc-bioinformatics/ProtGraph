@@ -48,7 +48,13 @@ def annotate_weights(graph_entry, **kwargs):
         Such information could e.g. be used to reduce the number of paths early on,
         when using a customized DFS or BFS
 
-        TODO arguments
+
+        kwargs arguments:
+        1. annotate_mono_weights     : If True, then mono weigths are added
+        2. annotate_mono_end_weights : If True, then 1. and the lowest weight to end is added
+
+        3. annotate_avrg_weights     : If True, then mono weigths are added
+        4. annotate_avrg_end_weights : If True, then 3. and the lowest weight to end is added
     '''
     # Get the mass dictionary, which should be happen instantly. 
     mass_dict = _get_mass_dict(factor=kwargs["mass_dict_factor"], type=kwargs["mass_dict_type"])
