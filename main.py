@@ -19,34 +19,8 @@ def main():
 
     graph_gen_args = parse_args()
 
-
-    entry_queue = Queue(100) # TODO limit? or not limit
+    entry_queue = Queue(1000) # TODO limit? or not limit
     statistics_queue = Queue()
-
-
-
-
-
-
-
-
-    input_file = ["/home/luxdo/git/uniprot-filtered-organism Homo+sapiens+(Human)+[9606] .txt"] # TODO parameterize
-    input_file_totals = [194237]
-
-    input_file = ["/home/luxii/git/variants_generator/e_coli.dat"] # TODO parameterize
-    input_file_totals = [9434]
-
-    # input_file = ["/hdd1tb/uniprot-filtered-organism Homo+sapiens+(Human)+[9606] .txt"]
-    # input_file_totals = [192814]
-
-    # input_file = [
-    #     "/hdd1tb/uniprot_sprot.dat",
-    #     "/hdd1tb/uniprot_trembl.dat"
-    # ]
-    # input_file_totals = [
-    #     563552,
-    #     195104019
-    # ]
 
 
     number_of_procs = cpu_count() -1 if graph_gen_args["num_of_processes"] is None else graph_gen_args["num_of_processes"]
@@ -59,7 +33,6 @@ def main():
     # database_writer = [Process(target=insert_to_database, args=(prot_variation_queue, output_queue,)) for _ in range(16)]
     # TODO DATABASE OUTPUT WRITER IS MISSING CURRENTLY!
     
-
 
     # Start Processes/threads in reverse!
     for p in graph_gen:
