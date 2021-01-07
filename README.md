@@ -57,10 +57,13 @@ Proteins are digested by Trypsin (default). This can be changed by setting the `
 
 A statistics file will be generated during each run. This statistics file contains various information, which were gathered on the fly or computed (if specified). 
 
-## Missing Functionalities
 
-* Export to graph files in folder
-* Export to Postgres
+## Exporting graphs
+To export each protein graph into a folder, simply set the flags `-edot`, `-egraphml` and/or `-egml`, which will create the corresponding dot, GraphML or GML files into a output folder. Exporting to GraphML is recommended since this is currently the only export method able to serialize all properties which have been set in this project on a graph.
+
+
+## Missing Functionalities
+* Export to Databases Postgres / Redis and more!
 * Other Export functionalities!
 
 
