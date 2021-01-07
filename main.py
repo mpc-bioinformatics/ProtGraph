@@ -172,10 +172,30 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--output_csv", "-o", default="protein_graph_statistics.csv", type=str,
+        "--output_csv", "-o", default=os.path.join(os.path.dirname(__file__), "protein_graph_statistics.csv"), type=str,
         help="Set the output file, which will contain information about the ProteinGaph (in csv) NOTE: It will write to"
-        " 'protein_graph_statistics.csv' and overwrite exisiting files."
+        " 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is set to write it in this projects folder"
     )    
+
+
+    ## Arguments for exporting
+    parser.add_argument(
+        "--export_output_folder", "-eo", default=os.path.join(os.path.dirname(__file__), "exported_graphs"), type=str,
+        help="Set the output folder to specify the dirctory of exported graphs (dot, graphml, gml) NOTE: It will overwrite"
+        " exisiting files. Default is set to export in this projects folder"
+    )    
+    parser.add_argument(
+        "--export_dot", "-edot", default=False, action="store_true",
+        help="Set this flag to export a dot file for each protein"
+    )
+    parser.add_argument(
+        "--export_graphml", "-egraphml", default=False, action="store_true",
+        help="Set this flag to export a GraphML file for each protein. This is the recommended export method."
+    )
+    parser.add_argument(
+        "--export_gml", "-egml", default=False, action="store_true",
+        help="Set this flag to export a GML file for each protein"
+    )
 
 
     args = parser.parse_args()
@@ -206,7 +226,12 @@ def parse_args():
         mass_dict_factor = args.mass_dict_factor,
 
         calc_num_possibilities = args.calc_num_possibilities,
-        output_csv = args.output_csv
+        output_csv = args.output_csv,
+
+        export_output_folder = args.export_output_folder,
+        export_dot = args.export_dot,
+        export_graphml = args.export_graphml,
+        export_gml = args.export_gml
     )
 
 

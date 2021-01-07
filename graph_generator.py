@@ -3,6 +3,8 @@ import igraph
 from Bio.SeqFeature import UncertainPosition, UnknownPosition
 
 
+from export.exporters import Exporters
+
 # TODO comment and beautify this file!!!
 from digestion import digest
 from merge_aminoacids import merge_aminoacids
@@ -457,6 +459,9 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
         describe kwargs and it is a consumer until a graph is generated and digested TODO
     '''
 
+    # Initialize the exporters for graphs
+    graph_exporters = Exporters(**kwargs)
+
 
     while True:
         # Get next entry
@@ -492,7 +497,8 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
         num_nodes, num_edges, num_paths = get_statistics(graph, **kwargs)
 
         # TODO 
-        # persist_graph
+        # Persist or export graphs with speicified exporters
+        graph_exporters.export_graph(graph)
 
 
         # Output statistics we gathered during processing
@@ -510,7 +516,8 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
             )
         )
 
-
+    # Close exporters (maybe opened files, database connections, etc... )
+    graph_exporters.close() 
         
 
 
