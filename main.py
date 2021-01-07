@@ -26,7 +26,7 @@ def main():
     number_of_procs = cpu_count() -1 if graph_gen_args["num_of_processes"] is None else graph_gen_args["num_of_processes"]
 
     # Create Processes
-    entry_reader = Process(target=read_embl, args=(graph_gen_args["files"], graph_gen_args["num_of_entries"], entry_queue,))
+    entry_reader = Process(target=read_embl, args=(graph_gen_args["files"], graph_gen_args["num_of_entries"], graph_gen_args["exclude_accessions"], entry_queue,))
     graph_gen = [Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=graph_gen_args) for _ in range(number_of_procs)]
     main_write_thread = Thread(target=write_output_csv_thread, args=(statistics_queue, graph_gen_args["output_csv"], graph_gen_args["num_of_entries"],))
 
@@ -91,6 +91,11 @@ def parse_args():
     parser.add_argument(
         "--num_of_entries", "-n", type=int, default=None,
         help="Number of entries across all files (summed). if given, it will an estimation of the runtime"
+    )
+    parser.add_argument(
+        "--exclude_accessions", "-exclude", type=str, default=None,
+        help="A csv file only containing accessions in the first row which should be excluded for processsing."
+        " Setting this value may reduce the reading performance and therefore the throughput performance overall."
     )
 
 
@@ -207,6 +212,7 @@ def parse_args():
     graph_gen_args = dict(
         files = args.files,
         num_of_entries = args.num_of_entries,
+        exclude_accessions = args.exclude_acccessions,
 
         num_of_processes = args.num_of_processes,
 
