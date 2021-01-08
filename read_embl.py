@@ -4,10 +4,10 @@ import csv
 from Bio import SwissProt
 
 
-def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv:str, queue):
+def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv: str, queue):
     ''' Reads entries from a list of existing embl files '''
     if exclude_csv is None:
-        # If no exclude csv is not provided, we execute the reading without an if checking! (performance)
+        # If no exclude csv is provided, we execute the reading without an if checking! (performance)
         for input_f in path_to_embls:
             # For each entry: try to read it and
             # add it to the queue

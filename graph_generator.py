@@ -502,9 +502,12 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
 
 
         # Output statistics we gathered during processing
+        entry_protein_desc = entry.description.split(";", 1)[0]
+        entry_protein_desc = entry_protein_desc[entry_protein_desc.index("=")+1:]
         graph_queue.put(
             (
                 entry.accessions[0], # Protein Accesion
+                entry.entry_name,    # Protein displayed name
                 num_isoforms,        # Number of Isoforms
                 num_initm,           # Number of Init_M (either 0 or 1)
                 num_signal,          # Number of Signal Peptides used (either 0 or 1)
@@ -512,7 +515,8 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
                 num_of_cleavages,    # Number of cleavages (marked edges) this protein has
                 num_nodes,           # Number of nodes for the Protein/Peptide Graph
                 num_edges,           # Number of edges for the Protein/Peptide Graph
-                num_paths            # Number of possible (non repeating paths) to the end of the Protein/Peptide. NOTE: This can contain repeating Peptides!
+                num_paths,           # Number of possible (non repeating paths) to the end of the Protein/Peptide. NOTE: This can contain repeating Peptides!
+                entry_protein_desc   # Description name of the Protein (which can be lenghty and is therefore added to the end)
             )
         )
 

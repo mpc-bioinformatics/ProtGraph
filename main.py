@@ -212,7 +212,7 @@ def parse_args():
     graph_gen_args = dict(
         files = args.files,
         num_of_entries = args.num_of_entries,
-        exclude_accessions = args.exclude_acccessions,
+        exclude_accessions = args.exclude_accessions,
 
         num_of_processes = args.num_of_processes,
 
@@ -260,14 +260,16 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
         # Write Header Row
         csv_writer.writerow([
                 "Accession",
-                "Number of Isoforms",
-                "Has INIT_M",
+                "Entry ID",
+                "Number of isoforms",
+                "Has INIT_MET",
                 "Has SIGNAL",
-                "Number of Variants",
-                "Number of cleaved Edges",
-                "Number of Nodes",
-                "Number of Edges",
-                "Num of possible paths"
+                "Number of variants",
+                "Number of cleaved edges",
+                "Number of nodes",
+                "Number of edges",
+                "Num of possible paths",
+                "Protein description"
         ])
 
         while True:
