@@ -107,11 +107,11 @@ def _generate_canonical_graph(sequence: str, acc: str):
     graph.vs["accession"] = [acc, *[acc]*len(sequence), acc] # TODO is this okay for every entry? to set them to acc
     graph.vs["isoform_accession"] = [None, *[None]*len(sequence), None]
     graph.vs["isoform_position"] = [None, *[None]*len(sequence), None] # Position acording to the isoform
-    graph.vs["cleaved"] = [False]*(len(sequence) + 2) # Position acording to the isoform
-
+    
 
     # Add Information about the Features used
     graph.es["qualifiers"] = [[] for _ in range(len(sequence) + 2)]
+    graph.es["cleaved"] = False # And each added edge is currently not cleaved!
 
     return graph
 
