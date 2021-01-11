@@ -107,6 +107,7 @@ def _generate_canonical_graph(sequence: str, acc: str):
     graph.vs["accession"] = [acc, *[acc]*len(sequence), acc] # TODO is this okay for every entry? to set them to acc
     graph.vs["isoform_accession"] = [None, *[None]*len(sequence), None]
     graph.vs["isoform_position"] = [None, *[None]*len(sequence), None] # Position acording to the isoform
+    graph.vs["cleaved"] = [False]*(len(sequence) + 2) # Position acording to the isoform
 
 
     # Add Information about the Features used
@@ -456,7 +457,7 @@ def _include_ft_information(entry, graph, kwargs):
 def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
     ''' TODO
         
-        describe kwargs and it is a consumer until a graph is generated and digested TODO
+        describe kwargs and consumer until a graph is generated and digested etc ...  TODO
     '''
 
     # Initialize the exporters for graphs
