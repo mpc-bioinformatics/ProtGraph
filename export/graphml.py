@@ -2,11 +2,12 @@ import os
 
 from export.abstract_exporter import AExporter
 
+
 class GraphML(AExporter):
-    ''' 
+    """ 
         A simple GraphML (XML-format) exporter. This one is 
         recommended since it can save all attributes used in the graph!
-    '''
+    """
 
     def start_up(self, **kwargs):
         # Here wer simply create the folder if it does not exist

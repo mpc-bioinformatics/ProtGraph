@@ -1,6 +1,6 @@
 
 def merge_aminoacids(graph_entry):
-    ''' This merging reduces the amount of nodes and edges drastically.
+    """ This merging reduces the amount of nodes and edges drastically.
 
         Each node in the graph represents a single aminoacid when built. It is very
         likely that each graph has many chains of aminoacids without interfering edges 
@@ -23,7 +23,7 @@ def merge_aminoacids(graph_entry):
         NOTE: If there are Proteins which can be completely summarized into a single node,
         then those are split into 3 Nodes and 2 Edges, so that the __start__ and __end__ node
         are present in all graphs. E.G:   __start__ -> PROTEIN -> __end__
-    '''
+    """
     #####################
     # Optimize and summarize chains of nodes
 
@@ -33,7 +33,7 @@ def merge_aminoacids(graph_entry):
         if e.outdegree() == 1 and e.indegree() == 1: # TODO correct?
             prev_node = e.neighbors(mode="IN")[0]
             if prev_node.outdegree() == 1:
-                chain.append( (prev_node.index, e.index) )
+                chain.append((prev_node.index, e.index))
 
     # Chain those elements together
     complete_chain = []
@@ -48,17 +48,18 @@ def merge_aminoacids(graph_entry):
         else:
             complete_chain[idx].append(ele[1])
 
-
-
-    # Generate intermediate Graph Mapping 
+    # Generate intermediate Graph Mapping
 
     # Special case exclude start and ending:
     [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
     [__end_node__] = graph_entry.vs.select(aminoacid="__end__")
-    complete_chain = [[y for y in x if y != __start_node__.index and y != __end_node__.index] for x in complete_chain]
+    complete_chain = [
+        [y for y in x if y != __start_node__.index and y != __end_node__.index]
+        for x in complete_chain
+    ]
 
     # Contains [(IDCS, VERTICES, OUT_EDGES)] all attributes in tuple as list
-    merge_list = [] 
+    merge_list = []
     for c in complete_chain:
         vs = []
         es = []
@@ -70,10 +71,7 @@ def merge_aminoacids(graph_entry):
             if outs[0].index not in c:
                 first_node = x
 
-
         merge_list.append((first_node, c + [], vs, es))
-
-
 
     # Sort them accordingly forom beginning and concat the attributes
     merged_nodes = []
@@ -87,13 +85,13 @@ def merge_aminoacids(graph_entry):
             sorted_edges.append(edges[fn_idx])
             sorted_nodes.append(vertices[fn_idx])
             first_node = sorted_edges[-1].target
-        ### Special case retrieve information of last node also 
+        ### Special case retrieve information of last node also
         last_node = sorted_edges[-1].source
         if sorted_edges[-1].target_vertex.indegree() == 1:
             if sorted_edges[-1].target_vertex["aminoacid"] != "__end__":
                 last_node = sorted_edges[-1].target
                 sorted_nodes.append(sorted_edges[-1].target_vertex.attributes())
-        
+
         # TODO check if only one element:
         iso_set = set([x["isoform_accession"] for x in sorted_nodes if x["isoform_accession"] is not None])
         acc_set = set([x["accession"] for x in sorted_nodes  if x["accession"] is not None])
@@ -101,7 +99,7 @@ def merge_aminoacids(graph_entry):
         if len(acc_set) > 1:
             print("DEBUG ME")
         if len(iso_set) > 1:
-            print("DEBUG ME") 
+            print("DEBUG ME")
 
         #  Merged Node atributes # TODO
         m_accession = acc_set.pop() if len(acc_set) == 1 else None # Should only Contain 1 Element
@@ -143,8 +141,6 @@ def merge_aminoacids(graph_entry):
             new_edge_attrs, # the attributes of the edge ingoing from the supernode (appending at the end!)
 
         ])
-
-
     
     ### Modifiy the graph by adding the new nodes
     ### adding saved edges to the supernode
@@ -153,7 +149,6 @@ def merge_aminoacids(graph_entry):
     ### removing the edges at beginning of supernode (saving them for later)
     ### removing the edges at end of supernode (saving them for later)
     ### removing the nodes in supernode
-    
     
     # 1. add all supernodes and its attributes!
     cur_node_count = graph_entry.vcount()
@@ -166,7 +161,6 @@ def merge_aminoacids(graph_entry):
 
     supernode_idcs = list(range(cur_node_count, cur_node_count + len(merged_nodes)))
 
-
     # 2. Get all edges connected to supernode and them appropiately!
     for supernode_idx, (_, _, first_n, last_n, _, edge_attr) in zip(supernode_idcs, merged_nodes):
         # Get all in edges
@@ -177,13 +171,13 @@ def merge_aminoacids(graph_entry):
                 attrs["qualifiers"] = edge_attr["qualifiers"]
             else:
                 attrs["qualifiers"] = attrs["qualifiers"] + edge_attr["qualifiers"]
-            in_e_new_attrs.append( ((in_e.source, supernode_idx), attrs ) )
+            in_e_new_attrs.append(((in_e.source, supernode_idx), attrs))
 
         # Get all out edges
         out_e_new_attrs = []
         for out_e in graph_entry.vs[last_n].out_edges():
             attrs = out_e.attributes()
-            out_e_new_attrs.append( ((supernode_idx, out_e.target), attrs)  )
+            out_e_new_attrs.append(((supernode_idx, out_e.target), attrs))
 
         # Add them to the graph
         e_count = graph_entry.ecount()

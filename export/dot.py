@@ -2,8 +2,9 @@ import os
 
 from export.abstract_exporter import AExporter
 
+
 class Dot(AExporter):
-    ''' A simple Dot Exporter using igraph '''
+    """ A simple Dot Exporter using igraph """
 
     def start_up(self, **kwargs):
         # Here wer simply create the folder if it does not exist

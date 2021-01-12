@@ -5,7 +5,7 @@ from threading import Thread
 from read_embl import read_embl
 from graph_generator import generate_graph_consumer
 from variation_generator import get_next_variant
-# from database_writer import insert_to_database
+
 import time
 
 from tqdm import tqdm
@@ -13,13 +13,12 @@ import os
 import csv
 
 
-
 def main():
-    ''' MAIN DESCRIPTION TODO '''
+    """ MAIN DESCRIPTION TODO """
 
     graph_gen_args = parse_args()
 
-    entry_queue = Queue(1000) # TODO limit? or not limit
+    entry_queue = Queue(1000)  # TODO limit? or not limit
     statistics_queue = Queue()
 
 
@@ -32,14 +31,12 @@ def main():
 
     # database_writer = [Process(target=insert_to_database, args=(prot_variation_queue, output_queue,)) for _ in range(16)]
     # TODO DATABASE OUTPUT WRITER IS MISSING CURRENTLY!
-    
 
     # Start Processes/threads in reverse!
     for p in graph_gen:
         p.start()
     entry_reader.start()
     main_write_thread.start()
-
 
     # Check Processes and Threads in Reverse
     graph_gen_stop_sent = False
@@ -68,17 +65,17 @@ def main():
             continue
 
 
-        
-
-
 def check_if_file_exists(s: str):
-    ''' checks if a file exists. If not: raise Exception ''' 
+    """ checks if a file exists. If not: raise Exception """ 
     if os.path.isfile(s):
         return s
-    else: 
+    else:
         raise Exception("File '{}' does not exists".format(s))
 
+
 import argparse
+
+
 def parse_args():
     ### Arguments for Parser
     parser = argparse.ArgumentParser(description="Graph-Generator for Proteins/Peptides and Exporter to various formats")
@@ -202,11 +199,7 @@ def parse_args():
         help="Set this flag to export a GML file for each protein"
     )
 
-
     args = parser.parse_args()
-
-
-
 
     # Graph generation arguments in dict:
     graph_gen_args = dict(
@@ -244,12 +237,11 @@ def parse_args():
     return graph_gen_args
 
 
-
 def write_output_csv_thread(queue, out_file, total_num_entries):
-    ''' 
+    """ 
         The statistics writing thread, which writes to 'out_file', overwriting its 
         contents if existing.
-    '''
+    """
     # Generate Progrssbar
     pbar = tqdm(total=total_num_entries, mininterval=0.5, unit="proteins")
 
@@ -258,7 +250,8 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
         csv_writer = csv.writer(out_f)
 
         # Write Header Row
-        csv_writer.writerow([
+        csv_writer.writerow(
+            [
                 "Accession",
                 "Entry ID",
                 "Number of isoforms",
@@ -270,7 +263,8 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
                 "Number of edges",
                 "Num of possible paths",
                 "Protein description"
-        ])
+            ]
+        )
 
         while True:
             # Wait and get next result entry
@@ -289,12 +283,8 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
     pbar.close()
 
 
-
-
 if __name__ == "__main__":
     main()
-
-
 
     # Nodes Count: 71031227
     # Edges Count: 77997502
@@ -302,4 +292,3 @@ if __name__ == "__main__":
     # Optimization is possible here!
     # We could concat Nodes together as long as there is only one  in and out degree
     # This optimization can happen before!!! doing the weighting (we can use the topological sort for this)
-

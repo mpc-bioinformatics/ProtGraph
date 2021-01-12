@@ -5,13 +5,13 @@ from Bio import SwissProt
 
 
 def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv: str, queue):
-    ''' Reads entries from a list of existing embl files '''
+    """ Reads entries from a list of existing embl files """
     if exclude_csv is None:
         # If no exclude csv is provided, we execute the reading without an if checking! (performance)
         for input_f in path_to_embls:
             # For each entry: try to read it and
             # add it to the queue
-            try: 
+            try:
                 entries = SwissProt.parse(input_f)
                 for entry in entries:
                     queue.put(entry)
@@ -28,11 +28,12 @@ def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv: str, queue)
             for input_f in path_to_embls:
                 # For each entry: try to read it and
                 # add it to the queue
-                try: 
+                try:
                     entries = SwissProt.parse(input_f)
                     for entry in entries:
                         if entry.accessions[0] in exclude_list: 
-                            continue # This effectively skips an entry at the cost to check whether to skip in EACH entry!
+                            # This effectively skips an entry at the cost to check whether to skip in EACH entry!
+                            continue 
                         queue.put(entry)
                 except Exception as e: 
                     print("File '{}' could not be parsed and was excluded. Reason: {}".format(input_f, e))

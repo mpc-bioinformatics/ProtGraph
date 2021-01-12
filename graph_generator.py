@@ -1,4 +1,3 @@
-
 import igraph
 from Bio.SeqFeature import UncertainPosition, UnknownPosition
 
@@ -11,9 +10,9 @@ from merge_aminoacids import merge_aminoacids
 from aa_masses_annotation import annotate_weights
 from graph_statistics import get_statistics
 
-def _execute_init_met(graph, init_met_feature):
-    ''' DONE? NOTE This may contain flaws! '''
 
+def _execute_init_met(graph, init_met_feature):
+    """ DONE? NOTE This may contain flaws! """
 
     # Get start
     [start] = graph.vs.select(aminoacid="__start__")
@@ -22,37 +21,44 @@ def _execute_init_met(graph, init_met_feature):
     pos_first_aas = graph.neighbors(start, mode="out")
 
     # Filtering is important, since we may skip an aminoacid of an already cleaved protein
-    met_aas = [x for x in pos_first_aas if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["position"] == 1]
+    met_aas = [
+        x 
+        for x in pos_first_aas 
+        if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["position"] == 1
+    ]
 
     # Get possible features 
-    features = [graph.es.select(_source=start, _target=x)["qualifiers"] for x in met_aas]
+    features = [
+        graph.es.select(_source=start, _target=x)["qualifiers"] for x in met_aas
+    ]
     # Get the next nodes which should be after them
     targets = [graph.neighbors(x, mode="out") for x in met_aas]
 
     # Get current number of edges
     cur_count = graph.ecount()
 
-
     # Generate the edges list
     edge_list = [(start, y) for x in targets for y in x]
-    qualifiers_list = [[init_met_feature, *features[x_idx][y_idx]] for x_idx, x in enumerate(targets) for y_idx, _ in enumerate(x)]
+    qualifiers_list = [
+        [init_met_feature, *features[x_idx][y_idx]]
+        for x_idx, x in enumerate(targets)
+        for y_idx, _ in enumerate(x)
+    ]
 
     # Add new edges (bulk)
     graph.add_edges(edge_list)
-
-
     graph.es[cur_count:]["qualifiers"] = qualifiers_list 
     
 
 def _get_isoforms_of_entry(comments, accession):
-    ''' Get all Isoforms from Comment Section '''
+    """ Get all Isoforms from Comment Section """
     # TODO/DEBUG for Protein Q9QXS1, since there are only problems with this Protein!
     # TODO comment make nice and quick
     d = {}
     num_of_isoforms = 0
 
     for isoforms in [x for x in comments if x.startswith("ALTERNATIVE PRODUCTS:")]:
-        isoforms = isoforms[len("ALTERNATIVE PRODUCTS:"):]
+        isoforms = isoforms[len("ALTERNATIVE PRODUCTS:") :]
 
         entries = isoforms.split(";")
         for e_idx, entry in enumerate(entries):
@@ -75,17 +81,21 @@ def _get_isoforms_of_entry(comments, accession):
                     iso_key, iso_value = entries[e_idx+offset].strip().split("=", 1) # TODO There are comma seperated Synonyms!? see ADAM22=G07, 22g(D26D27)+29.3
                     if not iso_key.lower() == "isoid":
                         offset = 2
-                        iso_key, iso_value = entries[e_idx+offset].strip().split("=")
+                        iso_key, iso_value = entries[e_idx + offset].strip().split("=")
                         assert iso_key.lower() == "isoid"
-                    seq_key, seq_value = entries[e_idx+offset + 1].strip().split("=")
+                    seq_key, seq_value = entries[e_idx + offset + 1].strip().split("=")
                     assert seq_key.lower() == "sequence"
 
 
-                    if "," in iso_value: # BUG/Feature in embl. Some IDs are not unique (see e.g. P12821-3, P22966-1)
+                    if "," in iso_value: 
+                        # BUG/Feature in embl. Some IDs are not unique (see e.g. P12821-3, P22966-1)
                         # We simply take the first occurence 
                         iso_value = iso_value.split(",", 1)[0].strip()
-                    d[value] = (iso_value, [x.strip() for x in seq_value.split(",")], reference_info)
-
+                    d[value] = (
+                        iso_value, 
+                        [x.strip() for x in seq_value.split(",")], 
+                        reference_info
+                    )
 
     return d, num_of_isoforms
 
@@ -93,13 +103,13 @@ def _get_isoforms_of_entry(comments, accession):
 
 def _generate_canonical_graph(sequence: str, acc: str):
 
-    graph = igraph.Graph(directed=True) 
+    graph = igraph.Graph(directed=True)
 
     # Initialize the graph with the sequence
-    graph.add_vertices(len(sequence) + 2) 
+    graph.add_vertices(len(sequence) + 2)
     graph.add_edges([(x1, x1+1) for x1 in range(len(sequence) + 1)])
 
-    # Add their amino acid to 
+    # Add their amino acid to
     graph.vs["aminoacid"] = ["__start__", *[x for x in sequence], "__end__"]
 
     # Add position attributes to nodes as well as from which accesion they originate
@@ -108,7 +118,6 @@ def _generate_canonical_graph(sequence: str, acc: str):
     graph.vs["isoform_accession"] = [None, *[None]*len(sequence), None]
     graph.vs["isoform_position"] = [None, *[None]*len(sequence), None] # Position acording to the isoform
     
-
     # Add Information about the Features used
     graph.es["qualifiers"] = [[] for _ in range(len(sequence) + 2)]
     graph.es["cleaved"] = False # And each added edge is currently not cleaved!
@@ -124,17 +133,19 @@ def _combine_vertices(list_a, list_b):
         if a["isoform_accession"] not in out_d:
             out_d[a["isoform_accession"]] = dict(inn=[a])
         else: 
-            raise Exception("Key is multiple times in dict") # TODO we cannot simply associate via accession!?!?
+            # TODO we cannot simply associate via accession!?!?
+            raise Exception("Key is multiple times in dict") 
     for b in list_b:
         if b["isoform_accession"] not in out_d:
             out_d[b["isoform_accession"]] = dict(out=[b])
         else:
             if "out" not in out_d[b["isoform_accession"]]:
                 out_d[b["isoform_accession"]]["out"] = [b]
-            else:    
+            else:
                 out_d[b["isoform_accession"]]["out"].append(b)
             if len(out_d[b["isoform_accession"]]) > 2:
-                raise Exception("multiple Entries Found")# TODO we cannot simply associate via accession!?!?
+                # TODO we cannot simply associate via accession!?!?
+                raise Exception("multiple Entries Found")
     # TODO Does these two cases ever happen? 
 
     k = list(out_d.items())
@@ -144,12 +155,9 @@ def _combine_vertices(list_a, list_b):
     return a_s, b_s
 
 
-
-
 def _execute_variant(graph, variant_feature):
-    text = variant_feature.qualifiers["note"] # check if missing or if we add another node
-
-
+    # Check if missing or if we add another node
+    text = variant_feature.qualifiers["note"] 
 
     # TODO what about nodes which are sequentielly replaced
     # add missing node here use select for all available previous nodes (using acc AND position)!!!
@@ -164,11 +172,16 @@ def _execute_variant(graph, variant_feature):
             vertices_before_raw = list(graph.vs.select(position=aa_before))
             vertices_after_raw = list(graph.vs.select(position=aa_after))
         else: 
-            vertices_before_raw = list(graph.vs.select(isoform_position=aa_before, isoform_accession=variant_feature.ref))
-            vertices_after_raw = list(graph.vs.select(isoform_position=aa_after, isoform_accession=variant_feature.ref))
+            vertices_before_raw = list(
+                graph.vs.select(isoform_position=aa_before, isoform_accession=variant_feature.ref)
+            )
+            vertices_after_raw = list(
+                graph.vs.select(isoform_position=aa_after, isoform_accession=variant_feature.ref)
+            )
 
         if len(vertices_before_raw) == 0 or len(vertices_after_raw) == 0:
-            print("fdfd")
+            # TODO does this happen?
+            raise Exception("TODO this should never happen!")
 
         vertices_before, vertices_after = _combine_vertices(vertices_before_raw, vertices_after_raw)
 
@@ -183,7 +196,7 @@ def _execute_variant(graph, variant_feature):
 
         # Bulk add of edges
         cur_edges = graph.ecount()
-        graph.add_edges( [x[0] for x in edge_list] )
+        graph.add_edges([x[0] for x in edge_list])
         graph.es[cur_edges:]["qualifiers"] = [x[1] for x in edge_list]
 
     else:
@@ -195,32 +208,37 @@ def _execute_variant(graph, variant_feature):
         assert len(xy) == 2
         y = xy[1].strip().replace(" ", "")
         
-
         # Get start and end position
         # NOTE: Shifted by 1 due to the __start__ node at 0
         aa_before = variant_feature.location.start + 1
         aa_after = variant_feature.location.end + 0
-
 
         # Get list of all aa before and after
         if variant_feature.ref is None:
             vertices_before_raw = list(graph.vs.select(position=aa_before))
             vertices_after_raw = list(graph.vs.select(position=aa_after))
         else: 
-            vertices_before_raw = list(graph.vs.select(isoform_position=aa_before, isoform_accession=variant_feature.ref))
-            vertices_after_raw = list(graph.vs.select(isoform_position=aa_after, isoform_accession=variant_feature.ref))
+            vertices_before_raw = list(
+                graph.vs.select(isoform_position=aa_before, isoform_accession=variant_feature.ref)
+            )
+            vertices_after_raw = list(
+                graph.vs.select(isoform_position=aa_after, isoform_accession=variant_feature.ref)
+            )
 
         if len(vertices_before_raw) == 0 or len(vertices_after_raw) == 0:
-            print("fdfd")
+            # TODO does this happen?
+            raise Exception("TODO this should never happen!")
 
-        vertices_before, vertices_after = _combine_vertices(vertices_before_raw, vertices_after_raw)
+        vertices_before, vertices_after = _combine_vertices(
+            vertices_before_raw, vertices_after_raw
+        )
 
         # Association via combine Vertices OK ?? TODO
         for aa_in, aa_out in zip(vertices_before, vertices_after):
             if len(aa_out) == 0 or len(aa_in) == 0:
                 # Skip this entry, since we do not have complete information
                 # -> Not possible to link either start or end or both
-                continue 
+                continue
 
             # Append new node in graph and mapping
             # Case for one or multiple amino acids TODO
@@ -235,14 +253,14 @@ def _execute_variant(graph, variant_feature):
 
             # Add edges between them:
             for idx, n in enumerate(y_idcs[:-1]):
-                graph.add_edges( [(n, y_idcs[idx+1])] )
+                graph.add_edges([(n, y_idcs[idx+1])])
 
             # Get first node and last node
             first_node, last_node = y_idcs[0], y_idcs[-1]
 
             # Add edges to the original protein
             edge_list = []
-            
+
             for aa_in_in in aa_in:
                 for aa_in_in_in in list(graph.es.select(_target=aa_in_in)) :
                     edge_list.append( ((aa_in_in_in.source, first_node), [*aa_in_in_in["qualifiers"], variant_feature]) )
@@ -252,38 +270,45 @@ def _execute_variant(graph, variant_feature):
 
             # Bulk add of edges
             cur_edges = graph.ecount()
-            graph.add_edges( [x[0] for x in edge_list] )
+            graph.add_edges([x[0] for x in edge_list])
             graph.es[cur_edges:]["qualifiers"] = [x[1] for x in edge_list]
 
-            
 
-
-
-
-def _execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displayed_accession): # Isoforms
-
+def _execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displayed_accession): 
+    # or also known as: Isoforms
     execute_isoforms = {}
 
     for f in var_seqs_features:
-        
+
         if "note" not in f.qualifiers:
-            print("Some feature tables do not contain information about all isoforms for {}".format(displayed_accession))
+            print(
+                "Some feature tables do not contain information "
+                "about all isoforms for {}".format(displayed_accession)
+            )
             return
 
         # get isoform information
         note = f.qualifiers["note"]
-        isoform_isoids = note[note.index("(")+1 + 3:note.rfind(")")] # +3 to remove "in "
+        isoform_isoids = note[
+            note.index("(")+1 + 3 : note.rfind(")") # +3 to remove "in "
+        ] 
         isoform_isoids = isoform_isoids.replace("isoform", "").replace(" and ", ",")
         for isoid in isoform_isoids.split(","):
             isoid = isoid.strip()
             if isoid not in isoforms:
-                print("Isoform not found in specification. Skipping all isoforms for: {}".format(displayed_accession))
+                print(
+                    "Isoform not found in specification. "
+                    "Skipping all isoforms for: {}".format(displayed_accession)
+                )
                 return
 
             if "Displayed" in isoforms[isoid]:
-                print("Isoform modification for canonical sequence found. Skipping all isoforms for: {}".format(displayed_accession))
+                print(
+                    "Isoform modification for canonical sequence "
+                    "found. Skipping all isoforms for: {}".format(displayed_accession)
+                )
                 return
-            
+
             if isoid not in execute_isoforms:
                 execute_isoforms[isoid] = [f]
             else:
@@ -292,7 +317,7 @@ def _execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displaye
 
 
     [__start_node__] = graph.vs.select(aminoacid="__start__")
-    [__stop_node__]  = graph.vs.select(aminoacid="__end__")
+    [__stop_node__] = graph.vs.select(aminoacid="__end__")
     for key in execute_isoforms.keys():
         iso_sequence, iso_orig_pos, iso_pos = _create_isoform_lists(isoforms[key][0], execute_isoforms[key], sequence)
 
@@ -420,7 +445,7 @@ def _sort_entry_features(entry):
 
 
 def _include_ft_information(entry, graph, kwargs):
-    ''' Returns num of possible isoforms and others (on the fly) TODO ''' 
+    """ Returns num of possible isoforms and others (on the fly) TODO """ 
     # Sort features of entry according to their type into a dict
     sorted_features = _sort_entry_features(entry)
 
@@ -455,10 +480,10 @@ def _include_ft_information(entry, graph, kwargs):
 
 # TODO parse note Missing or replace information! via method!
 def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
-    ''' TODO
+    """ TODO
         
         describe kwargs and consumer until a graph is generated and digested etc ...  TODO
-    '''
+    """
 
     # Initialize the exporters for graphs
     graph_exporters = Exporters(**kwargs)
@@ -472,7 +497,6 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
         if entry == None:
             # --> Stop Condition of Process
             break
-
 
         ### Beginning of Graph-Generation
         ### We also collect interesting information here!
@@ -497,10 +521,8 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
         # Calculate statistics on the graph:
         num_nodes, num_edges, num_paths = get_statistics(graph, **kwargs)
 
-        # TODO 
         # Persist or export graphs with speicified exporters
         graph_exporters.export_graph(graph)
-
 
         # Output statistics we gathered during processing
         entry_protein_desc = entry.description.split(";", 1)[0]
@@ -523,6 +545,3 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
 
     # Close exporters (maybe opened files, database connections, etc... )
     graph_exporters.close() 
-        
-
-

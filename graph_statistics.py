@@ -1,12 +1,9 @@
-
-
-
 def get_statistics(graph, **kwargs):
-    '''
+    """
         TODO
 
         returns #Node, #Edges, #Num_Of_Paths
-    '''
+    """
 
     # Get the number of nodes and edges (an be done instantly)
     num_edges = _get_edge_count(graph)
@@ -22,17 +19,17 @@ def get_statistics(graph, **kwargs):
 
 
 def _get_edge_count(graph_entry):
-    ''' Get number of edges'''
+    """ Get number of edges"""
     return graph_entry.ecount()
 
 
 def _get_node_count(graph_entry):
-    ''' Get number of nodes'''
+    """ Get number of nodes"""
     return graph_entry.vcount()
 
 
 def _num_of_possible_paths(graph_entry):
-    ''' Get the Number of all possible simple Paths for a Protein or Peptide.
+    """ Get the Number of all possible simple Paths for a Protein or Peptide.
         A dynamic programming approach is taken here. We can minimize this problem
         into subproblems. The goal is to find the number of paths from the start of
         a protein to the end of a protein. 
@@ -43,19 +40,19 @@ def _num_of_possible_paths(graph_entry):
 
         This algorithm therefore needs to iterate over the graph, which can be done with the help of 
         the topological sort. The runtime of the dynamic programming part should be O(n^2) TODO is this 100% correct?
-    '''
+    """
 
     # First get topological sorting of the graph
     sorted_nodes = graph_entry.topological_sorting()
 
     # Create list with num of paths
-    var_paths = [0]*graph_entry.vcount()
+    var_paths = [0] * graph_entry.vcount()
 
     # Initialize Path from the very first node! For convenience we set it to one (actually 0!)
     # The very first node should always be the __start__ of a protein
     first = sorted_nodes[0]
-    var_paths[first] = 1 
-    
+    var_paths[first] = 1
+
     # Iterative approach look how many paths are possible from previous to itself (O(n^2)) # TODO is this 100% correct?
     # Get next node in topological sorted nodes
     for v in sorted_nodes[1:]:
@@ -68,7 +65,7 @@ def _num_of_possible_paths(graph_entry):
         var_paths[v] = summed
 
     # We changed the first nodes value to 1, which is not correct, we set it back here!
-    var_paths[first] = 0 # Path to itself is zero!
+    var_paths[first] = 0  # Path to itself is zero!
 
     # Returning the last node (which should always be the __end__ of a protein)
-    return var_paths[sorted_nodes[-1]] # This contains the number of paths
+    return var_paths[sorted_nodes[-1]]  # This contains the number of paths

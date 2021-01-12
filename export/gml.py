@@ -2,8 +2,9 @@ import os
 
 from export.abstract_exporter import AExporter
 
+
 class GML(AExporter):
-    ''' A simple GML (Graph Markup Language) exporter '''
+    """ A simple GML (Graph Markup Language) exporter """
 
     def start_up(self, **kwargs):
         # Here wer simply create the folder if it does not exist
