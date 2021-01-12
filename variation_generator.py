@@ -1,77 +1,71 @@
-import igraph
+## TODO UNUSED
+ 
+# import igraph
 
-from digestion import digest
+# from digestion import digest
 
-def _find_all_paths(graph, start, end, cutoff):
-    # Maybe in C or CPP ? Optimize this, it is not fast enough!
-    # Generator for all possible paths
-    path = []
-    queue = [(start, end, path)]
-    while queue:
-        start, end, path = queue.pop()
-        if len(path) > cutoff: 
-            # TODO remove this MODIFICATION of the all path algorithm here!
-            continue
-        path = path + [start]
+# def _find_all_paths(graph, start, end, cutoff):
+#     # Maybe in C or CPP ? Optimize this, it is not fast enough!
+#     # Generator for all possible paths
+#     path = []
+#     queue = [(start, end, path)]
+#     while queue:
+#         start, end, path = queue.pop()
+#         if len(path) > cutoff: 
+#             # TODO remove this MODIFICATION of the all path algorithm here!
+#             continue
+#         path = path + [start]
 
-        for node in set(graph.neighbors(start, mode='OUT')).difference(path):
-            queue.append((node, end, path))
+#         for node in set(graph.neighbors(start, mode='OUT')).difference(path):
+#             queue.append((node, end, path))
 
-        if start == end and len(path) > 0:
-            yield path
-
-
-def _get_path_count(graph, start, end, cutoff):
-    counter = 0
-    for _ in _find_all_paths(graph, start, end, cutoff):
-        counter += 1
-    return counter
+#         if start == end and len(path) > 0:
+#             yield path
 
 
-def _get_mass_dict():
-    # So only integers are returned
-    # CONVERTED BY FACTOR: 1 000 000 000
-    factor = 1000000000
-    return dict(
-        G=(int(57.021463735*factor),  int(57.05132*factor) ),
-        A=(int(71.037113805*factor),  int(71.0779*factor) ),
-        S=(int(87.032028435*factor),  int(87.0773*factor) ),
-        P=(int(97.052763875*factor),  int(97.11518*factor) ),
-        V=(int(99.068413945*factor),  int(99.13106*factor) ),
-        T=(int(101.047678505*factor), int(101.10388*factor) ),
-        C=(int(103.009184505*factor), int(103.1429*factor) ),
-        L=(int(113.084064015*factor), int(113.15764*factor) ),
-        I=(int(113.084064015*factor), int(113.15764*factor) ),
-        N=(int(114.042927470*factor), int(114.10264*factor) ),
-        D=(int(115.026943065*factor), int(115.0874*factor) ),
-        Q=(int(128.058577540*factor), int(128.12922*factor) ),
-        K=(int(128.094963050*factor), int(128.17228*factor) ),
-        E=(int(129.042593135*factor), int(129.11398*factor) ),
-        M=(int(131.040484645*factor), int(131.19606*factor) ),
-        H=(int(137.058911875*factor), int(137.13928*factor) ),
-        F=(int(147.068413945*factor), int(147.17386*factor) ),
-        U=(int(150.953633405*factor), int(150.3079*factor) ),
-        R=(int(156.101111050*factor), int(156.18568*factor) ),
-        Y=(int(163.063328575*factor), int(163.17326*factor) ),
-        W=(int(186.079312980*factor), int(186.2099*factor) ),
-        O=(int(237.147726925*factor), int(237.29816*factor) ),
-
-        J=(int(113.084064015*factor), int(113.1594*factor) ),
-        X=(int(0.0*factor), int(0.0*factor) ), # Unknown Amino Acid
-        Z=(int(128.55059*factor), int(128.6231*factor) ),
-        B=(int(114.53495*factor), int(114.5962*factor) ),
-
-        __start__=(0, 0),
-        __end__=(0, 0)
-    )
+# def _get_path_count(graph, start, end, cutoff):
+#     counter = 0
+#     for _ in _find_all_paths(graph, start, end, cutoff):
+#         counter += 1
+#     return counter
 
 
+# def _get_mass_dict():
+#     # So only integers are returned
+#     # CONVERTED BY FACTOR: 1 000 000 000
+#     factor = 1000000000
+#     return dict(
+#         G=(int(57.021463735*factor),  int(57.05132*factor) ),
+#         A=(int(71.037113805*factor),  int(71.0779*factor) ),
+#         S=(int(87.032028435*factor),  int(87.0773*factor) ),
+#         P=(int(97.052763875*factor),  int(97.11518*factor) ),
+#         V=(int(99.068413945*factor),  int(99.13106*factor) ),
+#         T=(int(101.047678505*factor), int(101.10388*factor) ),
+#         C=(int(103.009184505*factor), int(103.1429*factor) ),
+#         L=(int(113.084064015*factor), int(113.15764*factor) ),
+#         I=(int(113.084064015*factor), int(113.15764*factor) ),
+#         N=(int(114.042927470*factor), int(114.10264*factor) ),
+#         D=(int(115.026943065*factor), int(115.0874*factor) ),
+#         Q=(int(128.058577540*factor), int(128.12922*factor) ),
+#         K=(int(128.094963050*factor), int(128.17228*factor) ),
+#         E=(int(129.042593135*factor), int(129.11398*factor) ),
+#         M=(int(131.040484645*factor), int(131.19606*factor) ),
+#         H=(int(137.058911875*factor), int(137.13928*factor) ),
+#         F=(int(147.068413945*factor), int(147.17386*factor) ),
+#         U=(int(150.953633405*factor), int(150.3079*factor) ),
+#         R=(int(156.101111050*factor), int(156.18568*factor) ),
+#         Y=(int(163.063328575*factor), int(163.17326*factor) ),
+#         W=(int(186.079312980*factor), int(186.2099*factor) ),
+#         O=(int(237.147726925*factor), int(237.29816*factor) ),
 
+#         J=(int(113.084064015*factor), int(113.1594*factor) ),
+#         X=(int(0.0*factor), int(0.0*factor) ), # Unknown Amino Acid
+#         Z=(int(128.55059*factor), int(128.6231*factor) ),
+#         B=(int(114.53495*factor), int(114.5962*factor) ),
 
-
-
-
-
+#         __start__=(0, 0),
+#         __end__=(0, 0)
+#     )
 
 # def get_next_variant(graph_queue, cutoff=60):
 #     # cutoff, the maximal length of paths

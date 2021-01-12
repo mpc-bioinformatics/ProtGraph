@@ -1,10 +1,10 @@
 
 def _get_mass_dict(factor=1000000000, type=int):
-    ''' Return a Dictionary containing the masses of each aminoacid 
+    """ Return a Dictionary containing the masses of each aminoacid 
         We explicitly convert them by a factor of 1 000 000 000 (default) into integers
 
         The values are taken from: https://proteomicsresource.washington.edu/protocols06/masses.php
-    '''
+    """
     return dict(   #  In format: AA = (MONO_MASS, AVG_MASS)
         G=(type(57.021463735*factor),  type(57.05132*factor)  ),
         A=(type(71.037113805*factor),  type(71.0779*factor)   ),
@@ -40,7 +40,7 @@ def _get_mass_dict(factor=1000000000, type=int):
 
 
 def annotate_weights(graph_entry, **kwargs):
-    ''' This method annotates the graph (if explicitly set) with the 
+    """ This method annotates the graph (if explicitly set) with the 
         average and monoisotopic weight. It also has the possibility to set
         the end weight of the edges. This value tells from a specific edge (node)
         how much weight it has at least to go to get to the end.
@@ -55,8 +55,8 @@ def annotate_weights(graph_entry, **kwargs):
 
         3. annotate_avrg_weights     : If True, then mono weigths are added
         4. annotate_avrg_end_weights : If True, then 3. and the lowest weight to end is added
-    '''
-    # Get the mass dictionary, which should be happen instantly. 
+    """
+    # Get the mass dictionary, which should be happen instantly.
     mass_dict = _get_mass_dict(factor=kwargs["mass_dict_factor"], type=kwargs["mass_dict_type"])
 
     # If mono or mono_end is set, annotate the graph with the mono weights
@@ -66,7 +66,6 @@ def annotate_weights(graph_entry, **kwargs):
     # If avrg or avrg_end is set, annotate the graph with the average weights
     if kwargs["annotate_avrg_weights"] or kwargs["annotate_avrg_end_weights"]:
         _add_masses(graph_entry, "avrg_weight", mass_dict, 1)
-
 
     # If one of the end weights is set:
     if kwargs["annotate_mono_end_weights"] or kwargs["annotate_avrg_end_weights"]:
@@ -83,16 +82,19 @@ def annotate_weights(graph_entry, **kwargs):
 
 
 def _add_masses(graph_entry, weight_name, mass_dict, idx):
-    ''' Here we simply iterate over each edge, get their target node (sum up, if it contains multiple aminoacid entries
+    """ Here we simply iterate over each edge, get their target node (sum up, if it contains multiple aminoacid entries
         due to merging) and set the masses in the graph.
 
         weight_name: name of the weight
         mass_dict: The masses dictionary (as in this file)
         idx: Which entry of the list-value from the dictionary should be taken
-    '''
+    """
     mono_masses = [
         sum([
-            mass_dict[y][idx] for y in x.target_vertex["aminoacid"].replace("__start__", "").replace("__end__", "") 
+            mass_dict[y][idx] 
+            for y in x.target_vertex["aminoacid"]
+            .replace("__start__", "")
+            .replace("__end__", "") 
             # 2. Get the aminoacid (-chain) from target and sum it up
         ]) 
         for x in graph_entry.es[:] 
@@ -100,10 +102,10 @@ def _add_masses(graph_entry, weight_name, mass_dict, idx):
     ]
     # Then set the masses for each edge
     graph_entry.es[:][weight_name] = mono_masses
-    
+
 
 def _add_end_masses(graph_entry, weight_end_name, weight_name, sorted_nodes):
-    ''' By using the sorted nodes (reverse topologically sorted), we can simply iterate over this list
+    """ By using the sorted nodes (reverse topologically sorted), we can simply iterate over this list
         and do a second iteration over each edge (which targets this node). Those edges can only 
         target nodes further in the graph. We simply check, wheather we can reach it with a lower
         weight and set it appropiately. Runtime should be: 0(n + e)  (n=Nodes, e=Edges).
@@ -113,14 +115,14 @@ def _add_end_masses(graph_entry, weight_end_name, weight_name, sorted_nodes):
         weigth_end_name: The name for the end weight
         weight_name: An ALREADY set weight in the graph
         sorted_nodes: Sorted nodes in REVERSE topological order.
-    '''
+    """
     # First set all weights to Infinity
     graph_entry.vs[:][weight_end_name] = float("inf")
     # The target Node has end weight as 0 (Initialization point)
     graph_entry.vs.select(aminoacid="__end__")[weight_end_name] = 0
 
     ## Complexity O (n + e)
-    # For each node in sorted nodes:  
+    # For each node in sorted nodes:
     for node in sorted_nodes:
         # Grab its edges, which targets the node. For each of the edge:
         for edge in graph_entry.es.select(_target=node):
@@ -130,8 +132,7 @@ def _add_end_masses(graph_entry, weight_end_name, weight_name, sorted_nodes):
             if graph_entry.vs[edge.source][weight_end_name] > temp_weight:
                 graph_entry.vs[edge.source][weight_end_name] = temp_weight
 
-
-    # Since we want this information on the edges, simply shift it from the target nodes 
+    # Since we want this information on the edges, simply shift it from the target nodes
     mono_end_masses = [x.target_vertex[weight_end_name] for x in graph_entry.es[:]]
     graph_entry.es[:][weight_end_name] = mono_end_masses
 

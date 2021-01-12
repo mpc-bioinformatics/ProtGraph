@@ -4,7 +4,6 @@ from threading import Thread
 
 from read_embl import read_embl
 from graph_generator import generate_graph_consumer
-from variation_generator import get_next_variant
 
 import time
 
