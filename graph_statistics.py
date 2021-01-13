@@ -32,13 +32,13 @@ def _num_of_possible_paths(graph_entry):
     """ Get the Number of all possible simple Paths for a Protein or Peptide.
         A dynamic programming approach is taken here. We can minimize this problem
         into subproblems. The goal is to find the number of paths from the start of
-        a protein to the end of a protein. 
+        a protein to the end of a protein.
 
         This can be divided into the number of paths from the start to a node in the protein,
         which sums the number of possible paths from its previous nodes. This can be continued up to
         the end node, yielding the number of possible (non-repetative) paths to the end of a protein.
 
-        This algorithm therefore needs to iterate over the graph, which can be done with the help of 
+        This algorithm therefore needs to iterate over the graph, which can be done with the help of
         the topological sort. The runtime of the dynamic programming part should be O(n^2) TODO is this 100% correct?
     """
 

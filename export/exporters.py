@@ -1,13 +1,13 @@
 from contextlib import ContextDecorator
 
 from export.dot import Dot
-from export.graphml import GraphML
 from export.gml import GML
+from export.graphml import GraphML
 
 
 class Exporters(ContextDecorator):
-    """ 
-        A class containing a list of all exporters 
+    """
+        A class containing a list of all exporters
         This class can be closed afterwards -> call it so that the exporters can tear down!
     """
 

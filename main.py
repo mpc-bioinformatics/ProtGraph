@@ -1,15 +1,14 @@
-from multiprocessing import Queue, Process, cpu_count
+import argparse
+import csv
+import os
+import time
+from multiprocessing import Process, Queue, cpu_count
 from threading import Thread
 
-
-from read_embl import read_embl
-from graph_generator import generate_graph_consumer
-
-import time
-
 from tqdm import tqdm
-import os
-import csv
+
+from graph_generator import generate_graph_consumer
+from read_embl import read_embl
 
 
 def main():
@@ -20,15 +19,14 @@ def main():
     entry_queue = Queue(1000)  # TODO limit? or not limit
     statistics_queue = Queue()
 
-
-    number_of_procs = cpu_count() -1 if graph_gen_args["num_of_processes"] is None else graph_gen_args["num_of_processes"]
+    number_of_procs = \
+        cpu_count() - 1 if graph_gen_args["num_of_processes"] is None else graph_gen_args["num_of_processes"]
 
     # Create Processes
     entry_reader = Process(target=read_embl, args=(graph_gen_args["files"], graph_gen_args["num_of_entries"], graph_gen_args["exclude_accessions"], entry_queue,))
     graph_gen = [Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=graph_gen_args) for _ in range(number_of_procs)]
     main_write_thread = Thread(target=write_output_csv_thread, args=(statistics_queue, graph_gen_args["output_csv"], graph_gen_args["num_of_entries"],))
 
-    # database_writer = [Process(target=insert_to_database, args=(prot_variation_queue, output_queue,)) for _ in range(16)]
     # TODO DATABASE OUTPUT WRITER IS MISSING CURRENTLY!
 
     # Start Processes/threads in reverse!
@@ -40,7 +38,7 @@ def main():
     # Check Processes and Threads in Reverse
     graph_gen_stop_sent = False
     main_write_thread_stop_send = False
-    while True: 
+    while True:
         time.sleep(1)
 
         # Is the writing thread alive?
@@ -48,7 +46,7 @@ def main():
             # Then exit the program
             break
 
-        # Are Consumers alive? 
+        # Are Consumers alive?
         if all([not x.is_alive() for x in graph_gen]) and not main_write_thread_stop_send:
             # Add None to the last queue to stop thread
             statistics_queue.put(None)
@@ -65,23 +63,22 @@ def main():
 
 
 def check_if_file_exists(s: str):
-    """ checks if a file exists. If not: raise Exception """ 
+    """ checks if a file exists. If not: raise Exception """
     if os.path.isfile(s):
         return s
     else:
         raise Exception("File '{}' does not exists".format(s))
 
 
-import argparse
-
-
 def parse_args():
-    ### Arguments for Parser
-    parser = argparse.ArgumentParser(description="Graph-Generator for Proteins/Peptides and Exporter to various formats")
+    # Arguments for Parser
+    parser = argparse.ArgumentParser(
+        description="Graph-Generator for Proteins/Peptides and Exporter to various formats"
+    )
 
-    ## Needed Arguments for parsing (and additional information for it)
+    # Needed Arguments for parsing (and additional information for it)
     parser.add_argument(
-        "files", type=check_if_file_exists, nargs="+", 
+        "files", type=check_if_file_exists, nargs="+",
         help="Files containing the Swissprot/EMBL-Entries (either in .dat or .txt)"
     )
     parser.add_argument(
@@ -94,36 +91,34 @@ def parse_args():
         " Setting this value may reduce the reading performance and therefore the throughput performance overall."
     )
 
-
-    ## Argument for number of Processes
+    # Argument for number of Processes
     parser.add_argument(
         "--num_of_processes", "-np", type=int, default=None,
         help="The number of processes used to process entries. Each process can process an entry individually. "
         "The default value is 'cores - 1', since one process is reserved for reading entries"
     )
 
-    ## Arguments for graph generation
+    # Arguments for graph generation
     parser.add_argument(
         "--skip_isoforms", "-si", default=False, action="store_true",
-        help="Set this flag to exclude isoforms 'VAR_SEQ' (and possible modification on them like variations, etc...) from the FeatureTable"
-    )    
+        help="Set this flag to exclude isoforms 'VAR_SEQ' (and possible modification on them like variations, etc...) "
+        "from the FeatureTable"
+    )
     parser.add_argument(
         "--skip_variants", "-sv", default=False, action="store_true",
         help="Set this flag to exclude 'VARIANT' from the FeatureTable"
     )
     parser.add_argument(
         "--skip_init_met", "-sm", default=False, action="store_true",
-        help="Set this flag to exclude the skipping of the initiator methionine ('INIT_M' in FeatureTable) for proteins"
+        help="Set this flag to exclude the skipping of the initiator methionine ('INIT_M' in "
+        "FeatureTable) for proteins"
     )
     parser.add_argument(
         "--skip_signal", "-ss", default=False, action="store_true",
         help="Set this flag to exclude skipping the signal peptide ('SIGNAL' in FeatureTable) of specific proteins"
     )
 
-
-
-
-    ## Arguments for graph processing/digestion
+    # Arguments for graph processing/digestion
     parser.add_argument(
         "--digestion", "-d", type=str.lower, default="trypsin",
         choices=["trypsin", "skip"],
@@ -131,60 +126,65 @@ def parse_args():
     )
     parser.add_argument(
         "--no_merge", "-nm", default=False, action="store_true",
-        help="Set this flag to skip the merging process for chains of nodes and edges "
-        "into a single node. Setting this option could drastically increase the size of the graph, especially its depth."
+        help="Set this flag to skip the merging process for chains of nodes and edges into a single node. Setting "
+        "this option could drastically increase the size of the graph, especially its depth."
     )
 
-
-    ## Arguments for node and edge weights
+    # Arguments for node and edge weights
     parser.add_argument(
         "--annotate_mono_weights", "-amw", default=False, action="store_true",
-        help="Set this to annotate nodes and edges with the monoisotopic weights. (Values are taken from the mass dictionary)"
+        help="Set this to annotate nodes and edges with the monoisotopic weights. (Values are taken from "
+        "the mass dictionary)"
     )
     parser.add_argument(
         "--annotate_avrg_weights", "-aaw", default=False, action="store_true",
-        help="Set this to annotate nodes and edges with the average weights. (Values are taken from the mass dictionary)"
+        help="Set this to annotate nodes and edges with the average weights. (Values are taken from "
+        "the mass dictionary)"
     )
     parser.add_argument(
         "--annotate_mono_end_weights", "-amew", default=False, action="store_true",
-        help="Set this to annotate nodes and edges with the monoisotopic end weights. "
-        "This weight informs about how much weight is at least left to get to the end Node. NOTE: Applying this, also sets the monoisotopic weights"
+        help="Set this to annotate nodes and edges with the monoisotopic end weights. This weight informs about "
+        "how much weight is at least left to get to the end Node. NOTE: Applying this, also sets the monoisotopic "
+        "weights"
     )
     parser.add_argument(
         "--annotate_avrg_end_weights", "-aaew", default=False, action="store_true",
-        help="Set this to annotate nodes and edges with the average end weights. "
-        "This weight informs about how much weight is at least left to get to the end Node. NOTE: Applying this, also sets the average weights"
+        help="Set this to annotate nodes and edges with the average end weights. This weight informs about "
+        "how much weight is at least left to get to the end Node. NOTE: Applying this, also sets the average weights"
     )
     parser.add_argument(
-        "--mass_dict_type", "-mdt", type=lambda s: int if s.lower() == "int" else (float if s.lower() == "float" else None), default="int",
-        choices=[int, float], metavar = "{int,float}",
+        "--mass_dict_type", "-mdt",
+        type=lambda s: int if s.lower() == "int" else (float if s.lower() == "float" else None), default="int",
+        choices=[int, float], metavar="{int,float}",
         help="Set the type of the mass dictionary for amino acid. Default is set to int"
     )
     parser.add_argument(
         "--mass_dict_factor", "-mdf", type=float, default=1000000000,
-        help="Set the factor for the masses inside the mass_dictionary. The default is set to 1 000 000 000, so that each mass can be converted into integers."
+        help="Set the factor for the masses inside the mass_dictionary. The default is set to 1 000 000 000, "
+        "so that each mass can be converted into integers."
     )
 
-    ## Arguments for generation of graph statistics
+    # Arguments for generation of graph statistics
     parser.add_argument(
         "--calc_num_possibilities", "-cnp", default=False, action="store_true",
-        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will be calculated. "
-        "This uses a dynamic programming approach to calculate this in an efficient manner."
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This uses a dynamic programming approach to calculate this in an efficient manner."
     )
 
     parser.add_argument(
-        "--output_csv", "-o", default=os.path.join(os.path.dirname(__file__), "protein_graph_statistics.csv"), type=str,
-        help="Set the output file, which will contain information about the ProteinGaph (in csv) NOTE: It will write to"
-        " 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is set to write it in this projects folder"
-    )    
+        "--output_csv", "-o", default=os.path.join(os.path.dirname(__file__), "protein_graph_statistics.csv"),
+        type=str,
+        help="Set the output file, which will contain information about the ProteinGaph (in csv) NOTE: "
+        "It will write to 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is "
+        "set to write it in this projects folder"
+    )
 
-
-    ## Arguments for exporting
+    # Arguments for exporting
     parser.add_argument(
         "--export_output_folder", "-eo", default=os.path.join(os.path.dirname(__file__), "exported_graphs"), type=str,
-        help="Set the output folder to specify the dirctory of exported graphs (dot, graphml, gml) NOTE: It will overwrite"
-        " exisiting files. Default is set to export in this projects folder"
-    )    
+        help="Set the output folder to specify the dirctory of exported graphs (dot, graphml, gml) NOTE: It will "
+        "overwrite exisiting files. Default is set to export in this projects folder"
+    )
     parser.add_argument(
         "--export_dot", "-edot", default=False, action="store_true",
         help="Set this flag to export a dot file for each protein"
@@ -202,43 +202,42 @@ def parse_args():
 
     # Graph generation arguments in dict:
     graph_gen_args = dict(
-        files = args.files,
-        num_of_entries = args.num_of_entries,
-        exclude_accessions = args.exclude_accessions,
-
-        num_of_processes = args.num_of_processes,
-
-        skip_isoforms= args.skip_isoforms,
-        skip_variants= args.skip_variants,
-        skip_init_met= args.skip_init_met,
-        skip_signal  = args.skip_signal,
-
-        digestion    = args.digestion,
-        no_merge     = args.no_merge,
-
-        annotate_mono_weights = args.annotate_mono_weights,
-        annotate_avrg_weights = args.annotate_avrg_weights,
-        annotate_mono_end_weights = args.annotate_mono_end_weights,
-        annotate_avrg_end_weights = args.annotate_avrg_end_weights,
-        mass_dict_type = args.mass_dict_type,
-        mass_dict_factor = args.mass_dict_factor,
-
-        calc_num_possibilities = args.calc_num_possibilities,
-        output_csv = args.output_csv,
-
-        export_output_folder = args.export_output_folder,
-        export_dot = args.export_dot,
-        export_graphml = args.export_graphml,
-        export_gml = args.export_gml
+        files=args.files,
+        num_of_entries=args.num_of_entries,
+        exclude_accessions=args.exclude_accessions,
+        # num of parallel processes
+        num_of_processes=args.num_of_processes,
+        # skip FTs?
+        skip_isoforms=args.skip_isoforms,
+        skip_variants=args.skip_variants,
+        skip_init_met=args.skip_init_met,
+        skip_signal=args.skip_signal,
+        # Digestion and graph optiomization
+        digestion=args.digestion,
+        no_merge=args.no_merge,
+        # Annotation arguments
+        annotate_mono_weights=args.annotate_mono_weights,
+        annotate_avrg_weights=args.annotate_avrg_weights,
+        annotate_mono_end_weights=args.annotate_mono_end_weights,
+        annotate_avrg_end_weights=args.annotate_avrg_end_weights,
+        mass_dict_type=args.mass_dict_type,
+        mass_dict_factor=args.mass_dict_factor,
+        # Ouput CSV and num_of_paths arguments
+        calc_num_possibilities=args.calc_num_possibilities,
+        output_csv=args.output_csv,
+        # Export Arguments
+        export_output_folder=args.export_output_folder,
+        export_dot=args.export_dot,
+        export_graphml=args.export_graphml,
+        export_gml=args.export_gml
     )
-
 
     return graph_gen_args
 
 
 def write_output_csv_thread(queue, out_file, total_num_entries):
-    """ 
-        The statistics writing thread, which writes to 'out_file', overwriting its 
+    """
+        The statistics writing thread, which writes to 'out_file', overwriting its
         contents if existing.
     """
     # Generate Progrssbar

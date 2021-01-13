@@ -1,6 +1,5 @@
-
-from tqdm import tqdm
 import csv
+
 from Bio import SwissProt
 
 
@@ -15,10 +14,10 @@ def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv: str, queue)
                 entries = SwissProt.parse(input_f)
                 for entry in entries:
                     queue.put(entry)
-            except Exception as e: 
+            except Exception as e:
                 print("File '{}' could not be parsed and was excluded. Reason: {}".format(input_f, e))
 
-    else:         
+    else:
         # If a exclude csv is provided, then a simple if check is added (reduced performance)
         with open(exclude_csv) as in_f:
             # Read the contents of the csv
@@ -31,10 +30,9 @@ def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv: str, queue)
                 try:
                     entries = SwissProt.parse(input_f)
                     for entry in entries:
-                        if entry.accessions[0] in exclude_list: 
+                        if entry.accessions[0] in exclude_list:
                             # This effectively skips an entry at the cost to check whether to skip in EACH entry!
-                            continue 
+                            continue
                         queue.put(entry)
-                except Exception as e: 
+                except Exception as e:
                     print("File '{}' could not be parsed and was excluded. Reason: {}".format(input_f, e))
-

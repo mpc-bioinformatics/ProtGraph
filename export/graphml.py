@@ -4,8 +4,8 @@ from export.abstract_exporter import AExporter
 
 
 class GraphML(AExporter):
-    """ 
-        A simple GraphML (XML-format) exporter. This one is 
+    """
+        A simple GraphML (XML-format) exporter. This one is
         recommended since it can save all attributes used in the graph!
     """
 
@@ -17,7 +17,7 @@ class GraphML(AExporter):
 
     def export(self, prot_graph):
         accession = prot_graph.vs["accession"][0]
-        prot_graph.write_graphml(os.path.join(self.out_folder, accession+ ".graphml"))
+        prot_graph.write_graphml(os.path.join(self.out_folder, accession + ".graphml"))
 
     def tear_down(self):
         # We do not need to tear down a graph export to graphml files

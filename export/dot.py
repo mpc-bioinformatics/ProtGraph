@@ -14,7 +14,7 @@ class Dot(AExporter):
 
     def export(self, prot_graph):
         accession = prot_graph.vs["accession"][0]
-        prot_graph.write_dot(os.path.join(self.out_folder, accession+ ".dot"))
+        prot_graph.write_dot(os.path.join(self.out_folder, accession + ".dot"))
 
     def tear_down(self):
         # We do not need to tear down a graph export to dot files
