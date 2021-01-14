@@ -5,7 +5,7 @@ def _get_mass_dict(factor=1000000000, type=int):
 
         The values are taken from: https://proteomicsresource.washington.edu/protocols06/masses.php
     """
-    return dict(   # In format: AA = (MONO_MASS, AVG_MASS)
+    return dict(  # In format: AA = (MONO_MASS, AVG_MASS)
         G=(type(57.021463735 * factor), type(57.05132 * factor)),
         A=(type(71.037113805 * factor), type(71.0779 * factor)),
         S=(type(87.032028435 * factor), type(87.0773 * factor)),
@@ -35,7 +35,7 @@ def _get_mass_dict(factor=1000000000, type=int):
         B=(type(114.53495 * factor), type(114.5962 * factor)),
         # Custom start and end points
         __start__=(type(0), type(0)),
-        __end__=(type(0), type(0))
+        __end__=(type(0), type(0)),
     )
 
 

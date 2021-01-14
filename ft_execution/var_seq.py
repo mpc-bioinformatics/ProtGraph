@@ -1,28 +1,32 @@
-def execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displayed_accession): 
-    ''' 
+def execute_var_seq(
+    isoforms, graph, sequence: str, var_seqs_features, displayed_accession
+):
+    """
         Executes the Feature Table Information (with parsed comments, retrieved by the dict isoforms)
         VAR_SEQ to generate chains of nodes and edges for the corresponding isoforms.
 
         NOTE: This transforms the graph without returning it.
 
         Following Keys are set here:
-        Nodes:" isoform_accesion", "isoform_position"
+        Nodes: "isoform_accesion", "isoform_position"
         Edges: "qualifiers" ( -> adds VAR_SEQ)
-    '''
+    """
     # First sort all isoforms
     execute_isoforms = {}
     # For each feature
     for f in var_seqs_features:
         # Skip the complete isoform generation if no information is available
         if "note" not in f.qualifiers:
-            print("Some feature tables do not contain information "
-                "about all isoforms for {}".format(displayed_accession))
+            print(
+                "Some feature tables do not contain information "
+                "about all isoforms for {}".format(displayed_accession)
+            )
             return
 
         # Get isoform information
         note = f.qualifiers["note"]
         isoform_isoids = note[
-            note.index("(")+1 + 3 : note.rfind(")")  # +3 to remove "in "
+            note.index("(") + 1 + 3: note.rfind(")")  # +3 to remove "in "
         ]
         # Replace the words "isoform" and "and"
         isoform_isoids = isoform_isoids.replace("isoform", "").replace(" and ", ",")
@@ -31,13 +35,17 @@ def execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displayed
             isoid = isoid.strip()
             # Skip if we did not found a specification
             if isoid not in isoforms:
-                print("Isoform not found in specification. "
-                    "Skipping all isoforms for: {}".format(displayed_accession))
+                print(
+                    "Isoform not found in specification. "
+                    "Skipping all isoforms for: {}".format(displayed_accession)
+                )
                 return
             # Skip if we found an isoform as canonical!? Maybe the entry is corrupted?
             if "Displayed" in isoforms[isoid]:
-                print("Isoform modification for canonical sequence "
-                    "found. Skipping all isoforms for: {}".format(displayed_accession))
+                print(
+                    "Isoform modification for canonical sequence "
+                    "found. Skipping all isoforms for: {}".format(displayed_accession)
+                )
                 return
 
             # We add (or append) it to our dictionary with its isoid
@@ -52,9 +60,11 @@ def execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displayed
 
     # Execute for each isoform, all information at once!
     for key in execute_isoforms.keys():
-        # Get the isoform sequence (similar as to the canonical form), its 
+        # Get the isoform sequence (similar as to the canonical form), its
         # position as isofrom as well as its original position (none isoform)
-        iso_sequence, iso_orig_pos, iso_pos = _create_isoform_lists(isoforms[key][0], execute_isoforms[key], sequence)
+        iso_sequence, iso_orig_pos, iso_pos = _create_isoform_lists(
+            isoforms[key][0], execute_isoforms[key], sequence
+        )
 
         # Bulk add the new sequence to the graph (similar to the code in canonical)
         cur_nodes = graph.vcount()
@@ -78,29 +88,33 @@ def execute_var_seq(isoforms, graph, sequence: str, var_seqs_features, displayed
         graph.add_edges([(__start_node__, graph.vs[cur_nodes]), (graph.vs[-1], __stop_node__)])
         qualifiers = execute_isoforms[key]
         # Add qualifier information here for the FT: VAR_SEQ
-        graph.es[-2:]["qualifiers"] = [qualifiers, []] # need to be set like this for igraph!?
+        graph.es[-2:]["qualifiers"] = [qualifiers, []]  # need to be set like this for igraph!?
 
 
 def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
 
-    sorted_features = sorted(feature_list, key= lambda x: x.location.start)
+    sorted_features = sorted(feature_list, key=lambda x: x.location.start)
 
     for idx, _ in enumerate(feature_list[:-1]):
         if feature_list[idx].location.end > feature_list[idx+1].location.start:
-            print("Isoform information for accession {} overlap! Returning no sequence!".format(isoform_accession))
+            print(
+                "Isoform information for accession {} overlap! "
+                "Returning no sequence!".format(isoform_accession)
+            )
             return "", [], []
 
-    orig_positions = list(range(1, len(sequence)+1))
+    orig_positions = list(range(1, len(sequence) + 1))
 
     for f in sorted_features[::-1]:
         text = f.qualifiers["note"]
         if text.lower().startswith("missing"):
             # Missing is set, it needs to be removed
-            sequence = sequence[:f.location.start] + sequence[f.location.end:]
+            sequence = sequence[: f.location.start] + sequence[f.location.end:]
             orig_positions = orig_positions[:f.location.start] + orig_positions[f.location.end:]
-        
+
         else:
-            # Get   X -> Y   Information
+            # Get X -> Y Information
+            # TODO duplicated in VARIANT?
             idx = text.find("(")
             if idx != -1:
                 text = text[:idx]
@@ -108,14 +122,11 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
             assert len(xy) == 2
             y = xy[1].strip().replace(" ", "")
             # Replacing sequence!
-            sequence = sequence[:f.location.start] + y + sequence[f.location.end:]
+            sequence = sequence[: f.location.start] + y + sequence[f.location.end:]
             orig_positions = orig_positions[:f.location.start] + [None]*len(y) + orig_positions[f.location.end:]
 
     # Return the new sequence, original positions of NOT replaced amino acids and the isoform positions
     return sequence, orig_positions, list(range(1, len(sequence)+1))
-
-
-
 
 
 def _get_isoforms_of_entry(comments, accession):
@@ -128,7 +139,7 @@ def _get_isoforms_of_entry(comments, accession):
     # for each comment line starting with: "ALTERNATIVE PRODUCTS:"
     for isoforms in [x for x in comments if x.startswith("ALTERNATIVE PRODUCTS:")]:
         # Get its text
-        isoforms = isoforms[len("ALTERNATIVE PRODUCTS:") :]
+        isoforms = isoforms[len("ALTERNATIVE PRODUCTS:"):]
         # and split each entry
         entries = isoforms.split(";")
         # Each entry consist of "Name", "Synonyms", "IsoId", "Sequence"
@@ -162,26 +173,26 @@ def _get_isoforms_of_entry(comments, accession):
                     # We now try to retrieve IsoId and sequence
                     # TODO There are comma seperated Synonyms!? see ADAM22=G07, 22g(D26D27)+29.3
                     e_idx += 1  # Increase by one to get the IsoID information
-                    iso_key, iso_value = entries[e_idx].strip().split("=", 1) 
+                    iso_key, iso_value = entries[e_idx].strip().split("=", 1)
                     if not iso_key.lower() == "isoid":
                         e_idx += 1  # if IsoId is still not next we simply increase it again
                         iso_key, iso_value = entries[e_idx].strip().split("=")
                         assert iso_key.lower() == "isoid"
-                    e_idx += 1 # Increase it again to retrieve the sequence information
+                    e_idx += 1  # Increase it again to retrieve the sequence information
                     # TODO the sequence information is not used anywhere
                     seq_key, seq_value = entries[e_idx].strip().split("=")
                     assert seq_key.lower() == "sequence"
 
-                    if "," in iso_value: 
+                    if "," in iso_value:
                         # BUG/Feature in embl. Some IDs are not unique (see e.g. P12821-3, P22966-1)
-                        # We simply take the first occurence 
+                        # We simply take the first occurence
                         iso_value = iso_value.split(",", 1)[0].strip()
-                    
+
                     # At last add the information to the dict
                     d[value] = (
-                        iso_value, 
-                        [x.strip() for x in seq_value.split(",")], 
-                        reference_info
+                        iso_value,
+                        [x.strip() for x in seq_value.split(",")],
+                        reference_info,
                     )
             e_idx += 1  # Increase for the next iteration
 
