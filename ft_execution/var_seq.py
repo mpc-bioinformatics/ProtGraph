@@ -2,14 +2,14 @@ def execute_var_seq(
     isoforms, graph, sequence: str, var_seqs_features, displayed_accession
 ):
     """
-        Executes the Feature Table Information (with parsed comments, retrieved by the dict isoforms)
-        VAR_SEQ to generate chains of nodes and edges for the corresponding isoforms.
+    Executes the Feature Table Information (with parsed comments, retrieved by the dict isoforms)
+    VAR_SEQ to generate chains of nodes and edges for the corresponding isoforms.
 
-        NOTE: This transforms the graph without returning it.
+    NOTE: This transforms the graph without returning it.
 
-        Following Keys are set here:
-        Nodes: "isoform_accesion", "isoform_position"
-        Edges: "qualifiers" ( -> adds VAR_SEQ)
+    Following Keys are set here:
+    Nodes: "isoform_accesion", "isoform_position"
+    Edges: "qualifiers" ( -> adds VAR_SEQ)
     """
     # First sort all isoforms
     execute_isoforms = {}
@@ -71,15 +71,15 @@ def execute_var_seq(
         # cur_edges = graph.ecount() # TODO REMOVE DL
         graph.add_vertices(len(iso_sequence))
         nodes_indices = graph.vs[cur_nodes:].indices
-        graph.add_edges([(nodes_indices[idx], nodes_indices[idx+1]) for idx, _ in enumerate(nodes_indices[:-1])])
+        graph.add_edges([(nodes_indices[idx], nodes_indices[idx + 1])for idx, _ in enumerate(nodes_indices[:-1])])
         # edges_indices = graph.es[cur_edges:].indices # TODO REMOVE DL
 
         # Bulk add of all information about these new nodes!
         graph.vs[nodes_indices]["aminoacid"] = [x for x in iso_sequence]  # Adding the aminoacid
         graph.vs[nodes_indices]["position"] = iso_orig_pos  # Position according to  (none indicates new seqs)
         graph.vs[nodes_indices]["isoform_position"] = iso_pos  # Position according to the isoform
-        graph.vs[nodes_indices]["isoform_accession"] = [isoforms[key][0]]*len(iso_sequence)  # Iso-Acc. ("PXXXXX-3")
-        graph.vs[nodes_indices]["accession"] = [displayed_accession]*len(iso_sequence)  # The original accession
+        graph.vs[nodes_indices]["isoform_accession"] = [isoforms[key][0]] * len(iso_sequence)  # Iso-Acc. ("PXXXXX-3")
+        graph.vs[nodes_indices]["accession"] = [displayed_accession] * len(iso_sequence)  # The original accession
 
         # Bulk add Information about edges # TODO REMOVE DL
         # graph.es[edges_indices]["qualifiers"] = [[]]*(len(edges_indices)-1)
@@ -92,11 +92,12 @@ def execute_var_seq(
 
 
 def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
+    """ TODO comments """
 
     sorted_features = sorted(feature_list, key=lambda x: x.location.start)
 
     for idx, _ in enumerate(feature_list[:-1]):
-        if feature_list[idx].location.end > feature_list[idx+1].location.start:
+        if feature_list[idx].location.end > feature_list[idx + 1].location.start:
             print(
                 "Isoform information for accession {} overlap! "
                 "Returning no sequence!".format(isoform_accession)
@@ -110,7 +111,7 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
         if text.lower().startswith("missing"):
             # Missing is set, it needs to be removed
             sequence = sequence[: f.location.start] + sequence[f.location.end:]
-            orig_positions = orig_positions[:f.location.start] + orig_positions[f.location.end:]
+            orig_positions = (orig_positions[: f.location.start] + orig_positions[f.location.end:])
 
         else:
             # Get X -> Y Information
@@ -123,10 +124,10 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
             y = xy[1].strip().replace(" ", "")
             # Replacing sequence!
             sequence = sequence[: f.location.start] + y + sequence[f.location.end:]
-            orig_positions = orig_positions[:f.location.start] + [None]*len(y) + orig_positions[f.location.end:]
+            orig_positions = orig_positions[: f.location.start] + [None] * len(y) + orig_positions[f.location.end:]
 
     # Return the new sequence, original positions of NOT replaced amino acids and the isoform positions
-    return sequence, orig_positions, list(range(1, len(sequence)+1))
+    return sequence, orig_positions, list(range(1, len(sequence) + 1))
 
 
 def _get_isoforms_of_entry(comments, accession):

@@ -2,7 +2,7 @@
 
 This project aims to efficiently generate graphs of proteins from [UniProt](https://www.uniprot.org/) `.dat` or `.txt` files.
 
-It does so by utilizing Biopython and igraph to generate directed acyclic graphs of Proteins 
+It does so by utilizing Biopython and igraph to generate directed acyclic graphs of Proteins.
 
 
 [TODO IMAGE describing what happens from entry to graph]
@@ -50,7 +50,7 @@ It is also possible to add multiple files. The number of entries for each file t
 If to many (or to few) processes are executed, then it can be adjusted via `--num_of_processes` or `-np`. E.G. `python main.py --num_of_processes 3 --num_of_entries 9434 e_coli.txt` will use 4 (3 + 1 reading process) processes.
 
 
-To execute everything there can be, use the following: `python main.py -amew -aaew -cnp -n 9434 r_coli.dat`
+To execute everything there can be, use the following: `python main.py -amwe -aawe -cnp -n 9434 r_coli.dat`
 
 
 Proteins are digested by Trypsin (default). This can be changed by setting the `--digestion` to something else. See help information for more.

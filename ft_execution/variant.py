@@ -1,15 +1,14 @@
-
 def execute_variant(graph, variant_feature):
     """
-        This function adds vertices and edges depending on the feature variant.
-        Effectively, the variant information get executed. This method can skip
-        feature variants which may reference ONLY isoforms. Skipped variants are printed.
+    This function adds vertices and edges depending on the feature variant.
+    Effectively, the variant information get executed. This method can skip
+    feature variants which may reference ONLY isoforms. Skipped variants are printed.
 
-        NOTE: This transforms the graph without returning it!
+    NOTE: This transforms the graph without returning it!
 
-        Following Keys are set here:
-        Nodes: <None>
-        Edges: "qualifiers" ( -> adds VARIANT)
+    Following Keys are set here:
+    Nodes: <None>
+    Edges: "qualifiers" ( -> adds VARIANT)
     """
     # Get start and end position first
     # NOTE: Shifted by 1 due to the __start__ node beeing at 0
@@ -19,16 +18,12 @@ def execute_variant(graph, variant_feature):
     # Get all vertices which are at beginning (before)
     # and all vertices which are at the end (after)
     vertices_before, vertices_after = _get_all_vertices_before_after(
-        graph,
-        aa_before,
-        aa_after,
-        variant_feature.ref
+        graph, aa_before, aa_after, variant_feature.ref
     )
     if len(vertices_before) == 0 or len(vertices_after) == 0:
         # Check if we have vertices, if not simply skip
         print("No Vertices retrieved for protein {}, using VARIANT: {} (referencing: {}). Skipping...".format(
-            graph.vs[0]["accession"], variant_feature.id, variant_feature.ref
-        ))
+            graph.vs[0]["accession"], variant_feature.id, variant_feature.ref))
         return
 
     # Now we check if we skip or add nodes
@@ -53,7 +48,7 @@ def execute_variant(graph, variant_feature):
                             edge_list.append(
                                 (
                                     (aa_edge_in.source, aa_edge_out.target),
-                                    [*_get_qualifiers(aa_edge_in), variant_feature]
+                                    [*_get_qualifiers(aa_edge_in), variant_feature],
                                 )
                             )
 
@@ -81,12 +76,11 @@ def execute_variant(graph, variant_feature):
                 vertex = graph.add_vertex()
                 graph.vs[vertex.index]["aminoacid"] = entry
                 graph.vs[vertex.index]["accession"] = graph.vs[1]["accession"]
-                # TODO add position??
                 y_idcs.append(vertex.index)
 
             # Add edges between them (if needed)
             for idx, n in enumerate(y_idcs[:-1]):
-                graph.add_edges([(n, y_idcs[idx+1])])
+                graph.add_edges([(n, y_idcs[idx + 1])])
 
             # Get the first and last node index
             first_node, last_node = y_idcs[0], y_idcs[-1]
@@ -95,7 +89,7 @@ def execute_variant(graph, variant_feature):
             for aa_in in aa_in_list:
                 for aa_edge_in in list(graph.es.select(_target=aa_in)):  # Get all incoming edges
                     edge_list.append(
-                        ((aa_edge_in.source, first_node), [*_get_qualifiers(aa_edge_in), variant_feature])
+                        ((aa_edge_in.source, first_node), [*_get_qualifiers(aa_edge_in), variant_feature],)
                     )
             for aa_out in aa_out_list:
                 for aa_edge_out in list(graph.es.select(_source=aa_out)):  # Get all outgoing edges
@@ -111,14 +105,14 @@ def execute_variant(graph, variant_feature):
 
 def _get_all_vertices_before_after(graph, aa_before: int, aa_after: int, reference: str):
     """
-        Get the vertices which are at the beginning and end of the referencing variant.
-        We explicitly check here if we need to take the isoform position (and accesion)
-        via the reference attribute, or if we simply query the graph for its position
-        attribute.
+    Get the vertices which are at the beginning and end of the referencing variant.
+    We explicitly check here if we need to take the isoform position (and accesion)
+    via the reference attribute, or if we simply query the graph for its position
+    attribute.
 
-        Returns two lists:
-            before -> Aminoacid at the beginning
-            after  -> Aminoacid at the end
+    Returns two lists:
+        before -> Aminoacid at the beginning
+        after  -> Aminoacid at the end
     """
     if reference is None:
         # Get list of all aa before and after the specified position (no isoform)
@@ -128,12 +122,8 @@ def _get_all_vertices_before_after(graph, aa_before: int, aa_after: int, referen
          "isoform_position" in graph.vs[0].attributes():
         # Get list of all aa before and after the specified position from the isoforms,
         # since this variant references explicitly a isoform!
-        vertices_before_raw = list(
-            graph.vs.select(isoform_position=aa_before, isoform_accession=reference)
-        )
-        vertices_after_raw = list(
-            graph.vs.select(isoform_position=aa_after, isoform_accession=reference)
-        )
+        vertices_before_raw = list(graph.vs.select(isoform_position=aa_before, isoform_accession=reference))
+        vertices_after_raw = list(graph.vs.select(isoform_position=aa_after, isoform_accession=reference))
     else:
         # No vertex found return empty lists.
         # this case happens e.g. if the user wants variants but no isoforms,
@@ -143,9 +133,7 @@ def _get_all_vertices_before_after(graph, aa_before: int, aa_after: int, referen
 
     # TODO is such a combination enough and correct?
     # Combine the retrieved vertices to their corresponding isoforms (if available)
-    vertices_before, vertices_after = _combine_vertices(
-        vertices_before_raw, vertices_after_raw
-    )
+    vertices_before, vertices_after = _combine_vertices(vertices_before_raw, vertices_after_raw)
 
     return vertices_before, vertices_after
 

@@ -1,13 +1,12 @@
-
 def execute_init_met(graph, init_met_feature):
     """
-        This function adds ONLY edges to skip the initiator metheonine.
+    This function adds ONLY edges to skip the initiator metheonine.
 
-        NOTE: This transforms the graph without returning it!
+    NOTE: This transforms the graph without returning it!
 
-        Following Keys are set here:
-        Nodes: <None>
-        Edges: "qualifiers" ( -> adds INIT_MET)
+    Following Keys are set here:
+    Nodes: <None>
+    Edges: "qualifiers" ( -> adds INIT_MET)
     """
     # Get start node
     [start] = graph.vs.select(aminoacid="__start__")
@@ -23,9 +22,7 @@ def execute_init_met(graph, init_met_feature):
     ]
 
     # Get possible features of remaining nodes
-    features = [
-        _get_qualifiers(graph, start, x) for x in met_aas
-    ]
+    features = [_get_qualifiers(graph, start, x) for x in met_aas]
 
     # Get the next nodes which should be after them
     targets = [graph.neighbors(x, mode="out") for x in met_aas]
@@ -50,6 +47,8 @@ def execute_init_met(graph, init_met_feature):
 def _get_qualifiers(graph, source_node: int, target_node: int):
     """ Retrieve the qualifiers list (empty list if nonexistent) """
     if "qualifiers" in graph.es[0].attributes():
-        return graph.es.select(_source=source_node, _target=target_node)["qualifiers"]
+        qualifiers_list = graph.es.select(_source=source_node, _target=target_node)["qualifiers"]
+        qualifiers_list = [x if x is not None else [] for x in qualifiers_list]
+        return qualifiers_list
     else:
         return [[]]

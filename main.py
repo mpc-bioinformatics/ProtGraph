@@ -23,11 +23,21 @@ def main():
         cpu_count() - 1 if graph_gen_args["num_of_processes"] is None else graph_gen_args["num_of_processes"]
 
     # Create Processes
-    entry_reader = Process(target=read_embl, args=(graph_gen_args["files"], graph_gen_args["num_of_entries"], graph_gen_args["exclude_accessions"], entry_queue,))
-    graph_gen = [Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=graph_gen_args) for _ in range(number_of_procs)]
-    main_write_thread = Thread(target=write_output_csv_thread, args=(statistics_queue, graph_gen_args["output_csv"], graph_gen_args["num_of_entries"],))
-
-    # TODO DATABASE OUTPUT WRITER IS MISSING CURRENTLY!
+    entry_reader = Process(
+        target=read_embl,
+        args=(
+            graph_gen_args["files"], graph_gen_args["num_of_entries"],
+            graph_gen_args["exclude_accessions"], entry_queue,
+        )
+    )
+    graph_gen = [
+        Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=graph_gen_args)
+        for _ in range(number_of_procs)
+    ]
+    main_write_thread = Thread(
+        target=write_output_csv_thread,
+        args=(statistics_queue, graph_gen_args["output_csv"], graph_gen_args["num_of_entries"],)
+    )
 
     # Start Processes/threads in reverse!
     for p in graph_gen:
@@ -142,13 +152,13 @@ def parse_args():
         "the mass dictionary)"
     )
     parser.add_argument(
-        "--annotate_mono_end_weights", "-amew", default=False, action="store_true",
+        "--annotate_mono_weight_to_end", "-amwe", default=False, action="store_true",
         help="Set this to annotate nodes and edges with the monoisotopic end weights. This weight informs about "
         "how much weight is at least left to get to the end Node. NOTE: Applying this, also sets the monoisotopic "
         "weights"
     )
     parser.add_argument(
-        "--annotate_avrg_end_weights", "-aaew", default=False, action="store_true",
+        "--annotate_avrg_weight_to_end", "-aawe", default=False, action="store_true",
         help="Set this to annotate nodes and edges with the average end weights. This weight informs about "
         "how much weight is at least left to get to the end Node. NOTE: Applying this, also sets the average weights"
     )
@@ -218,8 +228,8 @@ def parse_args():
         # Annotation arguments
         annotate_mono_weights=args.annotate_mono_weights,
         annotate_avrg_weights=args.annotate_avrg_weights,
-        annotate_mono_end_weights=args.annotate_mono_end_weights,
-        annotate_avrg_end_weights=args.annotate_avrg_end_weights,
+        annotate_mono_weight_to_end=args.annotate_mono_weight_to_end,
+        annotate_avrg_weight_to_end=args.annotate_avrg_weight_to_end,
         mass_dict_type=args.mass_dict_type,
         mass_dict_factor=args.mass_dict_factor,
         # Ouput CSV and num_of_paths arguments
@@ -283,7 +293,8 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
 
 if __name__ == "__main__":
     main()
-
+    # TODO theses are the numbers of nodes
+    # and edged for complete uniprot. Remove it from the code!
     # Nodes Count: 71031227
     # Edges Count: 77997502
 
