@@ -7,8 +7,8 @@ from export.graphml import GraphML
 
 class Exporters(ContextDecorator):
     """
-        A class containing a list of all exporters
-        This class can be closed afterwards -> call it so that the exporters can tear down!
+    A class containing a list of all exporters
+    This class can be closed afterwards -> call it so that the exporters can tear down!
     """
 
     def __init__(self, **kwargs):

@@ -15,5 +15,6 @@ jobs:
       - name: Run Super-Linter
         uses: github/super-linter@v3
         env:
+          VALIDATE_PYTHON_BLACK: false
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
