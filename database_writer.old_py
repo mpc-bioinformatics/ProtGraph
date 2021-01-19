@@ -63,54 +63,6 @@ def _get_qualifiers(list_of_qs):
 def insert_to_database(digested_graphs_queue, output_query):
 
 
-
-
-    # Version for Redis Graph Local installation
-
-    # r = redis.Redis(host="localhost", port=6379)
-
-    # keys1 = ["accession", "aminoacid", "avrg_end_weight", "mono_end_weight"]
-    # keys2 = ["avrg_end_weight", "avrg_weight", "mono_end_weight", "mono_weight"]
-
-
-    # while True:
-    #     try: 
-    #         graph_entry = digested_graphs_queue.get(timeout=180)
-    #     except Exception:
-    #         continue
-
-    #     redis_graph = Graph("proteins", r)
-
-
- 
-
-    #     # redis_nodes = [
-    #     #     Node( label = "node", properties = x.attributes() ) for x in graph_entry.vs[:]
-    #     # ]
-    #     redis_nodes = [ # Excluding most attributes due to having None inside of them (causing errors)
-    #         Node( label = "node", properties = {key:value for key, value in x.attributes().items() if key in keys1} ) for x in graph_entry.vs[:]
-    #     ]
-    #     for x in redis_nodes:
-    #         redis_graph.add_node(x)
-        
-    #     # redis_edges = [
-    #     #     Edge( redis_nodes[x.source], "edge", redis_nodes[x.target], properties = x.attributes() )  for x in graph_entry.es[:]
-    #     # ]
-    #     redis_edges = [
-    #         Edge( redis_nodes[x.source], "edge", redis_nodes[x.target], properties = {key:value for key, value in x.attributes().items() if key in keys2} )  for x in graph_entry.es[:]
-    #     ]
-    #     for x in redis_edges:
-    #         redis_graph.add_edge(x)
-
-    #     p = redis_graph.commit()
-
-    #     output_query.put(1)
-
-
-
-
-
-
     ### BATCH VERSION OF  Orient DB
     # while True:
     #     try: 
