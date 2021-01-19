@@ -113,7 +113,7 @@ def merge_aminoacids(graph_entry):
         m_accession = _get_single_set_element(sorted_nodes, "accession")  # Get the ONLY accession
         # Now the attributes in nodes, which may be present
         m_isoform_accession = _get_single_set_element(sorted_nodes, "isoform_accession")  # Get the ONLY iso_accession
-        m_isoform_position = [sorted_nodes[0]["isoform_position"] if "isoform_position" in sorted_nodes[0] else None]
+        m_isoform_position = sorted_nodes[0]["isoform_position"] if "isoform_position" in sorted_nodes[0] else None
 
         # Merge edges attributes, which also may be present!
         sorted_nodes_attrs = [x.attributes() for x in sorted_edges]

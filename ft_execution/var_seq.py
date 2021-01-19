@@ -68,11 +68,9 @@ def execute_var_seq(
 
         # Bulk add the new sequence to the graph (similar to the code in canonical)
         cur_nodes = graph.vcount()
-        # cur_edges = graph.ecount() # TODO REMOVE DL
         graph.add_vertices(len(iso_sequence))
         nodes_indices = graph.vs[cur_nodes:].indices
         graph.add_edges([(nodes_indices[idx], nodes_indices[idx + 1])for idx, _ in enumerate(nodes_indices[:-1])])
-        # edges_indices = graph.es[cur_edges:].indices # TODO REMOVE DL
 
         # Bulk add of all information about these new nodes!
         graph.vs[nodes_indices]["aminoacid"] = [x for x in iso_sequence]  # Adding the aminoacid
@@ -80,9 +78,6 @@ def execute_var_seq(
         graph.vs[nodes_indices]["isoform_position"] = iso_pos  # Position according to the isoform
         graph.vs[nodes_indices]["isoform_accession"] = [isoforms[key][0]] * len(iso_sequence)  # Iso-Acc. ("PXXXXX-3")
         graph.vs[nodes_indices]["accession"] = [displayed_accession] * len(iso_sequence)  # The original accession
-
-        # Bulk add Information about edges # TODO REMOVE DL
-        # graph.es[edges_indices]["qualifiers"] = [[]]*(len(edges_indices)-1)
 
         # Add two special edges between start and end of sequence
         graph.add_edges([(__start_node__, graph.vs[cur_nodes]), (graph.vs[-1], __stop_node__)])
@@ -133,7 +128,7 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
 def _get_isoforms_of_entry(comments, accession):
     """ Get and parse all isoforms from the comment section """
     # TODO/DEBUG for Protein Q9QXS1, since there are only problems with this Protein!
-    # TODO comment make nice and quick
+    # TODO make nice and quick
     d = {}
     num_of_isoforms = 0
 

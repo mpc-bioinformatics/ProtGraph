@@ -207,6 +207,25 @@ def parse_args():
         "--export_gml", "-egml", default=False, action="store_true",
         help="Set this flag to export a GML file for each protein"
     )
+    parser.add_argument(
+        "--export_redisgraph", "-eredisg", default=False, action="store_true",
+        help="Set this flag to export to a redis-server having the module RedisGraph."
+        "NOTE: Currently the YY_BUFFER_SIZE is set to 1MB max large queries, you "
+        "may encounter errors while adding graphs. To resolve this, you may need to build RedisGraph yourself"
+        # TODO check on https://github.com/RedisGraph/RedisGraph/issues/1486
+    )
+    parser.add_argument(
+        "--redisgraph_host", type=str, default="localhost",
+        help="Set the host name for the redis-server having the module RedisGraph. Default: localhost"
+    )
+    parser.add_argument(
+        "--redisgraph_port", type=int, default=6379,
+        help="Set the port for the redis-server having the module RedisGraph. Default: 6379"
+    )
+    parser.add_argument(
+        "--redisgraph_graph", type=str, default="proteins",
+        help="Set the graph name on the redis-server having the module RedisGraph. Default 'proteins'"
+    )
 
     args = parser.parse_args()
 
@@ -235,11 +254,16 @@ def parse_args():
         # Ouput CSV and num_of_paths arguments
         calc_num_possibilities=args.calc_num_possibilities,
         output_csv=args.output_csv,
-        # Export Arguments
+        # Export files in folder
         export_output_folder=args.export_output_folder,
         export_dot=args.export_dot,
         export_graphml=args.export_graphml,
-        export_gml=args.export_gml
+        export_gml=args.export_gml,
+        # Export RedisGraph
+        export_redisgraph=args.export_redisgraph,
+        redisgraph_host=args.redisgraph_host,
+        redisgraph_port=args.redisgraph_port,
+        redisgraph_graph=args.redisgraph_graph,
     )
 
     return graph_gen_args

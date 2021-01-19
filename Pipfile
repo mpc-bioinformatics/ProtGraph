@@ -10,6 +10,8 @@ python-igraph = "*"
 texttable = "*"
 tqdm = "*"
 biopython = "*"
+redis = "*"
+redisgraph = "*"
 
 [requires]
 python_version = "3.8.6"
