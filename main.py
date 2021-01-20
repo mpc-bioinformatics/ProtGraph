@@ -226,6 +226,32 @@ def parse_args():
         "--redisgraph_graph", type=str, default="proteins",
         help="Set the graph name on the redis-server having the module RedisGraph. Default 'proteins'"
     )
+    parser.add_argument(
+        "--export_postgres", "-epg", default=False, action="store_true",
+        help="Set this flag to export to a postgresql server."
+        "NOTE: This will try to create the tables 'nodes' and 'edges' on a specified database."
+        " Make sure the database in which the data should be saved also exists."
+    )
+    parser.add_argument(
+        "--postgres_host", type=str, default="127.0.0.1",
+        help="Set the host name for the postgresql server. Default: 127.0.0.1"
+    )
+    parser.add_argument(
+        "--postgres_port", type=int, default=5433,
+        help="Set the port for the postgresql server. Default: 5433"
+    )
+    parser.add_argument(
+        "--postgres_user", type=str, default="postgres",
+        help="Set the username for the postgresql server. Default: postgres"
+    )
+    parser.add_argument(
+        "--postgres_password", type=str, default="developer",
+        help="Set the password for the postgresql server. Default: developer"
+    )
+    parser.add_argument(
+        "--postgres_database", type=str, default="proteins",
+        help="Set the database which will be used for the postgresql server. Default: proteins"
+    )
 
     args = parser.parse_args()
 
@@ -264,6 +290,13 @@ def parse_args():
         redisgraph_host=args.redisgraph_host,
         redisgraph_port=args.redisgraph_port,
         redisgraph_graph=args.redisgraph_graph,
+        # Export postgresql
+        export_postgres=args.export_postgres,
+        postgres_host=args.postgres_host,
+        postgres_port=args.postgres_port,
+        postgres_user=args.postgres_user,
+        postgres_password=args.postgres_password,
+        postgres_database=args.postgres_database,
     )
 
     return graph_gen_args
