@@ -13,13 +13,6 @@ Base = declarative_base()
 import pyorient 
 
 
-import redis
-from redisgraph import Node, Edge, Graph, Path
-
-
-import psycopg2
-
-
 # todo check if graph is dag and only has one starting and end pooint (via degree)
 
 # class Node(Base):
@@ -123,100 +116,6 @@ def insert_to_database(digested_graphs_queue, output_query):
         #     x["qualifiers"] = y
 
         # edge_objects = [client.command("create edge E from {} to {} content {}".format(x, y, json.dumps(z))) for x, y, z in zip(sources_nodes, target_nodes, content)]
-
-
-
-
-
-
-
-    ### psycopg2 
-    conn = psycopg2.connect(host="127.0.0.1", port=5433, user="postgres", password="developer", dbname="node_edges")
-    cur = conn.cursor()
-
-
-    # create nodes
-    cur.execute("""
-        create table if not exists nodes (
-            id BIGSERIAL PRIMARY KEY,
-            accession TEXT NOT NULL,
-            aminoacid VARCHAR(10) NOT NULL,
-            attributes JSON NOT NULL
-        );""")
-    conn.commit()
-
-
-    # Create edges
-    cur.execute("""
-        create table if not exists edges (
-            id BIGSERIAL PRIMARY KEY,
-            source BIGINT references nodes(id),
-            target BIGINT references nodes(id),
-            mono_weight BIGINT NOT NULL,  
-            mono_end_weight BIGINT NOT NULL, 
-            avrg_weight BIGINT NOT NULL,  
-            avrg_end_weight BIGINT NOT NULL, 
-            attributes JSON NOT NULL
-        );""")
-    conn.commit()
-
-
-    while True:
-        try: 
-            graph_entry, num_of_paths = digested_graphs_queue.get(timeout=180)
-        except Exception:
-            continue
-
-        # Generate Key list for json
-        json_keys = [x for x in graph_entry.vs[0].attribute_names() if not( x == "accession" or x == "aminoacid" )]
-
-        # Generate Node Object
-        db_nodes = [(x["accession"], x["aminoacid"], json.dumps({y: x[y] for y in json_keys})) for x in graph_entry.vs[:]]
-
-        # Insert all nodes (bulk)
-        
-        
-        
-        
-        
-        
-        statement = "INSERT INTO nodes(accession, aminoacid, attributes) VALUES " + ",".join(["(%s,%s,%s)"]*len(db_nodes)) + " RETURNING id"
-        db_nodes_falttened = [y for x in db_nodes for y in x]
-        cur.execute(cur.mogrify(statement, db_nodes_falttened))
-
-
-
-        node_ids_bulk = cur.fetchall()
-
-
-        # parse ids and map nodes to these
-        node_ids = [x[0] for x in node_ids_bulk]
-
-
-
-
-        sources = [node_ids[x.source] for x in graph_entry.es[:]]
-        targets = [node_ids[x.target] for x in graph_entry.es[:]]
-        mono_weights = graph_entry.es[:]["mono_weight"]
-        end_mono_weights = graph_entry.es[:]["mono_end_weight"]
-        avrg_weights = graph_entry.es[:]["avrg_weight"]
-        end_avrg_weights = graph_entry.es[:]["avrg_end_weight"]
-        attributes = [json.dumps(_get_qualifiers(x["qualifiers"])) for x in graph_entry.es[:]]
-
-
-        cur.executemany("""INSERT INTO edges(source, target, mono_weight, mono_end_weight, avrg_weight, avrg_end_weight, attributes) VALUES 
-        (%s, %s, %s, %s, %s, %s, %s)
-        ;""", zip(sources, targets, mono_weights, end_mono_weights, avrg_weights, end_avrg_weights, attributes))
-
-
-
-        conn.commit()
-
-
-        output_query.put( (graph_entry.vs[1]["accession"], num_of_paths) )
-
-
-
 
 
     ### SQL ALchemy
