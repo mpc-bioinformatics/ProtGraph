@@ -180,6 +180,14 @@ def parse_args():
         help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
         " be calculated. This uses a dynamic programming approach to calculate this in an efficient manner."
     )
+    parser.add_argument(
+        "--calc_num_possibilities_miscleavages", "-cnpm", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of miscleavages (beginning at 0). "
+        "Example: Returns: [1, 3, 5, 2] -> 1 path with 0 miscleavages, 3 paths with 1 miscleavage, 5 paths "
+        "with 2 miscleavages, etc ... This uses a dynamic programming approach to calculate this in an efficient "
+        "manner. NOTE: This may get memory heavy, depending on the proteins (especially on Titin)"
+    )
 
     parser.add_argument(
         "--output_csv", "-o", default=os.path.join(os.path.dirname(__file__), "protein_graph_statistics.csv"),
@@ -279,6 +287,7 @@ def parse_args():
         mass_dict_factor=args.mass_dict_factor,
         # Ouput CSV and num_of_paths arguments
         calc_num_possibilities=args.calc_num_possibilities,
+        calc_num_possibilities_miscleavages=args.calc_num_possibilities_miscleavages,
         output_csv=args.output_csv,
         # Export files in folder
         export_output_folder=args.export_output_folder,
@@ -327,6 +336,7 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
                 "Number of nodes",
                 "Number of edges",
                 "Num of possible paths",
+                "Num of possible paths (by miscleavages 0, 1, ...)",
                 "Protein description"
             ]
         )
