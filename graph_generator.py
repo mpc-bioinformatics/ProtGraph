@@ -121,7 +121,7 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
         annotate_weights(graph, **kwargs)
 
         # Calculate statistics on the graph:
-        num_nodes, num_edges, num_paths, num_paths_miscleavages = get_statistics(graph, **kwargs)
+        num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops = get_statistics(graph, **kwargs)
 
         # Persist or export graphs with speicified exporters
         graph_exporters.export_graph(graph)
@@ -142,6 +142,7 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
                 num_edges,  # Number of edges for the Protein/Peptide Graph
                 num_paths,  # Possible (non repeating paths) to the end of a graph. (may conatin repeating peptides)
                 num_paths_miscleavages,  # As num_paths, but binned to the number of miscleavages (by list idx, at 0)
+                num_paths_hops,  # As num_paths, only that we bin by hops (E.G. useful for determine DFS or BFS depths)
                 entry_protein_desc,  # Description name of the Protein (can be lenghty)
             )
         )

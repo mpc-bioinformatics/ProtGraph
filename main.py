@@ -188,6 +188,16 @@ def parse_args():
         "with 2 miscleavages, etc ... This uses a dynamic programming approach to calculate this in an efficient "
         "manner. NOTE: This may get memory heavy, depending on the proteins (especially on Titin)"
     )
+    parser.add_argument(
+        "--calc_num_possibilities_hops", "-cnph", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of hops (beginning at 0). "
+        "Example: Returns: [0, 3, 5, 2] -> 0 paths with 0 hops, 3 paths with 1 hop, 5 paths "
+        "with 2 hops, etc ... This uses a dynamic programming approach to calculate this in an efficient "
+        "manner. NOTE: This mis even more memory heavy then binning on miscleavages. Of course it depends "
+        "on the proteins (especially on Titin) NOTE: The dedicated start and end node is not counted here. "
+        "If you traverse a graph, expect +2 more nodes in a path!"
+    )
 
     parser.add_argument(
         "--output_csv", "-o", default=os.path.join(os.path.dirname(__file__), "protein_graph_statistics.csv"),
@@ -288,6 +298,7 @@ def parse_args():
         # Ouput CSV and num_of_paths arguments
         calc_num_possibilities=args.calc_num_possibilities,
         calc_num_possibilities_miscleavages=args.calc_num_possibilities_miscleavages,
+        calc_num_possibilities_hops=args.calc_num_possibilities_hops,
         output_csv=args.output_csv,
         # Export files in folder
         export_output_folder=args.export_output_folder,
@@ -337,6 +348,7 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
                 "Number of edges",
                 "Num of possible paths",
                 "Num of possible paths (by miscleavages 0, 1, ...)",
+                "Num of possible paths (by hops 0, 1, ...)",
                 "Protein description"
             ]
         )
