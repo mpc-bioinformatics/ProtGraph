@@ -2,7 +2,7 @@
 
 This project aims to efficiently generate graphs of proteins using text entries from [UniProt](https://www.uniprot.org/). These files either end via: `.dat` or `.txt`.
 
-We utilize the Framework: [BioPython](https://biopython.org/) and [igraph](https://igraph.org/python/) to generate so called directed and acyclic graphs (DAGs) of proteins
+We utilize the tools: [BioPython](https://biopython.org/) and [igraph](https://igraph.org/python/) to generate so called directed and acyclic graphs (DAGs) of proteins
 
 In essence, this tool is doing the following:
 
@@ -35,16 +35,19 @@ SQ   SEQUENCE   8 AA;  988 MW;  XXXXXXXXXXXXXXXX CRC64;
      MPROTEIN                   
 ```
 
-This entry contains the canonical sequence (in section `SQ`), which is used usually in fasta files and other tools. But this entry provides further information, which are usually not considered and left out. Especially in this example, a `SIGNAL` peptide is present, leading to a peptide, which may not be covered when cleaving e.g. via Trypsin. Additionally 3 `VARIANT`s are present in this entry, informing about substituted aminoacids, which again may yield peptides that are not covered by the canonical sequence or by digestion.
+This entry contains the canonical sequence (in section `SQ`), which is used usually in fasta files and other tools. But this entry provides further information, which are usually not considered and left out. Especially in this example, a `SIGNAL` peptide is present, leading to a peptide, which may not be covered when cleaving e.g. via Trypsin.
+Additionally 3 `VARIANT`s are present in this entry, informing about substituted aminoacids, which again may yield peptides that are not covered by the canonical sequence or by digestion.
 
 With `ProtGraph`, a graph can be generated. It may look as follows:
 ![Example Graph](resources/example_graph.png)
 
-With this graph, the earlier mentioned peptides are now considered and could be retrieved, by traversing from the dedicated `s`tart node to the dedicated `e`nd node. (These are internally denoted by: `__start__` and `__end__`). The `black drawn` edges (with the label `TRYPSIN`) indicate that this graph was additionally digested via Trypsin (default) leading to a compact DAGraph, allowing to compute all possible peptides and even more statistics!
+With this graph, the earlier mentioned peptides are now considered and could be retrieved, by traversing from the dedicated `s`tart node to the dedicated `e`nd node. (These are internally denoted by: `__start__` and `__end__`).
+The `black drawn` edges (with the label `TRYPSIN`) indicate that this graph was additionally digested via Trypsin (default) leading to a compact DAGraph, allowing to compute all possible peptides and even more statistics!
 
 This tool will additionally generate a statistics file when generating a graph from an UniProt-entry, containing various information about the protein/entry which were retrieved during generation (partially on the fly).
 
-If executing via the flag `-cnp`, the number of possible paths between `s` and `e` are calculated. In this example, `48` paths are possible. With this, we now know that there are `48` peptides (some of them repeating) in such a (small) graph. It may be interesting to know how many (repeating) peptides with a certain number of miscleavages are present in a protein. To calculate this statistic, simply provide the flag `-cnpm`. In this example: `25` peptides with 0 miscleavages, `19` with 1 miscleavage and `4` with 2 miscleavages are present.
+If executing via the flag `-cnp`, the number of possible paths between `s` and `e` are calculated. In this example, `48` paths are possible. With this, we now know that there are `48` peptides (some of them repeating) in such a (small) graph.
+It may be interesting to know how many (repeating) peptides with a certain number of miscleavages are present in a protein. To calculate this statistic, simply provide the flag `-cnpm`. In this example: `25` peptides with 0 miscleavages, `19` with 1 miscleavage and `4` with 2 miscleavages are present.
 
 By combining the flags `-cnph` and `-nm`, the distribution of the peptide lengths (counting aminoacids) over all possible peptides can be retrieved. For the example protein, we retrieved the following distribution:
 | Peptide Length | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
@@ -86,7 +89,8 @@ The graph generation can be executed via: `python main.py examples/e_coli.txt`. 
 
 But why does it not show information when it will end?
 
-Sadly, `Biopython` does not provide information of how many entries are available in a `.txt` or `.dat` file. Therefor this information needs to be provided via another parameter: `python main.py --num_of_entries 9434 e_coli.txt` (you can also use `-n`). To retrieve the number of entries beforehand you could e.g. use a simple command as follows `cat /examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files. The number of entries for each file then need to be summed: `python main.py -n 18868 examples/e_coli.txt examples/e_coli.txt`
+Sadly, `Biopython` does not provide information of how many entries are available in a `.txt` or `.dat` file. Therefor this information needs to be provided via another parameter: `python main.py --num_of_entries 9434 e_coli.txt` (you can also use `-n`).
+To retrieve the number of entries beforehand you could e.g. use a simple command as follows `cat /examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files. The number of entries for each file then need to be summed: `python main.py -n 18868 examples/e_coli.txt examples/e_coli.txt`
 
 ---
 
@@ -94,7 +98,7 @@ If to many (or to few) processes are executed, then it can be adjusted via `--nu
 
 ---
 
-To fully annotate the graphs with weights, use the following: `python main.py -amwe -aawe -cnp -cnpm -cnph -n 9434 examples/e_coli.dat`
+To fully annotate the graphs with weights and to retrieve all statistics, use the following: `python main.py -amwe -aawe -cnp -cnpm -cnph -n 9434 examples/e_coli.dat`
 
 ## Exporting graphs
 
@@ -104,11 +108,12 @@ The default behaviour of `ProtGraph` is to exclude the generated graphs, since t
 
 ### File Exports
 
-To export each protein graph into a folder, simply set the flags `-edot`, `-egraphml` and/or `-egml`, which will create the corresponding dot, GraphML or GML files into a output folder. Exporting to GraphML is recommended since this is the only export method able to serialize all properties in a file which have been set in this project on a graph.
+To export each protein graph into a folder, simply set the flags `-edot`, `-egraphml` and/or `-egml`, which will create the corresponding dot, GraphML or GML files into a output folder.
+Exporting to GraphML is recommended since this is the only export method able to serialize all properties in a file which have been set in this project on a graph.
 
 ### Database Exporters
 
-The database exporters are currently under development. But currently two different exports are available. `ProtGraph` allows to export the generated graphs into PostgreSQL as well as into RedisGraph. For configuration such export, please look into the `--help` output.
+The database exporters are currently under development. But two exports are already available. `ProtGraph` allows to export the generated graphs into PostgreSQL as well as into RedisGraph. For configuration such export, please look into the `--help` output.
 
 Note: In Postgresql a database should be created where the tables `nodes` and `edges` are NOT present.
 
