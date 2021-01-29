@@ -61,8 +61,8 @@ To set up `ProtGraph` make sure you have `pipenv` and `pyenv` installed. (via `p
 First clone this project and enter its directory via:
 
 ```shell
-git clone git@github.com:mpc-bioinformatics/provar-db-graph-gen.git
-cd provar-db-graph-gen
+git clone git@github.com:mpc-bioinformatics/ProtGraph.git
+cd ProtGraph/
 ```
 
 Now the dependencies (and possibly Python) need to be installed. This can be done with:
