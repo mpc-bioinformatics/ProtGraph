@@ -47,10 +47,12 @@ def _digest_via_trypsin(graph):
 
     # Filter out edges, which have P as target
     k_s_edges_remaining = [
-        y for x in k_s_edges for y in x if graph.vs[y.target]["aminoacid"] != "P"
+        y for x in k_s_edges for y in x
+        if graph.vs[y.target]["aminoacid"] != "P" and graph.vs[y.target]["aminoacid"] != "__end__"
     ]
     r_s_edges_remaining = [
-        y for x in r_s_edges for y in x if graph.vs[y.target]["aminoacid"] != "P"
+        y for x in r_s_edges for y in x
+        if graph.vs[y.target]["aminoacid"] != "P" and graph.vs[y.target]["aminoacid"] != "__end__"
     ]
 
     # Mark edges as cleaved

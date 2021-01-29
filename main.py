@@ -180,6 +180,24 @@ def parse_args():
         help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
         " be calculated. This uses a dynamic programming approach to calculate this in an efficient manner."
     )
+    parser.add_argument(
+        "--calc_num_possibilities_miscleavages", "-cnpm", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of miscleavages (beginning at 0). "
+        "Example: Returns: [1, 3, 5, 2] -> 1 path with 0 miscleavages, 3 paths with 1 miscleavage, 5 paths "
+        "with 2 miscleavages, etc ... This uses a dynamic programming approach to calculate this in an efficient "
+        "manner. NOTE: This may get memory heavy, depending on the proteins (especially on Titin)"
+    )
+    parser.add_argument(
+        "--calc_num_possibilities_hops", "-cnph", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of hops (beginning at 0). "
+        "Example: Returns: [0, 3, 5, 2] -> 0 paths with 0 hops, 3 paths with 1 hop, 5 paths "
+        "with 2 hops, etc ... This uses a dynamic programming approach to calculate this in an efficient "
+        "manner. NOTE: This mis even more memory heavy then binning on miscleavages. Of course it depends "
+        "on the proteins (especially on Titin) NOTE: The dedicated start and end node is not counted here. "
+        "If you traverse a graph, expect +2 more nodes in a path!"
+    )
 
     parser.add_argument(
         "--output_csv", "-o", default=os.path.join(os.path.dirname(__file__), "protein_graph_statistics.csv"),
@@ -206,6 +224,51 @@ def parse_args():
     parser.add_argument(
         "--export_gml", "-egml", default=False, action="store_true",
         help="Set this flag to export a GML file for each protein"
+    )
+    parser.add_argument(
+        "--export_redisgraph", "-eredisg", default=False, action="store_true",
+        help="Set this flag to export to a redis-server having the module RedisGraph."
+        "NOTE: Currently the YY_BUFFER_SIZE is set to 1MB max large queries, you "
+        "may encounter errors while adding graphs. To resolve this, you may need to build RedisGraph yourself"
+        # TODO check on https://github.com/RedisGraph/RedisGraph/issues/1486
+    )
+    parser.add_argument(
+        "--redisgraph_host", type=str, default="localhost",
+        help="Set the host name for the redis-server having the module RedisGraph. Default: localhost"
+    )
+    parser.add_argument(
+        "--redisgraph_port", type=int, default=6379,
+        help="Set the port for the redis-server having the module RedisGraph. Default: 6379"
+    )
+    parser.add_argument(
+        "--redisgraph_graph", type=str, default="proteins",
+        help="Set the graph name on the redis-server having the module RedisGraph. Default 'proteins'"
+    )
+    parser.add_argument(
+        "--export_postgres", "-epg", default=False, action="store_true",
+        help="Set this flag to export to a postgresql server."
+        "NOTE: This will try to create the tables 'nodes' and 'edges' on a specified database."
+        " Make sure the database in which the data should be saved also exists."
+    )
+    parser.add_argument(
+        "--postgres_host", type=str, default="127.0.0.1",
+        help="Set the host name for the postgresql server. Default: 127.0.0.1"
+    )
+    parser.add_argument(
+        "--postgres_port", type=int, default=5433,
+        help="Set the port for the postgresql server. Default: 5433"
+    )
+    parser.add_argument(
+        "--postgres_user", type=str, default="postgres",
+        help="Set the username for the postgresql server. Default: postgres"
+    )
+    parser.add_argument(
+        "--postgres_password", type=str, default="developer",
+        help="Set the password for the postgresql server. Default: developer"
+    )
+    parser.add_argument(
+        "--postgres_database", type=str, default="proteins",
+        help="Set the database which will be used for the postgresql server. Default: proteins"
     )
 
     args = parser.parse_args()
@@ -234,12 +297,26 @@ def parse_args():
         mass_dict_factor=args.mass_dict_factor,
         # Ouput CSV and num_of_paths arguments
         calc_num_possibilities=args.calc_num_possibilities,
+        calc_num_possibilities_miscleavages=args.calc_num_possibilities_miscleavages,
+        calc_num_possibilities_hops=args.calc_num_possibilities_hops,
         output_csv=args.output_csv,
-        # Export Arguments
+        # Export files in folder
         export_output_folder=args.export_output_folder,
         export_dot=args.export_dot,
         export_graphml=args.export_graphml,
-        export_gml=args.export_gml
+        export_gml=args.export_gml,
+        # Export RedisGraph
+        export_redisgraph=args.export_redisgraph,
+        redisgraph_host=args.redisgraph_host,
+        redisgraph_port=args.redisgraph_port,
+        redisgraph_graph=args.redisgraph_graph,
+        # Export postgresql
+        export_postgres=args.export_postgres,
+        postgres_host=args.postgres_host,
+        postgres_port=args.postgres_port,
+        postgres_user=args.postgres_user,
+        postgres_password=args.postgres_password,
+        postgres_database=args.postgres_database,
     )
 
     return graph_gen_args
@@ -270,6 +347,8 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
                 "Number of nodes",
                 "Number of edges",
                 "Num of possible paths",
+                "Num of possible paths (by miscleavages 0, 1, ...)",
+                "Num of possible paths (by hops 0, 1, ...)",
                 "Protein description"
             ]
         )
