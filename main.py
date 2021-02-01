@@ -228,6 +228,10 @@ def parse_args():
         help="Set this flag to export a GML file for each protein"
     )
     parser.add_argument(
+        "--export_pickle", "-epickle", default=False, action="store_true",
+        help="Set this flag to export a Pickle file for each protein"
+    )
+    parser.add_argument(
         "--export_redisgraph", "-eredisg", default=False, action="store_true",
         help="Set this flag to export to a redis-server having the module RedisGraph."
         "NOTE: Currently the YY_BUFFER_SIZE is set to 1MB max large queries, you "
@@ -307,6 +311,7 @@ def parse_args():
         export_dot=args.export_dot,
         export_graphml=args.export_graphml,
         export_gml=args.export_gml,
+        export_pickle=args.export_pickle,
         # Export RedisGraph
         export_redisgraph=args.export_redisgraph,
         redisgraph_host=args.redisgraph_host,

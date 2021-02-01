@@ -83,7 +83,7 @@ def _get_metheonines(graph, pos_first_aas, init_met_feature):
             x
             for x in pos_first_aas
             if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["isoform_position"] == 1 and
-            graph.vs[x]["isoform_accession"] is init_met_feature.ref
+            graph.vs[x]["isoform_accession"] == init_met_feature.ref
         ]
     else:
         # Unknown case
