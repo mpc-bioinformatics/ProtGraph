@@ -29,9 +29,9 @@ def execute_var_seq(
             note.index("(") + 1 + 3: note.rfind(")")  # +3 to remove "in "
         ]
         # Replace the words "isoform" and "and"
-        isoform_isoids = isoform_isoids.replace("isoform", "").replace(" and ", ",")
+        isoform_isoids = isoform_isoids.replace("isoform", "").replace(" and ", ", ")
         # For each comma entry:
-        for isoid in isoform_isoids.split(","):
+        for isoid in isoform_isoids.split(", "):
             isoid = isoid.strip()
             # Skip if we did not found a specification
             if isoid not in isoforms:

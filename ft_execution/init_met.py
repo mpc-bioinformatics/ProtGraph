@@ -1,3 +1,6 @@
+from unexpected_exception import UnexpectedException
+
+
 def execute_init_met(graph, init_met_feature):
     """
     This function adds ONLY edges to skip the initiator metheonine.
@@ -15,11 +18,8 @@ def execute_init_met(graph, init_met_feature):
     pos_first_aas = graph.neighbors(start, mode="out")
 
     # Filtering is important, since we may skip an aminoacid of an already cleaved protein
-    met_aas = [
-        x
-        for x in pos_first_aas
-        if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["position"] == 1
-    ]
+    # Depending on the set reference we need to distinguish between multiple INIT_METs for one protein
+    met_aas = _get_metheonines(graph, pos_first_aas, init_met_feature)
 
     # Get possible features of remaining nodes
     features = [_get_qualifiers(graph, start, x) for x in met_aas]
@@ -52,3 +52,55 @@ def _get_qualifiers(graph, source_node: int, target_node: int):
         return qualifiers_list
     else:
         return [[]]
+
+
+def _get_metheonines(graph, pos_first_aas, init_met_feature):
+    """ Wrapper function to retrieve the metheonines, depending on reference and isoforms """
+    # Check if graph has isoforms
+    has_isoforms = True if "isoform_accession" in graph.vs[0].attributes() and \
+        "isoform_position" in graph.vs[0].attributes() else False
+
+    if init_met_feature.ref is None:
+        # Canonical M
+        if not has_isoforms:
+            # for no isoforms
+            met_aas = [
+                x
+                for x in pos_first_aas
+                if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["position"] == 1
+            ]
+        else:
+            # for isoforms
+            met_aas = [
+                x
+                for x in pos_first_aas
+                if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["position"] == 1 and
+                graph.vs[x]["isoform_accession"] is None
+            ]
+    elif has_isoforms:
+        # Referenced isoform M depending on ref
+        met_aas = [
+            x
+            for x in pos_first_aas
+            if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["isoform_position"] == 1 and
+            graph.vs[x]["isoform_accession"] is init_met_feature.ref
+        ]
+    else:
+        # Unknown case
+        raise UnexpectedException(
+            accession=graph.vs[0]["accession"],
+            position=1,
+            message="Unknown Case for the feature INIT_MET. No Aminoacid found to be skipped",
+            additional_info=str(init_met_feature)
+        )
+
+    # Check if we found a M to skip
+    if len(met_aas) == 0:
+        raise UnexpectedException(
+            accession=graph.vs[0]["accession"],
+            position=1,
+            message="No M found to skip for the feature INIT_MET for the given cases",
+            additional_info=str(init_met_feature)
+        )
+
+    return met_aas

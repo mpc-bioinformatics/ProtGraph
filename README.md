@@ -2,7 +2,7 @@
 
 This project aims to efficiently generate graphs of proteins using text entries from [UniProt](https://www.uniprot.org/). These files either end via: `.dat` or `.txt`.
 
-We utilize the tools: [BioPython](https://biopython.org/) and [igraph](https://igraph.org/python/) to generate so called directed and acyclic graphs (DAGs) of proteins
+We utilize the tools: [BioPython](https://biopython.org/) and [igraph](https://igraph.org/python/) to generate so called directed and acyclic graphs (DAGs) of proteins.
 
 In essence, this tool is doing the following:
 

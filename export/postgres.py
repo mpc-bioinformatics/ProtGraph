@@ -65,6 +65,10 @@ class Postgres(AExporter):
                     isoform_accession VARCHAR(20),
                     isoform_position INT
                 );""")
+
+        except Exception as e:
+            print("Error createing nodes table. Continuing... (Reason: {})".format(str(e)))
+        finally:
             self.conn.commit()
             cur.close()
             self.nodes_keys = [
@@ -74,8 +78,6 @@ class Postgres(AExporter):
                 "isoform_accession",
                 "isoform_position"
             ]
-        except Exception as e:
-            print("Error createing nodes table. Continuing... (Reason: {})".format(str(e)))
 
         try:
             # Create edges
@@ -92,6 +94,10 @@ class Postgres(AExporter):
                     avrg_weight_to_end {0},
                     qualifiers JSONB
                 );""".format("BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE PRECISION"))
+
+        except Exception as e:
+            print("Error createing edges table. Continuing... (Reason: {})".format(str(e)))
+        finally:
             self.conn.commit()
             cur.close()
             self.edges_keys = [
@@ -102,8 +108,6 @@ class Postgres(AExporter):
                 "avrg_weight_to_end",
                 "qualifiers"
             ]
-        except Exception as e:
-            print("Error createing edges table. Continuing... (Reason: {})".format(str(e)))
 
     def export(self, prot_graph):
         # Export the protein
