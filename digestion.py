@@ -75,6 +75,7 @@ def _digest_via_trypsin(graph):
     # Return the number of cleaved edges
     return len(cleaved_idcs)
 
+
 def _digest_via_full(graph):
     """
     Digestion via Full. Here we digest at every possible and available edge in the graph.
@@ -107,7 +108,7 @@ def _digest_via_full(graph):
     cleaved_edges = [
         x.index
         for x in graph.es[:]
-        if x.source != __start_node__.index and \
+        if x.source != __start_node__.index and
         x.target != __end_node__.index
     ]
     graph.es[cleaved_edges]["cleaved"] = True

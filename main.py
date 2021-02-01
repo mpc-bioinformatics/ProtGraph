@@ -132,9 +132,9 @@ def parse_args():
     parser.add_argument(
         "--digestion", "-d", type=str.lower, default="trypsin",
         choices=["trypsin", "skip", "full"],
-        help="Set the digestion method. The full digestion cleaves at every edge, which can be useful for retrieving all "
-        "possible peptides with arbitrary cutting points. The digestion method skip skips the digestion completely. "
-        "Default: Trypsin"
+        help="Set the digestion method. The full digestion cleaves at every edge, which can be useful for retrieving "
+        "all possible peptides with arbitrary cutting points. The digestion method skip skips the digestion "
+        "completely. Default: Trypsin"
     )
     parser.add_argument(
         "--no_merge", "-nm", default=False, action="store_true",
