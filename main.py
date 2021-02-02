@@ -216,6 +216,12 @@ def parse_args():
         "overwrite exisiting files. Default is set to export in this projects folder"
     )
     parser.add_argument(
+        "--export_in_directories", "-edirs", default=False, action="store_true",
+        help="Set this flag to export files in directories (coded by accession) instead of directly by "
+        "the accession name. This could be useful if millions of proteins are added into this tool, since "
+        "a folder with millions of entries can be problematic in some cases."
+    )
+    parser.add_argument(
         "--export_dot", "-edot", default=False, action="store_true",
         help="Set this flag to export a dot file for each protein"
     )
@@ -308,6 +314,7 @@ def parse_args():
         output_csv=args.output_csv,
         # Export files in folder
         export_output_folder=args.export_output_folder,
+        export_in_directories=args.export_in_directories,
         export_dot=args.export_dot,
         export_graphml=args.export_graphml,
         export_gml=args.export_gml,
