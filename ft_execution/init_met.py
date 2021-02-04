@@ -83,7 +83,7 @@ def _get_metheonines(graph, pos_first_aas, init_met_feature):
             x
             for x in pos_first_aas
             if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["isoform_position"] == 1 and
-            graph.vs[x]["isoform_accession"] is init_met_feature.ref
+            graph.vs[x]["isoform_accession"] == init_met_feature.ref
         ]
     else:
         # Unknown case
@@ -94,13 +94,12 @@ def _get_metheonines(graph, pos_first_aas, init_met_feature):
             additional_info=str(init_met_feature)
         )
 
-    # Check if we found a M to skip
+    # Check if we found a M to skip, if not print a Warning, since this may be the case for
+    # unreviewed entries...
     if len(met_aas) == 0:
-        raise UnexpectedException(
-            accession=graph.vs[0]["accession"],
-            position=1,
-            message="No M found to skip for the feature INIT_MET for the given cases",
-            additional_info=str(init_met_feature)
+        print(
+            "WARNING: Protein '{}' does not have Metheonine at the beginning, while "
+            "trying to skip it via the feature 'INIT_MET'. Skipping ..."
         )
 
     return met_aas

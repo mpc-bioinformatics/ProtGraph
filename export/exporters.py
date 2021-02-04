@@ -3,7 +3,9 @@ from contextlib import ContextDecorator
 from export.dot import Dot
 from export.gml import GML
 from export.graphml import GraphML
+from export.pickle import Pickle
 from export.postgres import Postgres
+from export.postgres_trypper_peptides import PostgresTrypperPeptides
 from export.redisgraph import RedisGraph
 
 
@@ -23,10 +25,14 @@ class Exporters(ContextDecorator):
             self.export_classes.append(GraphML())
         if kwargs["export_gml"]:
             self.export_classes.append(GML())
+        if kwargs["export_pickle"]:
+            self.export_classes.append(Pickle())
         if kwargs["export_redisgraph"]:
             self.export_classes.append(RedisGraph())
         if kwargs["export_postgres"]:
             self.export_classes.append(Postgres())
+        if kwargs["export_postgres_trypper"]:
+            self.export_classes.append(PostgresTrypperPeptides())
 
         # Also start up all exporters
         for ec in self.export_classes:

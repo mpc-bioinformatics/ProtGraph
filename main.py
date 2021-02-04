@@ -216,6 +216,12 @@ def parse_args():
         "overwrite exisiting files. Default is set to export in this projects folder"
     )
     parser.add_argument(
+        "--export_in_directories", "-edirs", default=False, action="store_true",
+        help="Set this flag to export files in directories (coded by accession) instead of directly by "
+        "the accession name. This could be useful if millions of proteins are added into this tool, since "
+        "a folder with millions of entries can be problematic in some cases."
+    )
+    parser.add_argument(
         "--export_dot", "-edot", default=False, action="store_true",
         help="Set this flag to export a dot file for each protein"
     )
@@ -226,6 +232,10 @@ def parse_args():
     parser.add_argument(
         "--export_gml", "-egml", default=False, action="store_true",
         help="Set this flag to export a GML file for each protein"
+    )
+    parser.add_argument(
+        "--export_pickle", "-epickle", default=False, action="store_true",
+        help="Set this flag to export a Pickle file for each protein"
     )
     parser.add_argument(
         "--export_redisgraph", "-eredisg", default=False, action="store_true",
@@ -272,6 +282,52 @@ def parse_args():
         "--postgres_database", type=str, default="proteins",
         help="Set the database which will be used for the postgresql server. Default: proteins"
     )
+    parser.add_argument(
+        "--export_postgres_trypper", "-epgt", default=False, action="store_true",
+        help="Set this flag to export peptides (specifically paths) to a postgresql server."
+        "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
+        " Make sure the database in which the data should be saved also exists. If problems occur, try "
+        "to delete the generated tables and retry again."
+    )
+    parser.add_argument(
+        "--postgres_trypper_host", type=str, default="127.0.0.1",
+        help="Set the host name for the postgresql server (Trypper). Default: 127.0.0.1"
+    )
+    parser.add_argument(
+        "--postgres_trypper_port", type=int, default=5433,
+        help="Set the port for the postgresql server (Trypper). Default: 5433"
+    )
+    parser.add_argument(
+        "--postgres_trypper_user", type=str, default="postgres",
+        help="Set the username for the postgresql server (Trypper). Default: postgres"
+    )
+    parser.add_argument(
+        "--postgres_trypper_password", type=str, default="developer",
+        help="Set the password for the postgresql server (Trypper). Default: developer"
+    )
+    parser.add_argument(
+        "--postgres_trypper_database", type=str, default="proteins",
+        help="Set the database which will be used for the postgresql server. Default: proteins"
+    )
+    parser.add_argument(
+        "--postgres_trypper_hops", type=int, default=9,
+        help="Set the number of hops (max length of path) which should be used to get paths "
+        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
+        "the protein which currently is processed. Defaul is set to '9', since this value generates "
+        "reasonable and not too exploding numbers."
+    )
+    parser.add_argument(
+        "--postgres_trypper_miscleavages", type=int, default=-1,
+        help="Set this number to filter the generated paths by their miscleavages."
+        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
+        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
+        "number of miscleavages, if needed."
+    )
+    parser.add_argument(
+        "--postgres_trypper_min_pep_length", type=int, default=0,
+        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
+        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
+    )
 
     args = parser.parse_args()
 
@@ -304,9 +360,11 @@ def parse_args():
         output_csv=args.output_csv,
         # Export files in folder
         export_output_folder=args.export_output_folder,
+        export_in_directories=args.export_in_directories,
         export_dot=args.export_dot,
         export_graphml=args.export_graphml,
         export_gml=args.export_gml,
+        export_pickle=args.export_pickle,
         # Export RedisGraph
         export_redisgraph=args.export_redisgraph,
         redisgraph_host=args.redisgraph_host,
@@ -319,6 +377,16 @@ def parse_args():
         postgres_user=args.postgres_user,
         postgres_password=args.postgres_password,
         postgres_database=args.postgres_database,
+        # Export postgresql TrypperDB
+        export_postgres_trypper=args.export_postgres_trypper,
+        postgres_trypper_host=args.postgres_trypper_host,
+        postgres_trypper_port=args.postgres_trypper_port,
+        postgres_trypper_user=args.postgres_trypper_user,
+        postgres_trypper_password=args.postgres_trypper_password,
+        postgres_trypper_database=args.postgres_trypper_database,
+        postgres_trypper_hops=args.postgres_trypper_hops,
+        postgres_trypper_miscleavages=args.postgres_trypper_miscleavages,
+        postgres_trypper_min_pep_length=args.postgres_trypper_min_pep_length,
     )
 
     return graph_gen_args
@@ -374,11 +442,3 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
 
 if __name__ == "__main__":
     main()
-    # TODO theses are the numbers of nodes
-    # and edged for complete uniprot. Remove it from the code!
-    # Nodes Count: 71031227
-    # Edges Count: 77997502
-
-    # Optimization is possible here!
-    # We could concat Nodes together as long as there is only one  in and out degree
-    # This optimization can happen before!!! doing the weighting (we can use the topological sort for this)
