@@ -127,7 +127,6 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
 
 def _get_isoforms_of_entry(comments, accession):
     """ Get and parse all isoforms from the comment section """
-    # TODO/DEBUG for Protein Q9QXS1, since there are only problems with this Protein!
     # TODO make nice and quick
     d = {}
     num_of_isoforms = 0
