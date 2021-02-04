@@ -282,7 +282,6 @@ def parse_args():
         "--postgres_database", type=str, default="proteins",
         help="Set the database which will be used for the postgresql server. Default: proteins"
     )
-    # TODO comment the next parameters!
     parser.add_argument(
         "--export_postgres_trypper", "-epgt", default=False, action="store_true",
         help="Set this flag to export peptides (specifically paths) to a postgresql server."

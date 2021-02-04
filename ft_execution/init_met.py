@@ -94,13 +94,12 @@ def _get_metheonines(graph, pos_first_aas, init_met_feature):
             additional_info=str(init_met_feature)
         )
 
-    # Check if we found a M to skip
+    # Check if we found a M to skip, if not print a Warning, since this may be the case for 
+    # unreviewed entries...
     if len(met_aas) == 0:
-        raise UnexpectedException(
-            accession=graph.vs[0]["accession"],
-            position=1,
-            message="No M found to skip for the feature INIT_MET for the given cases",
-            additional_info=str(init_met_feature)
+        print(
+            "WARNING: Protein '{}' does not have Metheonine at the beginning, while "
+            "trying to skip it via the feature 'INIT_MET'. Skipping ..."
         )
 
     return met_aas
