@@ -18,6 +18,7 @@ def execute_signal(graph, signal_feature):
 
     # Get end node
     [__stop_node__] = graph.vs.select(aminoacid="__end__")
+    [__start_node__] = graph.vs.select(aminoacid="__start__")
 
     # Get start and end position of signal peptide
     # NOTE: + 1, since the start node occupies the position 0
@@ -54,6 +55,8 @@ def execute_signal(graph, signal_feature):
 
             # And add a new edge to skip the signal
             for ei in edges_in:
+                if ei.index == __start_node__.index:
+                    continue
                 for eo in edges_out:
                     all_edges.append(
                         (
