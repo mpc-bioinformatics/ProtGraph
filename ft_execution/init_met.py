@@ -94,7 +94,7 @@ def _get_metheonines(graph, pos_first_aas, init_met_feature):
             additional_info=str(init_met_feature)
         )
 
-    # Check if we found a M to skip, if not print a Warning, since this may be the case for 
+    # Check if we found a M to skip, if not print a Warning, since this may be the case for
     # unreviewed entries...
     if len(met_aas) == 0:
         print(
