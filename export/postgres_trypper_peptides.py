@@ -1,7 +1,7 @@
 import psycopg2
 
 from export.abstract_exporter import AExporter
-
+import networkx
 
 class PostgresTrypperPeptides(AExporter):
     """
@@ -170,20 +170,20 @@ class PostgresTrypperPeptides(AExporter):
         [__start_node__] = prot_graph.vs.select(aminoacid="__start__")
         [__stop_node__] = prot_graph.vs.select(aminoacid="__end__")
 
-        # Get all simple paths (depending on how long we want them)
-        peptides = prot_graph.get_all_simple_paths(
-            __start_node__,
-            to=__stop_node__,
-            cutoff=self.peptide_length
-        )
-
-        # Now Filter and insert wanted peptides
+        # Set insert statement for peptides
         statement = "INSERT INTO peptides (" \
             + ",".join(self.peptides_keys) \
             + ") VALUES (" \
             + ",".join(["%s"]*len(self.peptides_keys)) \
             + ")"
-        for pep in peptides:
+
+        # Iterate via neworkx over all peptides (robust to parallel edges)
+        netx = prot_graph.to_networkx()
+        for pep in networkx.algorithms.simple_paths.all_simple_paths(
+            netx,__start_node__.index,
+            __stop_node__.index, 
+            cutoff=self.peptide_length
+            ):
             # Get the actual Peptide (aas)
             aas = "".join(prot_graph.vs[pep[1:-1]]["aminoacid"])
 

@@ -13,6 +13,7 @@ biopython = "*"
 redis = "*"
 redisgraph = "*"
 psycopg2 = "*"
+networkx = "*"
 
 [requires]
 python_version = "3.8.6"

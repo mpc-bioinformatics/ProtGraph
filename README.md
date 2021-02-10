@@ -46,13 +46,13 @@ The `black drawn` edges (with the label `TRYPSIN`) indicate that this graph was 
 
 This tool will additionally generate a statistics file when generating a graph from an UniProt-entry, containing various information about the protein/entry which were retrieved during generation (partially on the fly).
 
-If executing via the flag `-cnp`, the number of possible paths between `s` and `e` are calculated. In this example, `48` paths are possible. With this, we now know that there are `48` peptides (some of them repeating) in such a (small) graph.
-It may be interesting to know how many (repeating) peptides with a certain number of miscleavages are present in a protein. To calculate this statistic, simply provide the flag `-cnpm`. In this example: `25` peptides with 0 miscleavages, `19` with 1 miscleavage and `4` with 2 miscleavages are present.
+If executing via the flag `-cnp`, the number of possible paths between `s` and `e` are calculated. In this example, `48` paths are possible. With this, we now know that there are `43` peptides (some of them repeating) in such a (small) graph.
+It may be interesting to know how many (repeating) peptides with a certain number of miscleavages are present in a protein. To calculate this statistic, simply provide the flag `-cnpm`. In this example: `21` peptides with 0 miscleavages, `18` with 1 miscleavage and `4` with 2 miscleavages are present.
 
 By combining the flags `-cnph` and `-nm`, the distribution of the peptide lengths (counting aminoacids) over all possible peptides can be retrieved. For the example protein, we retrieved the following distribution:
 | Peptide Length | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |----------------|---|---|---|---|---|---|---|---|
-| #Peptides      | 3 | 6 | 9 | 8 | 6 | 4 | 8 | 4 |
+| #Peptides      | 2 | 5 | 8 | 6 | 6 | 4 | 8 | 4 |
 
 ## Setting up
 
