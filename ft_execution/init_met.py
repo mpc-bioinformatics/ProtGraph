@@ -3,7 +3,7 @@ from unexpected_exception import UnexpectedException
 
 def execute_init_met(graph, init_met_feature):
     """
-    This function adds ONLY edges to skip the initiator metheonine.
+    This function adds ONLY edges to skip the initiator methionine.
 
     NOTE: This transforms the graph without returning it!
 
@@ -19,7 +19,7 @@ def execute_init_met(graph, init_met_feature):
 
     # Filtering is important, since we may skip an aminoacid of an already cleaved protein
     # Depending on the set reference we need to distinguish between multiple INIT_METs for one protein
-    met_aas = _get_metheonines(graph, pos_first_aas, init_met_feature)
+    met_aas = _get_methionines(graph, pos_first_aas, init_met_feature)
 
     # Get possible features of remaining nodes
     features = [_get_qualifiers(graph, start, x) for x in met_aas]
@@ -54,12 +54,13 @@ def _get_qualifiers(graph, source_node: int, target_node: int):
         return [[]]
 
 
-def _get_metheonines(graph, pos_first_aas, init_met_feature):
-    """ Wrapper function to retrieve the metheonines, depending on reference and isoforms """
+def _get_methionines(graph, pos_first_aas, init_met_feature):
+    """ Wrapper function to retrieve the methionines, depending on reference and isoforms """
     # Check if graph has isoforms
     has_isoforms = True if "isoform_accession" in graph.vs[0].attributes() and \
         "isoform_position" in graph.vs[0].attributes() else False
 
+    _aas_set = True  # Bool to check if we were able to retrieve aminoacids from the graph
     if init_met_feature.ref is None:
         # Canonical M
         if not has_isoforms:
@@ -86,20 +87,29 @@ def _get_metheonines(graph, pos_first_aas, init_met_feature):
             graph.vs[x]["isoform_accession"] == init_met_feature.ref
         ]
     else:
-        # Unknown case
-        raise UnexpectedException(
-            accession=graph.vs[0]["accession"],
-            position=1,
-            message="Unknown Case for the feature INIT_MET. No Aminoacid found to be skipped",
-            additional_info=str(init_met_feature)
-        )
+        if init_met_feature.ref is not None and not has_isoforms:
+            print(
+                "Warning, INIT_MET could not applied on isoform {} (isoform is missing in graph)"
+                .format(init_met_feature.ref)
+            )
+            met_aas = []
+            _aas_set = False
+
+        else:
+            # Unknown case
+            raise UnexpectedException(
+                accession=graph.vs[0]["accession"],
+                position=1,
+                message="Unknown Case for the feature INIT_MET. No Aminoacid found to be skipped",
+                additional_info=str(init_met_feature)
+            )
 
     # Check if we found a M to skip, if not print a Warning, since this may be the case for
     # unreviewed entries...
-    if len(met_aas) == 0:
+    if _aas_set and len(met_aas) == 0:
         print(
-            "WARNING: Protein '{}' does not have Metheonine at the beginning, while "
-            "trying to skip it via the feature 'INIT_MET'. Skipping ..."
+            "WARNING: Protein '{}' does not have Methionine at the beginning, while "
+            "trying to skip it via the feature 'INIT_MET'. Skipping ...".format(graph.vs[0]["accession"])
         )
 
     return met_aas

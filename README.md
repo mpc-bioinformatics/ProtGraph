@@ -16,7 +16,7 @@ AC   QXXXXX
 
 FT   INIT_MET        1
 FT                   /note="Removed"
-FT                   /evidence="EXAMPLE Initiator Metheonine"
+FT                   /evidence="EXAMPLE Initiator Methionine"
 FT   SIGNAL          1..4
 FT                   /evidence="EXAMPLE Signal"
 FT   VARIANT         3

@@ -108,6 +108,13 @@ def parse_args():
         "The default value is 'cores - 1', since one process is reserved for reading entries"
     )
 
+    # Flag to check if generated graphs are correctly generated
+    parser.add_argument(
+        "--verify_graph", "--verify", default=False, action="store_true",
+        help="Set this flag to perform a check whether the graph was generated correctly. Here we explicitly check "
+        "for parallel edges, for DAG and other properties."
+    )
+
     # Arguments for graph generation
     parser.add_argument(
         "--skip_isoforms", "-si", default=False, action="store_true",
@@ -338,6 +345,8 @@ def parse_args():
         exclude_accessions=args.exclude_accessions,
         # num of parallel processes
         num_of_processes=args.num_of_processes,
+        # verify graph flag
+        verify_graph=args.verify_graph,
         # skip FTs?
         skip_isoforms=args.skip_isoforms,
         skip_variants=args.skip_variants,
