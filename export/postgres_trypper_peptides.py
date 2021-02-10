@@ -1,7 +1,8 @@
+import networkx
 import psycopg2
 
 from export.abstract_exporter import AExporter
-import networkx
+
 
 class PostgresTrypperPeptides(AExporter):
     """
@@ -180,10 +181,11 @@ class PostgresTrypperPeptides(AExporter):
         # Iterate via neworkx over all peptides (robust to parallel edges)
         netx = prot_graph.to_networkx()
         for pep in networkx.algorithms.simple_paths.all_simple_paths(
-            netx,__start_node__.index,
-            __stop_node__.index, 
+            netx,
+            __start_node__.index,
+            __stop_node__.index,
             cutoff=self.peptide_length
-            ):
+        ):
             # Get the actual Peptide (aas)
             aas = "".join(prot_graph.vs[pep[1:-1]]["aminoacid"])
 
