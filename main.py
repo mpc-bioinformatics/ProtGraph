@@ -246,10 +246,7 @@ def parse_args():
     )
     parser.add_argument(
         "--export_redisgraph", "-eredisg", default=False, action="store_true",
-        help="Set this flag to export to a redis-server having the module RedisGraph."
-        "NOTE: Currently the YY_BUFFER_SIZE is set to 1MB max large queries, you "
-        "may encounter errors while adding graphs. To resolve this, you may need to build RedisGraph yourself"
-        # TODO check on https://github.com/RedisGraph/RedisGraph/issues/1486
+        help="Set this flag to export to a redis-server having the module RedisGraph loaded."
     )
     parser.add_argument(
         "--redisgraph_host", type=str, default="localhost",
@@ -335,6 +332,23 @@ def parse_args():
         help="Set the minimum peptide length to filter out smaller existing path/peptides. "
         "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
     )
+    parser.add_argument(
+        "--export_gremlin", "-egremlin", default=False, action="store_true",
+        help="Set this flag to export the graphs via gremlin to a gremlin server."
+        "NOTE: The export is very slow, since it executes each node as a single query "
+        "(tested on JanusGraph and Apache Gremlin Server). This exporter is not well implemented and may not work. "
+        "This is due to difficulties implementing such an exporter in a global manner. "
+        "To reduce the number of errors: Try to have a stable connection to the gremlin-server and also allocate "
+        "enough resource for it, so that it can process the queries quick enough."
+    )
+    parser.add_argument(
+        "--gremlin_url", type=str, default="ws://localhost:8182/gremlin",
+        help="Set the url to the gremlin URL (no authentication). Default: 'ws://localhost:8182/gremlin'"
+    )
+    parser.add_argument(
+        "--gremlin_traversal_source", type=str, default="g",
+        help="Set the traversal source for remote. Default 'g'"
+    )
 
     args = parser.parse_args()
 
@@ -396,6 +410,10 @@ def parse_args():
         postgres_trypper_hops=args.postgres_trypper_hops,
         postgres_trypper_miscleavages=args.postgres_trypper_miscleavages,
         postgres_trypper_min_pep_length=args.postgres_trypper_min_pep_length,
+        # Export Gremlin (partially finished)
+        export_gremlin=args.export_gremlin,
+        gremlin_url=args.gremlin_url,
+        gremlin_traversal_source=args.gremlin_traversal_source,
     )
 
     return graph_gen_args

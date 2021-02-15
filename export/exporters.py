@@ -3,6 +3,7 @@ from contextlib import ContextDecorator
 from export.dot import Dot
 from export.gml import GML
 from export.graphml import GraphML
+from export.gremlin import Gremlin
 from export.pickle import Pickle
 from export.postgres import Postgres
 from export.postgres_trypper_peptides import PostgresTrypperPeptides
@@ -31,6 +32,8 @@ class Exporters(ContextDecorator):
             self.export_classes.append(RedisGraph())
         if kwargs["export_postgres"]:
             self.export_classes.append(Postgres())
+        if kwargs["export_gremlin"]:
+            self.export_classes.append(Gremlin())
         if kwargs["export_postgres_trypper"]:
             self.export_classes.append(PostgresTrypperPeptides())
 
