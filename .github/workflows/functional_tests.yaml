@@ -1,0 +1,28 @@
+name: Python Tests on Version 3.8
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install pipenv
+        run: |
+          python -m pip install --upgrade pipenv wheel
+
+      - name: Install dependencies
+        run: |
+          pipenv install
+          pipenv run pip install -e .
+
+      - name: Run Complete tests
+        run: |
+          pipenv run pytest

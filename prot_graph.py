@@ -11,32 +11,30 @@ from graph_generator import generate_graph_consumer
 from read_embl import read_embl
 
 
-def main():
+def main(prot_graph_args):
     """ MAIN DESCRIPTION TODO """
-
-    graph_gen_args = parse_args()
 
     entry_queue = Queue(1000)  # TODO limit? or not limit
     statistics_queue = Queue()
 
     number_of_procs = \
-        cpu_count() - 1 if graph_gen_args["num_of_processes"] is None else graph_gen_args["num_of_processes"]
+        cpu_count() - 1 if prot_graph_args["num_of_processes"] is None else prot_graph_args["num_of_processes"]
 
     # Create Processes
     entry_reader = Process(
         target=read_embl,
         args=(
-            graph_gen_args["files"], graph_gen_args["num_of_entries"],
-            graph_gen_args["exclude_accessions"], entry_queue,
+            prot_graph_args["files"], prot_graph_args["num_of_entries"],
+            prot_graph_args["exclude_accessions"], entry_queue,
         )
     )
     graph_gen = [
-        Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=graph_gen_args)
+        Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=prot_graph_args)
         for _ in range(number_of_procs)
     ]
     main_write_thread = Thread(
         target=write_output_csv_thread,
-        args=(statistics_queue, graph_gen_args["output_csv"], graph_gen_args["num_of_entries"],)
+        args=(statistics_queue, prot_graph_args["output_csv"], prot_graph_args["num_of_entries"],)
     )
 
     # Start Processes/threads in reverse!
@@ -80,7 +78,7 @@ def check_if_file_exists(s: str):
         raise Exception("File '{}' does not exists".format(s))
 
 
-def parse_args():
+def parse_args(args=None):
     # Arguments for Parser
     parser = argparse.ArgumentParser(
         description="Graph-Generator for Proteins/Peptides and Exporter to various formats"
@@ -350,7 +348,7 @@ def parse_args():
         help="Set the traversal source for remote. Default 'g'"
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     # Graph generation arguments in dict:
     graph_gen_args = dict(
@@ -468,4 +466,5 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
 
 
 if __name__ == "__main__":
-    main()
+    ARGS = parse_args()
+    main(ARGS)
