@@ -1,9 +1,8 @@
+import os
 import unittest
 
-import pytest
-
 import prot_graph
-import os
+
 
 class FunctionalTest(unittest.TestCase):
 
@@ -13,7 +12,7 @@ class FunctionalTest(unittest.TestCase):
         main_file_path = os.path.dirname(os.path.abspath(prot_graph.__file__))
         cls.examples_path = os.path.join(main_file_path, "examples")
         cls.example_files = [
-            os.path.join(cls.examples_path, "e_coli.dat"), 
+            os.path.join(cls.examples_path, "e_coli.dat"),
             os.path.join(cls.examples_path, "p53_human.txt")
         ]
 
