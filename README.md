@@ -113,7 +113,7 @@ Exporting to GraphML is recommended since this is the only export method able to
 
 ### Database Exporters
 
-The database exporters are currently under development. But two exports are already available. `ProtGraph` allows to export the generated graphs into PostgreSQL as well as into RedisGraph. For configuration such export, please look into the `--help` output. 
+The database exporters are currently under development. But two exports are already available. `ProtGraph` allows to export the generated graphs into PostgreSQL as well as into RedisGraph. For configuration such export, please look into the `--help` output.
 Furthermore an export (experimental) via gremlin is provided as well as an peptide export into PostGresQL (NOTE: Peptide exports may generate unmanagable amounts of peptides).
 
 Note: In Postgresql a database should be created where the tables `nodes` and `edges` are NOT present.
