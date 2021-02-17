@@ -56,8 +56,6 @@ By combining the flags `-cnph` and `-nm`, the distribution of the peptide length
 
 ## Setting up
 
-To set up `ProtGraph` make sure you have `pipenv` and `pyenv` installed. (via `pacman` `apt` and alike)
-
 First clone this project and enter its directory via:
 
 ```shell
@@ -65,46 +63,66 @@ git clone git@github.com:mpc-bioinformatics/ProtGraph.git
 cd ProtGraph/
 ```
 
+Depending on how you want to use this project follow either the usage instructions for only using Protgraph or the development and tests instructions if you want to use it in a python project or even develop something in ProtGraph itself.
+
+### Installing via pip (for usage)
+
+If you only want to use ProtGraph from the command line, it is sufficient to simply execute: `pip install --user .`
+
+After it has finished the binary `protgraph` should be available in your command line. You can now convert UniProt-entries into graphs!
+
+Troubleshooting: 
+
+ProtGraph has many dependencies which are mostly due to the export functionalities. For the dependency `psycopg2`, it may be neccessary to install PostgreSQL on your operating system, so that the wheel can be built. 
+
+If the command `protgraph` cannot be found, then make sure that you have included the python executables in your `PATH`. (If pip was executed with the flag `--user`, the binaries are usually located in the folder: `~/.local/bin`)
+
+### Installing via pipenv and pyenv (for development and tests)
+
+To set up `ProtGraph` make sure you have `pipenv` and `pyenv` installed. (via `pacman` `apt` and alike)
+
+
 Now the dependencies (and possibly Python) need to be installed. This can be done with:
 > pipenv install
+
+Afterwards execute:
+> pipenv run pip install -e .
 
 After everything is set up activate the environment via:
 > pipenv shell
 
-That is everything, that needed to be done. You can now convert Uniprot-entries into graphs!
+That is everything, that needed to be done. Via the flag `-e` the code from projects directory is used, so you can edit the files directly and test the changes out via your debugger or via the command `protgraph`.
 
 ## Usage
 
-Currently, the entrypoint of this project is `protgraph.py`. However, this may change in future.
-
-To see an overview of possible parameters and options use: `python protgraph.py --help`. The `help`-output contains brief descriptions for each flag.
+To see an overview of possible parameters and options use: `protgraph --help`. The `help`-output contains brief descriptions for each flag.
 
 ### Example calls
 
 Lets use the internal example from `e_coli.dat` located in `examples/e_coli.dat` (Or any other `.txt` or `.dat` file).
 
-The graph generation can be executed via: `python protgraph.py examples/e_coli.txt`. This will generate graphs and the additional statistics file. After it has finished (should only take up to 3 minutes), you can inspect the statistics file.
+The graph generation can be executed via: `protgraph examples/e_coli.dat`. This will generate graphs and the additional statistics file. After it has finished (should only take up to 3 minutes), you can inspect the statistics file.
 
 ---
 
 But why does it not show information when it will end?
 
-Sadly, `Biopython` does not provide information of how many entries are available in a `.txt` or `.dat` file. Therefor this information needs to be provided via another parameter: `python protgraph.py --num_of_entries 9434 e_coli.txt` (you can also use `-n`).
-To retrieve the number of entries beforehand you could e.g. use a simple command as follows `cat /examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files. The number of entries for each file then need to be summed: `python protgraph.py -n 18868 examples/e_coli.txt examples/e_coli.txt`
+Sadly, `Biopython` does not provide information of how many entries are available in a `.txt` or `.dat` file. Therefor this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
+To retrieve the number of entries beforehand you could e.g. use a simple command as follows `cat examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files. The number of entries for each file then need to be summed: `protgraph -n 18868 examples/e_coli.dat examples/e_coli.dat`
 
 ---
 
-If to many (or to few) processes are executed, then it can be adjusted via `--num_of_processes` or `-np`. E.G. `python protgraph.py --num_of_processes 3 --num_of_entries 9434 examples/e_coli.txt` will use 4 (`3` + 1 reading process) processes.
+If to many (or to few) processes are executed, then it can be adjusted via `--num_of_processes` or `-np`. E.G. `protgraph --num_of_processes 3 --num_of_entries 9434 examples/e_coli.dat` will use 4 (`3` + 1 reading process) processes.
 
 ---
 
-To fully annotate the graphs with weights and to retrieve all statistics, use the following: `python protgraph.py -amwe -aawe -cnp -cnpm -cnph -n 9434 examples/e_coli.dat`
+To fully annotate the graphs with weights and to retrieve all statistics, use the following: `protgraph -amwe -aawe -cnp -cnpm -cnph -n 9434 examples/e_coli.dat`
 
 ## Exporting graphs
 
 But where are the graphs after executing this tool?
 
-The default behaviour of `ProtGraph` is to exclude the generated graphs, since those can explode in size and disk space may be limited. Currently a few export functionalities are available and it is planned to extend this functionality.
+The default behaviour of `protgraph` is to exclude the generated graphs, since those can explode in size and disk space may be limited. Currently a few export functionalities are available and it is planned to extend this functionality.
 
 ### File Exports
 
@@ -113,7 +131,7 @@ Exporting to GraphML is recommended since this is the only export method able to
 
 ### Database Exporters
 
-The database exporters are currently under development. But two exports are already available. `ProtGraph` allows to export the generated graphs into PostgreSQL as well as into RedisGraph. For configuration such export, please look into the `--help` output.
+The database exporters are currently under development. But two exports are already available. `protgraph` allows to export the generated graphs into PostgreSQL as well as into RedisGraph. For configuration such export, please look into the `--help` output.
 Furthermore an export (experimental) via gremlin is provided as well as an peptide export into PostGresQL (NOTE: Peptide exports may generate unmanagable amounts of peptides).
 
 Note: In Postgresql a database should be created where the tables `nodes` and `edges` are NOT present.
