@@ -1,5 +1,6 @@
 import networkx
 import psycopg2
+
 from protgraph.export.abstract_exporter import AExporter
 
 

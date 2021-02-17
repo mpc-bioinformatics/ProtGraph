@@ -5,9 +5,10 @@ import time
 from multiprocessing import Process, Queue, cpu_count
 from threading import Thread
 
+from tqdm import tqdm
+
 from protgraph.graph_generator import generate_graph_consumer
 from protgraph.read_embl import read_embl
-from tqdm import tqdm
 
 
 def main():

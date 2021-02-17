@@ -1,10 +1,12 @@
 import igraph
+
 from protgraph.aa_masses_annotation import annotate_weights
 from protgraph.digestion import digest
 from protgraph.export.exporters import Exporters
 from protgraph.ft_execution.init_met import execute_init_met
 from protgraph.ft_execution.signal import execute_signal
-from protgraph.ft_execution.var_seq import _get_isoforms_of_entry, execute_var_seq
+from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
+                                            execute_var_seq)
 from protgraph.ft_execution.variant import execute_variant
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
