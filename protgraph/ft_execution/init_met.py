@@ -1,4 +1,4 @@
-from unexpected_exception import UnexpectedException
+from protgraph.unexpected_exception import UnexpectedException
 
 
 def execute_init_met(graph, init_met_feature):

@@ -1,6 +1,6 @@
 import os
 
-from export.abstract_exporter import AExporter
+from protgraph.export.abstract_exporter import AExporter
 
 
 class Dot(AExporter):

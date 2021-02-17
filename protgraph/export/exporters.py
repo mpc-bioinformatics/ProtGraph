@@ -1,13 +1,13 @@
 from contextlib import ContextDecorator
 
-from export.dot import Dot
-from export.gml import GML
-from export.graphml import GraphML
-from export.gremlin import Gremlin
-from export.pickle import Pickle
-from export.postgres import Postgres
-from export.postgres_trypper_peptides import PostgresTrypperPeptides
-from export.redisgraph import RedisGraph
+from protgraph.export.dot import Dot
+from protgraph.export.gml import GML
+from protgraph.export.graphml import GraphML
+from protgraph.export.gremlin import Gremlin
+from protgraph.export.pickle import Pickle
+from protgraph.export.postgres import Postgres
+from protgraph.export.postgres_trypper_peptides import PostgresTrypperPeptides
+from protgraph.export.redisgraph import RedisGraph
 
 
 class Exporters(ContextDecorator):

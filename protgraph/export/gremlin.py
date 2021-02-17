@@ -1,7 +1,7 @@
 import random
 from time import sleep
 
-from export.abstract_exporter import AExporter
+from protgraph.export.abstract_exporter import AExporter
 from gremlin_python.driver.driver_remote_connection import \
     DriverRemoteConnection
 from gremlin_python.process.anonymous_traversal import traversal

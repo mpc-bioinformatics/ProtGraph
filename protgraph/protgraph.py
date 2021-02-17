@@ -5,8 +5,8 @@ import time
 from multiprocessing import Process, Queue, cpu_count
 from threading import Thread
 
-from graph_generator import generate_graph_consumer
-from read_embl import read_embl
+from protgraph.graph_generator import generate_graph_consumer
+from protgraph.read_embl import read_embl
 from tqdm import tqdm
 
 
