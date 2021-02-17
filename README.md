@@ -121,7 +121,7 @@ Note: In Postgresql a database should be created where the tables `nodes` and `e
 
 ## Testing
 
-Make sure you are at the root folder of this project. Then simply execute `pytest . ` to run the tests for ProtGraph.
+Make sure you are at the root folder of this project. Then simply execute `pytest .` to run the tests for ProtGraph.
 
 
 ## Missing Functionalities

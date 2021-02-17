@@ -42,7 +42,5 @@ setup(
     version='0.1-alpha',
     entry_points=dict(console_scripts=['protgraph=protgraph:main']),
     packages=find_packages(),
-    install_requiers=[
-
-    ]
+    install_requiers=packages
 )

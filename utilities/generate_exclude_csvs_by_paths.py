@@ -77,7 +77,6 @@ if __name__ == "__main__":
 
         # Skip Header
         k = next(csv_in)
-        # TODO Error Check if length is correct (depending on miss and hops)
 
         paths_sum_lower = 0
         paths_sum_upper = 0
