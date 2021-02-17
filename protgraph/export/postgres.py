@@ -3,7 +3,6 @@ import json
 
 import psycopg2
 from Bio.SwissProt import FeatureLocation, FeatureTable
-
 from export.abstract_exporter import AExporter
 
 

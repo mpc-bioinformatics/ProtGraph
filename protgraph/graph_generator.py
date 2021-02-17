@@ -1,5 +1,4 @@
 import igraph
-
 from aa_masses_annotation import annotate_weights
 from digestion import digest
 from export.exporters import Exporters

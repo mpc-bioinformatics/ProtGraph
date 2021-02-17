@@ -5,10 +5,9 @@ import time
 from multiprocessing import Process, Queue, cpu_count
 from threading import Thread
 
-from tqdm import tqdm
-
 from graph_generator import generate_graph_consumer
 from read_embl import read_embl
+from tqdm import tqdm
 
 
 def main():

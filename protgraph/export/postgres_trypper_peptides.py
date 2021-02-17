@@ -1,6 +1,5 @@
 import networkx
 import psycopg2
-
 from export.abstract_exporter import AExporter
 
 

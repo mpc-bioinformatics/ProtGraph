@@ -43,6 +43,5 @@ setup(
     python_requires=">=3.6",
     entry_points=dict(console_scripts=['protgraph=protgraph:main']),
     packages=find_packages(),
-    package_dir={"": "protgraph"},
     install_requires=packages
 )
