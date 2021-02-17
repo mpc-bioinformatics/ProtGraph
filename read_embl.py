@@ -22,7 +22,7 @@ def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv: str, queue)
         with open(exclude_csv) as in_f:
             # Read the contents of the csv
             csv_reader = csv.reader(in_f)
-            exclude_list = [x[0] for x in list(csv_reader)]
+            exclude_set = set(x[0] for x in list(csv_reader))
 
             for input_f in path_to_embls:
                 # For each entry: try to read it and
@@ -30,7 +30,7 @@ def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv: str, queue)
                 try:
                     entries = SwissProt.parse(input_f)
                     for entry in entries:
-                        if entry.accessions[0] in exclude_list:
+                        if entry.accessions[0] in exclude_set:
                             # This effectively skips an entry at the cost to check whether to skip in EACH entry!
                             continue
                         queue.put(entry)

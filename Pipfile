@@ -16,4 +16,3 @@ psycopg2 = "*"
 networkx = "*"
 gremlinpython = "*"
 pytest = "*"
-

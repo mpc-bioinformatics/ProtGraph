@@ -75,30 +75,30 @@ That is everything, that needed to be done. You can now convert Uniprot-entries 
 
 ## Usage
 
-Currently, the entrypoint of this project is `main.py`. However, this may change in future.
+Currently, the entrypoint of this project is `protgraph.py`. However, this may change in future.
 
-To see an overview of possible parameters and options use: `python main.py --help`. The `help`-output contains brief descriptions for each flag.
+To see an overview of possible parameters and options use: `python protgraph.py --help`. The `help`-output contains brief descriptions for each flag.
 
 ### Example calls
 
 Lets use the internal example from `e_coli.dat` located in `examples/e_coli.dat` (Or any other `.txt` or `.dat` file).
 
-The graph generation can be executed via: `python main.py examples/e_coli.txt`. This will generate graphs and the additional statistics file. After it has finished (should only take up to 3 minutes), you can inspect the statistics file.
+The graph generation can be executed via: `python protgraph.py examples/e_coli.txt`. This will generate graphs and the additional statistics file. After it has finished (should only take up to 3 minutes), you can inspect the statistics file.
 
 ---
 
 But why does it not show information when it will end?
 
-Sadly, `Biopython` does not provide information of how many entries are available in a `.txt` or `.dat` file. Therefor this information needs to be provided via another parameter: `python main.py --num_of_entries 9434 e_coli.txt` (you can also use `-n`).
-To retrieve the number of entries beforehand you could e.g. use a simple command as follows `cat /examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files. The number of entries for each file then need to be summed: `python main.py -n 18868 examples/e_coli.txt examples/e_coli.txt`
+Sadly, `Biopython` does not provide information of how many entries are available in a `.txt` or `.dat` file. Therefor this information needs to be provided via another parameter: `python protgraph.py --num_of_entries 9434 e_coli.txt` (you can also use `-n`).
+To retrieve the number of entries beforehand you could e.g. use a simple command as follows `cat /examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files. The number of entries for each file then need to be summed: `python protgraph.py -n 18868 examples/e_coli.txt examples/e_coli.txt`
 
 ---
 
-If to many (or to few) processes are executed, then it can be adjusted via `--num_of_processes` or `-np`. E.G. `python main.py --num_of_processes 3 --num_of_entries 9434 examples/e_coli.txt` will use 4 (`3` + 1 reading process) processes.
+If to many (or to few) processes are executed, then it can be adjusted via `--num_of_processes` or `-np`. E.G. `python protgraph.py --num_of_processes 3 --num_of_entries 9434 examples/e_coli.txt` will use 4 (`3` + 1 reading process) processes.
 
 ---
 
-To fully annotate the graphs with weights and to retrieve all statistics, use the following: `python main.py -amwe -aawe -cnp -cnpm -cnph -n 9434 examples/e_coli.dat`
+To fully annotate the graphs with weights and to retrieve all statistics, use the following: `python protgraph.py -amwe -aawe -cnp -cnpm -cnph -n 9434 examples/e_coli.dat`
 
 ## Exporting graphs
 
@@ -117,6 +117,12 @@ The database exporters are currently under development. But two exports are alre
 Furthermore an export (experimental) via gremlin is provided as well as an peptide export into PostGresQL (NOTE: Peptide exports may generate unmanagable amounts of peptides).
 
 Note: In Postgresql a database should be created where the tables `nodes` and `edges` are NOT present.
+
+
+## Testing
+
+Make sure you are at the root folder of this project. Then simply execute `pytest . ` to run the tests for ProtGraph.
+
 
 ## Missing Functionalities
 

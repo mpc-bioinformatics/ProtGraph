@@ -11,7 +11,12 @@ from graph_generator import generate_graph_consumer
 from read_embl import read_embl
 
 
-def main(prot_graph_args):
+def main():
+    ARGS = parse_args()
+    prot_graph(ARGS)
+
+
+def prot_graph(prot_graph_args):
     """ MAIN DESCRIPTION TODO """
 
     entry_queue = Queue(1000)  # TODO limit? or not limit
@@ -466,5 +471,4 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
 
 
 if __name__ == "__main__":
-    ARGS = parse_args()
-    main(ARGS)
+    main()
