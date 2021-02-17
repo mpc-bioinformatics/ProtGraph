@@ -10,10 +10,10 @@ class FunctionalTest(unittest.TestCase):
     def setUpClass(cls):
         """ Set base Example Folder """
         main_file_path = os.path.dirname(os.path.abspath(protgraph.__file__))
-        cls.examples_path = os.path.join(main_file_path, "examples")
+        cls.examples_path = os.path.join(main_file_path, "..", "examples")
         cls.example_files = [
-            os.path.join(cls.examples_path, "e_coli.dat"),
-            os.path.join(cls.examples_path, "p53_human.txt")
+            os.path.abspath(os.path.join(cls.examples_path, "e_coli.dat")),
+            os.path.abspath(os.path.join(cls.examples_path, "p53_human.txt"))
         ]
 
     def test_minimal(self):

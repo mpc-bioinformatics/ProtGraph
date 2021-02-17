@@ -212,11 +212,11 @@ def parse_args(args=None):
     )
 
     parser.add_argument(
-        "--output_csv", "-o", default=os.path.join(os.path.dirname(__file__), "protein_graph_statistics.csv"),
+        "--output_csv", "-o", default=os.path.join(os.getcwd(), "protein_graph_statistics.csv"),
         type=str,
         help="Set the output file, which will contain information about the ProteinGaph (in csv) NOTE: "
         "It will write to 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is "
-        "set to write it in this projects folder"
+        "set to the current working directory"
     )
 
     # Arguments for exporting
