@@ -221,9 +221,9 @@ def parse_args(args=None):
 
     # Arguments for exporting
     parser.add_argument(
-        "--export_output_folder", "-eo", default=os.path.join(os.path.dirname(__file__), "exported_graphs"), type=str,
+        "--export_output_folder", "-eo", default=os.path.join(os.getcwd(), "exported_graphs"), type=str,
         help="Set the output folder to specify the dirctory of exported graphs (dot, graphml, gml) NOTE: It will "
-        "overwrite exisiting files. Default is set to export in this projects folder"
+        "overwrite exisiting files. Default is set the current working directory"
     )
     parser.add_argument(
         "--export_in_directories", "-edirs", default=False, action="store_true",

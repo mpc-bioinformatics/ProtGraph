@@ -38,10 +38,11 @@ for i in range(packages_sec+1, packages_end):
 
 setup(
     name='protgraph',
-    python_requires=">3.5",
-    version='0.1-alpha',
+    version='0.0.1a',
+    description="ProtGraph, a graph generator for proteins.",
+    python_requires=">=3.6",
     entry_points=dict(console_scripts=['protgraph=protgraph:main']),
-    packages=find_packages(where="protgraph"),
-    package_dir = {"":"protgraph"},
+    packages=find_packages(),
+    package_dir={"": "protgraph"},
     install_requires=packages
 )
