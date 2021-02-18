@@ -80,15 +80,19 @@ if __name__ == "__main__":
 
         paths_sum_lower = 0
         paths_sum_upper = 0
+        prot_count_lower = 0
+        prot_count_upper = 0
         for row in tqdm.tqdm(csv_in, unit="rows", total=num_entries):
             e = int(row[paths_entry])
             if e <= amount:
                 l_csv_in.writerow([row[accession_entry]])
                 paths_sum_lower += e
+                prot_count_lower += 1
                 continue
 
             u_csv_in.writerow([row[accession_entry]])
             paths_sum_upper += e
+            prot_count_upper += 1
 
-        print("Sum of paths which are lower  then {}:\n\t{}".format(amount, paths_sum_lower))
-        print("Sum of paths which are higher then {}:\n\t{}".format(amount, paths_sum_upper))
+        print("Sum of paths which are lower  then {} (in total {} proteins):\n\t{}".format(amount, prot_count_lower, paths_sum_lower))
+        print("Sum of paths which are higher then {} (in total {} proteins):\n\t{}".format(amount, prot_count_upper, paths_sum_upper))

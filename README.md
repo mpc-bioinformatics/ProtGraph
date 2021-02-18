@@ -71,9 +71,9 @@ If you only want to use ProtGraph from the command line, it is sufficient to sim
 
 After it has finished the binary `protgraph` should be available in your command line. You can now convert UniProt-entries into graphs!
 
-Troubleshooting: 
+Troubleshooting:
 
-ProtGraph has many dependencies which are mostly due to the export functionalities. For the dependency `psycopg2`, it may be neccessary to install PostgreSQL on your operating system, so that the wheel can be built. 
+ProtGraph has many dependencies which are mostly due to the export functionalities. For the dependency `psycopg2`, it may be neccessary to install PostgreSQL on your operating system, so that the wheel can be built.
 
 If the command `protgraph` cannot be found, then make sure that you have included the python executables in your `PATH`. (If pip was executed with the flag `--user`, the binaries are usually located in the folder: `~/.local/bin`)
 

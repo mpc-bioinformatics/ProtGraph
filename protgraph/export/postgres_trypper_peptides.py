@@ -73,10 +73,8 @@ class PostgresTrypperPeptides(AExporter):
             cur = self.conn.cursor()
             cur.execute("""
             CREATE TABLE  if not exists peptides (
-                id BIGSERIAL,
-                accession_id INT references accessions(id),
+                id BIGSERIAL UNIQUE,
                 weight {0} NOT NULL,
-                path INT[] NOT NULL,
                 a_count SMALLINT NOT NULL,
                 b_count SMALLINT NOT NULL,
                 c_count SMALLINT NOT NULL,
@@ -100,12 +98,18 @@ class PostgresTrypperPeptides(AExporter):
                 u_count SMALLINT NOT NULL,
                 v_count SMALLINT NOT NULL,
                 w_count SMALLINT NOT NULL,
-                -- x_count SMALLINT NOT NULL,  -- SKipping X since TrypperDB does not need it
+                x_count SMALLINT NOT NULL,  -- NOT SKIPPED
                 y_count SMALLINT NOT NULL,
                 z_count SMALLINT NOT NULL,
                 n_terminus character(1) NOT NULL,
                 c_terminus character(1) NOT NULL,
-                PRIMARY KEY (id, weight)
+                PRIMARY KEY (weight, a_count, b_count, c_count, 
+                    d_count, e_count, f_count, g_count, h_count, 
+                    i_count, j_count, k_count, l_count, m_count, 
+                    n_count, o_count, p_count, q_count, r_count, 
+                    s_count, t_count, u_count, v_count, w_count, 
+                    x_count, y_count, z_count, n_terminus, c_terminus
+                )
             );""".format("BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE PRECISION"))
         except Exception as e:
             print("Error createing peptides table. Continuing... (Reason: {})".format(str(e)))
@@ -113,37 +117,34 @@ class PostgresTrypperPeptides(AExporter):
             self.conn.commit()
             cur.close()
             self.peptides_keys = [
-                "accession_id",
                 "weight",
+                "a_count", "b_count", "c_count", "d_count", "e_count", "f_count", "g_count", "h_count", 
+                "i_count", "j_count", "k_count", "l_count", "m_count", "n_count", "o_count", "p_count", 
+                "q_count", "r_count", "s_count", "t_count", "u_count", "v_count", "w_count", "x_count", 
+                "y_count", "z_count", "n_terminus", "c_terminus"
+            ]
+        try:
+            # Create the peptides meta information (can also be extremely large)
+            cur = self.conn.cursor()
+            cur.execute("""
+            CREATE TABLE  if not exists peptides_meta (
+                id BIGSERIAL,
+                peptides_id BIGINT references peptides(id),
+                accession_id INT references accessions(id),
+                path INT[] NOT NULL,
+                miscleavages INT NOT NULL,
+                PRIMARY KEY (id)
+            );""")
+        except Exception as e:
+            print("Error createing peptides_meta table. Continuing... (Reason: {})".format(str(e)))
+        finally:
+            self.conn.commit()
+            cur.close()
+            self.peptides_meta_keys = [
+                "peptides_id",
+                "accession_id",
                 "path",
-                "a_count",
-                "b_count",
-                "c_count",
-                "d_count",
-                "e_count",
-                "f_count",
-                "g_count",
-                "h_count",
-                "i_count",
-                "j_count",
-                "k_count",
-                "l_count",
-                "m_count",
-                "n_count",
-                "o_count",
-                "p_count",
-                "q_count",
-                "r_count",
-                "s_count",
-                "t_count",
-                "u_count",
-                "v_count",
-                "w_count",
-                # "x_count",
-                "y_count",
-                "z_count",
-                "n_terminus",
-                "c_terminus"
+                "miscleavages"
             ]
 
     def export(self, prot_graph):
@@ -172,10 +173,19 @@ class PostgresTrypperPeptides(AExporter):
         [__stop_node__] = prot_graph.vs.select(aminoacid="__end__")
 
         # Set insert statement for peptides
-        statement = "INSERT INTO peptides (" \
+        statement_peptides = " LOCK TABLE peptides IN SHARE ROW EXCLUSIVE MODE; INSERT INTO peptides (" \
             + ",".join(self.peptides_keys) \
             + ") VALUES (" \
             + ",".join(["%s"]*len(self.peptides_keys)) \
+            + ") ON CONFLICT (" \
+            + ",".join(self.peptides_keys) \
+            + ") do update set {0} = EXCLUDED.{0} ".format(self.peptides_keys[0]) \
+            + "RETURNING id;" 
+        
+        statement_meta_peptides = "INSERT INTO peptides_meta (" \
+            + ",".join(self.peptides_meta_keys) \
+            + ") VALUES (" \
+            + ",".join(["%s"]*len(self.peptides_meta_keys)) \
             + ")"
 
         # Iterate via neworkx over all peptides (robust to parallel edges)
@@ -190,12 +200,12 @@ class PostgresTrypperPeptides(AExporter):
             aas = "".join(prot_graph.vs[pep[1:-1]]["aminoacid"])
 
             # TrypperDB specific: Filter out peptides which contain 'X'
-            if "X" in aas:
-                continue  # TODO should we make this as a option?
+            # if "X" in aas:
+            #     continue  # TODO should we make this as a option?
 
             # Filter by Peptide Length
-            if len(aas) < self.peptide_min_length:
-                continue  # Skip this entry
+            # if len(aas) < self.peptide_min_length:
+            #     continue  # Skip this entry
 
             # Get the weight
             edge_ids = prot_graph.get_eids(path=pep)
@@ -204,29 +214,43 @@ class PostgresTrypperPeptides(AExporter):
             else:
                 weight = -1
 
+            if "cleaved" in prot_graph.es[edge_ids[0]].attributes():
+                cleaved = sum(filter(None, prot_graph.es[edge_ids]["cleaved"]))
+            else:
+                cleaved = -1
+
             # Filter by Miscleavages
-            if self.miscleavages != -1 and "cleaved" in prot_graph.es[edge_ids[0]].attributes():
-                miscleaves = sum(filter(None, prot_graph.es[edge_ids]["cleaved"]))
-                if miscleaves > self.miscleavages:
-                    continue  # Skip this entry
+            # if self.miscleavages != -1:
+            #     if cleaved > self.miscleavages:
+            #         continue  # Skip this entry
+
+            
+            peptides_tup = (
+                weight,
+                # Counts of Aminoacids
+                aas.count("A"), aas.count("B"), aas.count("C"), aas.count("D"), aas.count("E"), aas.count("F"),
+                aas.count("G"), aas.count("H"), aas.count("I"), aas.count("J"), aas.count("K"), aas.count("L"),
+                aas.count("M"), aas.count("N"), aas.count("O"), aas.count("P"), aas.count("Q"), aas.count("R"),
+                aas.count("S"), aas.count("T"), aas.count("U"), aas.count("V"), aas.count("W"), aas.count("X"),
+                aas.count("Y"), aas.count("Z"),
+                # N and C Terminus
+                aas[0], aas[-1]
+            )
+
 
             # Insert new entry into database:
-            self.cursor.execute(
-                statement,
-                (
-                    accession_id,
-                    weight,
-                    pep,
-                    # Counts of Aminoacids
-                    aas.count("A"), aas.count("B"), aas.count("C"), aas.count("D"), aas.count("E"), aas.count("F"),
-                    aas.count("G"), aas.count("H"), aas.count("I"), aas.count("J"), aas.count("K"), aas.count("L"),
-                    aas.count("M"), aas.count("N"), aas.count("O"), aas.count("P"), aas.count("Q"), aas.count("R"),
-                    aas.count("S"), aas.count("T"), aas.count("U"), aas.count("V"), aas.count("W"),  # aas.count("X"),
-                    aas.count("Y"), aas.count("Z"),
-                    # N and C Terminus
-                    aas[0], aas[-1]
-                )  # TODO we could easily add other information (like "#of Miscleavages" or similar!)
+            self.cursor.execute(statement_peptides, peptides_tup)
+            peptides_id_fetched = self.cursor.fetchone()
+            peptides_id = peptides_id_fetched[0]
+
+            # Inster meta data
+            peptides_meta_tup = (
+                peptides_id,
+                accession_id,
+                pep,
+                cleaved
             )
+            self.cursor.execute(statement_meta_peptides, peptides_meta_tup)
 
         # Commit conenction
         self.conn.commit()
