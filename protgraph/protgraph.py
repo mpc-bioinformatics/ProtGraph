@@ -317,11 +317,10 @@ def parse_args(args=None):
         help="Set the database which will be used for the postgresql server. Default: proteins"
     )
     parser.add_argument(
-        "--postgres_trypper_hops", type=int, default=9,
+        "--postgres_trypper_hops", type=int, default=None,
         help="Set the number of hops (max length of path) which should be used to get paths "
         "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Defaul is set to '9', since this value generates "
-        "reasonable and not too exploding numbers."
+        "the protein which currently is processed. Defaul is set to 'None', so all lengths are considered."
     )
     parser.add_argument(
         "--postgres_trypper_miscleavages", type=int, default=-1,
@@ -329,6 +328,23 @@ def parse_args(args=None):
         "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
         "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
         "number of miscleavages, if needed."
+    )
+    parser.add_argument(
+        "--postgres_skip_x",  default=False, action="store_true",
+        help="Set this flag to skip to skip all entries, which contain an X"
+    )
+    parser.add_argument(
+        "--postgres_no_duplicates",  default=False, action="store_true",
+        help="Set this flag to not insert duplicates into the database. "
+        "NOTE: Setting this value decreases the performance drastically"
+    )
+    parser.add_argument(
+        "--postgres_use_igraph",  default=False, action="store_true",
+        help="Set this flag to use igraph instead of netx. "
+        "NOTE: If setting this flag, the peptide generation will be considerably faster "
+        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
+        "over each single edge, so some (repeating results) may never be discovered when using "
+        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
     )
     parser.add_argument(
         "--postgres_trypper_min_pep_length", type=int, default=0,
@@ -412,6 +428,9 @@ def parse_args(args=None):
         postgres_trypper_database=args.postgres_trypper_database,
         postgres_trypper_hops=args.postgres_trypper_hops,
         postgres_trypper_miscleavages=args.postgres_trypper_miscleavages,
+        postgres_skip_x=args.postgres_skip_x,
+        postgres_no_duplicates=args.postgres_no_duplicates,
+        postgres_use_igraph=args.postgres_use_igraph,
         postgres_trypper_min_pep_length=args.postgres_trypper_min_pep_length,
         # Export Gremlin (partially finished)
         export_gremlin=args.export_gremlin,

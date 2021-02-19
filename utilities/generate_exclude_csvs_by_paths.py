@@ -94,5 +94,7 @@ if __name__ == "__main__":
             paths_sum_upper += e
             prot_count_upper += 1
 
-        print("Sum of paths which are lower  then {} (in total {} proteins):\n\t{}".format(amount, prot_count_lower, paths_sum_lower))
-        print("Sum of paths which are higher then {} (in total {} proteins):\n\t{}".format(amount, prot_count_upper, paths_sum_upper))
+        print("Sum of paths which are lower  then {} (in total {} proteins):\n\t{}"
+              .format(amount, prot_count_lower, paths_sum_lower))
+        print("Sum of paths which are higher then {} (in total {} proteins):\n\t{}"
+              .format(amount, prot_count_upper, paths_sum_upper))
