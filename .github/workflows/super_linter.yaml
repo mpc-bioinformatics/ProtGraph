@@ -1,7 +1,5 @@
 name: Super-Linter
-
-# Run on every push
-on: push
+on: [push, pull_request]
 
 jobs:
   super-lint:
