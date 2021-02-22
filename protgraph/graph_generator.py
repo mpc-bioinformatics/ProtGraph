@@ -1,14 +1,16 @@
 import igraph
 
-from aa_masses_annotation import annotate_weights
-from digestion import digest
-from export.exporters import Exporters
-from ft_execution.init_met import execute_init_met
-from ft_execution.signal import execute_signal
-from ft_execution.var_seq import _get_isoforms_of_entry, execute_var_seq
-from ft_execution.variant import execute_variant
-from graph_statistics import get_statistics
-from merge_aminoacids import merge_aminoacids
+from protgraph.aa_masses_annotation import annotate_weights
+from protgraph.digestion import digest
+from protgraph.export.exporters import Exporters
+from protgraph.ft_execution.init_met import execute_init_met
+from protgraph.ft_execution.signal import execute_signal
+from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
+                                            execute_var_seq)
+from protgraph.ft_execution.variant import execute_variant
+from protgraph.graph_statistics import get_statistics
+from protgraph.merge_aminoacids import merge_aminoacids
+from protgraph.verify_graphs import verify_graph
 
 
 def _generate_canonical_graph(sequence: str, acc: str):
@@ -122,6 +124,10 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
 
         # Calculate statistics on the graph:
         num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops = get_statistics(graph, **kwargs)
+
+        # Verify graphs if wanted:
+        if kwargs["verify_graph"]:
+            verify_graph(graph)
 
         # Persist or export graphs with speicified exporters
         graph_exporters.export_graph(graph)

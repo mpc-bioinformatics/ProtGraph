@@ -2,7 +2,7 @@ import redis
 from Bio.SwissProt import FeatureLocation, FeatureTable
 from redisgraph import Edge, Graph, Node
 
-from export.abstract_exporter import AExporter
+from protgraph.export.abstract_exporter import AExporter
 
 
 class RedisGraph(AExporter):

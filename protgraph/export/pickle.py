@@ -1,10 +1,10 @@
 import os
 
-from export.abstract_exporter import AExporter
+from protgraph.export.abstract_exporter import AExporter
 
 
-class GML(AExporter):
-    """ A simple GML (Graph Markup Language) exporter """
+class Pickle(AExporter):
+    """ A simple Pickle Exporter using igraph """
 
     def start_up(self, **kwargs):
         # Here we simply create the folder if it does not exist
@@ -16,15 +16,15 @@ class GML(AExporter):
     def export(self, prot_graph):
         if self.flat:
             accession = prot_graph.vs["accession"][0]
-            prot_graph.write_gml(os.path.join(self.out_folder, accession + ".gml"))
+            prot_graph.write_pickle(os.path.join(self.out_folder, accession + ".pickle"))
         else:
             accession = prot_graph.vs["accession"][0]
             out_dir = os.path.join(self.out_folder, *[x for x in accession[:-1]])
             # Create outfolders if needed
             os.makedirs(out_dir, exist_ok=True)
 
-            prot_graph.write_gml(os.path.join(out_dir, accession[-1:] + ".gml"))
+            prot_graph.write_pickle(os.path.join(out_dir, accession[-1:] + ".pickle"))
 
     def tear_down(self):
-        # We do not need to tear down a graph export to gml files
+        # We do not need to tear down a graph export to dot files
         pass

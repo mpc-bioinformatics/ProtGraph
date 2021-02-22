@@ -7,36 +7,39 @@ from threading import Thread
 
 from tqdm import tqdm
 
-from graph_generator import generate_graph_consumer
-from read_embl import read_embl
+from protgraph.graph_generator import generate_graph_consumer
+from protgraph.read_embl import read_embl
 
 
 def main():
-    """ MAIN DESCRIPTION TODO """
+    ARGS = parse_args()
+    prot_graph(ARGS)
 
-    graph_gen_args = parse_args()
+
+def prot_graph(prot_graph_args):
+    """ MAIN DESCRIPTION TODO """
 
     entry_queue = Queue(1000)  # TODO limit? or not limit
     statistics_queue = Queue()
 
     number_of_procs = \
-        cpu_count() - 1 if graph_gen_args["num_of_processes"] is None else graph_gen_args["num_of_processes"]
+        cpu_count() - 1 if prot_graph_args["num_of_processes"] is None else prot_graph_args["num_of_processes"]
 
     # Create Processes
     entry_reader = Process(
         target=read_embl,
         args=(
-            graph_gen_args["files"], graph_gen_args["num_of_entries"],
-            graph_gen_args["exclude_accessions"], entry_queue,
+            prot_graph_args["files"], prot_graph_args["num_of_entries"],
+            prot_graph_args["exclude_accessions"], entry_queue,
         )
     )
     graph_gen = [
-        Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=graph_gen_args)
+        Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=prot_graph_args)
         for _ in range(number_of_procs)
     ]
     main_write_thread = Thread(
         target=write_output_csv_thread,
-        args=(statistics_queue, graph_gen_args["output_csv"], graph_gen_args["num_of_entries"],)
+        args=(statistics_queue, prot_graph_args["output_csv"], prot_graph_args["num_of_entries"],)
     )
 
     # Start Processes/threads in reverse!
@@ -80,7 +83,7 @@ def check_if_file_exists(s: str):
         raise Exception("File '{}' does not exists".format(s))
 
 
-def parse_args():
+def parse_args(args=None):
     # Arguments for Parser
     parser = argparse.ArgumentParser(
         description="Graph-Generator for Proteins/Peptides and Exporter to various formats"
@@ -106,6 +109,13 @@ def parse_args():
         "--num_of_processes", "-np", type=int, default=None,
         help="The number of processes used to process entries. Each process can process an entry individually. "
         "The default value is 'cores - 1', since one process is reserved for reading entries"
+    )
+
+    # Flag to check if generated graphs are correctly generated
+    parser.add_argument(
+        "--verify_graph", "--verify", default=False, action="store_true",
+        help="Set this flag to perform a check whether the graph was generated correctly. Here we explicitly check "
+        "for parallel edges, for DAG and other properties."
     )
 
     # Arguments for graph generation
@@ -202,18 +212,18 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--output_csv", "-o", default=os.path.join(os.path.dirname(__file__), "protein_graph_statistics.csv"),
+        "--output_csv", "-o", default=os.path.join(os.getcwd(), "protein_graph_statistics.csv"),
         type=str,
         help="Set the output file, which will contain information about the ProteinGaph (in csv) NOTE: "
         "It will write to 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is "
-        "set to write it in this projects folder"
+        "set to the current working directory"
     )
 
     # Arguments for exporting
     parser.add_argument(
-        "--export_output_folder", "-eo", default=os.path.join(os.path.dirname(__file__), "exported_graphs"), type=str,
+        "--export_output_folder", "-eo", default=os.path.join(os.getcwd(), "exported_graphs"), type=str,
         help="Set the output folder to specify the dirctory of exported graphs (dot, graphml, gml) NOTE: It will "
-        "overwrite exisiting files. Default is set to export in this projects folder"
+        "overwrite exisiting files. Default is set the current working directory"
     )
     parser.add_argument(
         "--export_in_directories", "-edirs", default=False, action="store_true",
@@ -239,10 +249,7 @@ def parse_args():
     )
     parser.add_argument(
         "--export_redisgraph", "-eredisg", default=False, action="store_true",
-        help="Set this flag to export to a redis-server having the module RedisGraph."
-        "NOTE: Currently the YY_BUFFER_SIZE is set to 1MB max large queries, you "
-        "may encounter errors while adding graphs. To resolve this, you may need to build RedisGraph yourself"
-        # TODO check on https://github.com/RedisGraph/RedisGraph/issues/1486
+        help="Set this flag to export to a redis-server having the module RedisGraph loaded."
     )
     parser.add_argument(
         "--redisgraph_host", type=str, default="localhost",
@@ -310,11 +317,10 @@ def parse_args():
         help="Set the database which will be used for the postgresql server. Default: proteins"
     )
     parser.add_argument(
-        "--postgres_trypper_hops", type=int, default=9,
+        "--postgres_trypper_hops", type=int, default=None,
         help="Set the number of hops (max length of path) which should be used to get paths "
         "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Defaul is set to '9', since this value generates "
-        "reasonable and not too exploding numbers."
+        "the protein which currently is processed. Defaul is set to 'None', so all lengths are considered."
     )
     parser.add_argument(
         "--postgres_trypper_miscleavages", type=int, default=-1,
@@ -324,12 +330,46 @@ def parse_args():
         "number of miscleavages, if needed."
     )
     parser.add_argument(
+        "--postgres_skip_x",  default=False, action="store_true",
+        help="Set this flag to skip to skip all entries, which contain an X"
+    )
+    parser.add_argument(
+        "--postgres_no_duplicates",  default=False, action="store_true",
+        help="Set this flag to not insert duplicates into the database. "
+        "NOTE: Setting this value decreases the performance drastically"
+    )
+    parser.add_argument(
+        "--postgres_use_igraph",  default=False, action="store_true",
+        help="Set this flag to use igraph instead of netx. "
+        "NOTE: If setting this flag, the peptide generation will be considerably faster "
+        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
+        "over each single edge, so some (repeating results) may never be discovered when using "
+        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
+    )
+    parser.add_argument(
         "--postgres_trypper_min_pep_length", type=int, default=0,
         help="Set the minimum peptide length to filter out smaller existing path/peptides. "
         "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
     )
+    parser.add_argument(
+        "--export_gremlin", "-egremlin", default=False, action="store_true",
+        help="Set this flag to export the graphs via gremlin to a gremlin server."
+        "NOTE: The export is very slow, since it executes each node as a single query "
+        "(tested on JanusGraph and Apache Gremlin Server). This exporter is not well implemented and may not work. "
+        "This is due to difficulties implementing such an exporter in a global manner. "
+        "To reduce the number of errors: Try to have a stable connection to the gremlin-server and also allocate "
+        "enough resource for it, so that it can process the queries quick enough."
+    )
+    parser.add_argument(
+        "--gremlin_url", type=str, default="ws://localhost:8182/gremlin",
+        help="Set the url to the gremlin URL (no authentication). Default: 'ws://localhost:8182/gremlin'"
+    )
+    parser.add_argument(
+        "--gremlin_traversal_source", type=str, default="g",
+        help="Set the traversal source for remote. Default 'g'"
+    )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     # Graph generation arguments in dict:
     graph_gen_args = dict(
@@ -338,6 +378,8 @@ def parse_args():
         exclude_accessions=args.exclude_accessions,
         # num of parallel processes
         num_of_processes=args.num_of_processes,
+        # verify graph flag
+        verify_graph=args.verify_graph,
         # skip FTs?
         skip_isoforms=args.skip_isoforms,
         skip_variants=args.skip_variants,
@@ -386,7 +428,14 @@ def parse_args():
         postgres_trypper_database=args.postgres_trypper_database,
         postgres_trypper_hops=args.postgres_trypper_hops,
         postgres_trypper_miscleavages=args.postgres_trypper_miscleavages,
+        postgres_skip_x=args.postgres_skip_x,
+        postgres_no_duplicates=args.postgres_no_duplicates,
+        postgres_use_igraph=args.postgres_use_igraph,
         postgres_trypper_min_pep_length=args.postgres_trypper_min_pep_length,
+        # Export Gremlin (partially finished)
+        export_gremlin=args.export_gremlin,
+        gremlin_url=args.gremlin_url,
+        gremlin_traversal_source=args.gremlin_traversal_source,
     )
 
     return graph_gen_args

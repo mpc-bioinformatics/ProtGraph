@@ -1,0 +1,35 @@
+name: Python Tests on Version 3.8
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+        - '3.6' 
+        - '3.7' 
+        - '3.8' 
+        - '3.9' 
+
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pipenv
+        run: |
+          python -m pip install --upgrade pipenv wheel
+
+      - name: Install dependencies
+        run: |
+          pipenv install
+          pipenv run pip install -e .
+
+      - name: Run Complete tests
+        run: |
+          pipenv run pytest
