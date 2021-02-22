@@ -57,7 +57,7 @@ By combining multiple flags, it is possible to retrieve the number of  peptides 
 | #Peptides      | 2 | 5 | 8 | 6 | 6 | 4 | 8 | 4 |
 
 
-Dividing this table by `43` would give us the distribution of the peptide lengths for the given protein. 
+Dividing this table by `43` would give us the distribution of the peptide lengths for the given protein.
 
 
 
@@ -78,7 +78,7 @@ If you only want to use ProtGraph from the command line, it is sufficient to sim
 
 The "binary" `protgraph` should be available in your command line after it finished. You can now convert UniProt-entries into graphs!
 
-#### Troubleshooting:
+#### Troubleshooting
 
 ProtGraph has many dependencies which are mostly due to the export functionalities. For the dependency `psycopg2`, it may be neccessary to install PostgreSQL on your operating system, so that the wheel can be built. It should be sufficient to install it as follows `sudo pacman -S postgres` (adapt this for `apt` and alike).
 
@@ -135,7 +135,7 @@ To fully annotate the graphs with weights and to retrieve currently all availabl
 
 While executing ProtGraph, generated graphs are not saved.
 
-This is the default behaviour of `protgraph`. It excludes the generated graphs, since those can explode in size and the disk space on machines  may also be limited. Currently a few export functionalities are available and it is planned to extend this functionality. 
+This is the default behaviour of `protgraph`. It excludes the generated graphs, since those can explode in size and the disk space on machines  may also be limited. Currently a few export functionalities are available and it is planned to extend this functionality.
 
 ### File Exports
 
