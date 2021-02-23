@@ -290,56 +290,82 @@ def parse_args(args=None):
         help="Set the database which will be used for the postgresql server. Default: proteins"
     )
     parser.add_argument(
-        "--export_postgres_trypper", "-epgt", default=False, action="store_true",
+        "--export_mysql", "-emysql", default=False, action="store_true",
+        help="Set this flag to export to a MySQL server."
+        "NOTE: This will try to create the tables 'nodes' and 'edges' on a specified database."
+        " Make sure the database in which the data should be saved also exists."
+    )
+    parser.add_argument(
+        "--mysql_host", type=str, default="127.0.0.1",
+        help="Set the host name for the MySQL server. Default: 127.0.0.1"
+    )
+    parser.add_argument(
+        "--mysql_port", type=int, default=3306,
+        help="Set the port for the MySQL server. Default: 3306"
+    )
+    parser.add_argument(
+        "--mysql_user", type=str, default="root",
+        help="Set the username for the MySQL server. Default: root"
+    )
+    parser.add_argument(
+        "--mysql_password", type=str, default="",
+        help="Set the password for the MySQL server. Default: <empty>"
+    )
+    parser.add_argument(
+        "--mysql_database", type=str, default="proteins",
+        help="Set the database which will be used for the MySQL server. Default: proteins"
+    )
+    parser.add_argument(
+        "--export_peptide_postgres", "-epeppg", default=False, action="store_true",
         help="Set this flag to export peptides (specifically paths) to a postgresql server."
         "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
         " Make sure the database in which the data should be saved also exists. If problems occur, try "
         "to delete the generated tables and retry again."
     )
     parser.add_argument(
-        "--postgres_trypper_host", type=str, default="127.0.0.1",
-        help="Set the host name for the postgresql server (Trypper). Default: 127.0.0.1"
+        "--pep_postgres_host", type=str, default="127.0.0.1",
+        help="Set the host name for the postgresql server. Default: 127.0.0.1"
     )
     parser.add_argument(
-        "--postgres_trypper_port", type=int, default=5433,
-        help="Set the port for the postgresql server (Trypper). Default: 5433"
+        "--pep_postgres_port", type=int, default=5433,
+        help="Set the port for the postgresql server. Default: 5433"
     )
     parser.add_argument(
-        "--postgres_trypper_user", type=str, default="postgres",
-        help="Set the username for the postgresql server (Trypper). Default: postgres"
+        "--pep_postgres_user", type=str, default="postgres",
+        help="Set the username for the postgresql server. Default: postgres"
     )
     parser.add_argument(
-        "--postgres_trypper_password", type=str, default="developer",
-        help="Set the password for the postgresql server (Trypper). Default: developer"
+        "--pep_postgres_password", type=str, default="developer",
+        help="Set the password for the postgresql server. Default: developer"
     )
     parser.add_argument(
-        "--postgres_trypper_database", type=str, default="proteins",
+        "--pep_postgres_database", type=str, default="proteins",
         help="Set the database which will be used for the postgresql server. Default: proteins"
     )
     parser.add_argument(
-        "--postgres_trypper_hops", type=int, default=None,
+        "--pep_postgres_hops", type=int, default=None,
         help="Set the number of hops (max length of path) which should be used to get paths "
         "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Defaul is set to 'None', so all lengths are considered."
+        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
     )
     parser.add_argument(
-        "--postgres_trypper_miscleavages", type=int, default=-1,
+        "--pep_postgres_miscleavages", type=int, default=-1,
         help="Set this number to filter the generated paths by their miscleavages."
         "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
         "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
         "number of miscleavages, if needed."
     )
     parser.add_argument(
-        "--postgres_skip_x",  default=False, action="store_true",
+        "--pep_postgres_skip_x",  default=False, action="store_true",
         help="Set this flag to skip to skip all entries, which contain an X"
     )
     parser.add_argument(
-        "--postgres_no_duplicates",  default=False, action="store_true",
+        "--pep_postgres_no_duplicates",  default=False, action="store_true",
         help="Set this flag to not insert duplicates into the database. "
         "NOTE: Setting this value decreases the performance drastically"
     )
     parser.add_argument(
-        "--postgres_use_igraph",  default=False, action="store_true",
+        "--pep_postgres_use_igraph",  default=False, action="store_true",
         help="Set this flag to use igraph instead of netx. "
         "NOTE: If setting this flag, the peptide generation will be considerably faster "
         "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
@@ -347,7 +373,7 @@ def parse_args(args=None):
         "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
     )
     parser.add_argument(
-        "--postgres_trypper_min_pep_length", type=int, default=0,
+        "--pep_postgres_min_pep_length", type=int, default=0,
         help="Set the minimum peptide length to filter out smaller existing path/peptides. "
         "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
     )
@@ -419,19 +445,26 @@ def parse_args(args=None):
         postgres_user=args.postgres_user,
         postgres_password=args.postgres_password,
         postgres_database=args.postgres_database,
-        # Export postgresql TrypperDB
-        export_postgres_trypper=args.export_postgres_trypper,
-        postgres_trypper_host=args.postgres_trypper_host,
-        postgres_trypper_port=args.postgres_trypper_port,
-        postgres_trypper_user=args.postgres_trypper_user,
-        postgres_trypper_password=args.postgres_trypper_password,
-        postgres_trypper_database=args.postgres_trypper_database,
-        postgres_trypper_hops=args.postgres_trypper_hops,
-        postgres_trypper_miscleavages=args.postgres_trypper_miscleavages,
-        postgres_skip_x=args.postgres_skip_x,
-        postgres_no_duplicates=args.postgres_no_duplicates,
-        postgres_use_igraph=args.postgres_use_igraph,
-        postgres_trypper_min_pep_length=args.postgres_trypper_min_pep_length,
+        # Export MySQL
+        export_mysql=args.export_mysql,
+        mysql_host=args.mysql_host,
+        mysql_port=args.mysql_port,
+        mysql_user=args.mysql_user,
+        mysql_password=args.mysql_password,
+        mysql_database=args.mysql_database,
+        # Export peptides on postgresql
+        export_peptide_postgres=args.export_peptide_postgres,
+        pep_postgres_host=args.pep_postgres_host,
+        pep_postgres_port=args.pep_postgres_port,
+        pep_postgres_user=args.pep_postgres_user,
+        pep_postgres_password=args.pep_postgres_password,
+        pep_postgres_database=args.pep_postgres_database,
+        pep_postgres_hops=args.pep_postgres_hops,
+        pep_postgres_miscleavages=args.pep_postgres_miscleavages,
+        pep_postgres_skip_x=args.pep_postgres_skip_x,
+        pep_postgres_no_duplicates=args.pep_postgres_no_duplicates,
+        pep_postgres_use_igraph=args.pep_postgres_use_igraph,
+        pep_postgres_min_pep_length=args.pep_postgres_min_pep_length,
         # Export Gremlin (partially finished)
         export_gremlin=args.export_gremlin,
         gremlin_url=args.gremlin_url,
