@@ -160,12 +160,12 @@ class PepPostgres(APeptideExporter):
             cur.execute("""
             CREATE TABLE  if not exists peptides_meta (
                 id BIGSERIAL,
-                peptides_id BIGINT references peptides(id),
-                accession_id INT references accessions(id),
+                peptides_id BIGINT,
+                accession_id INT,
                 path INT[] NOT NULL,
                 miscleavages INT NOT NULL,
                 PRIMARY KEY (id)
-            );""")
+            );""")  # References to peptide and accession removed for performance reasons
         except Exception as e:
             print("Error createing peptides_meta table. Continuing... (Reason: {})".format(str(e)))
         finally:
