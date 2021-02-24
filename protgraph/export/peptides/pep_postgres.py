@@ -234,34 +234,31 @@ class PepPostgres(APeptideExporter):
         )
 
         # Insert new entry into database:
-        with self.conn.cursor() as cur:
+        with self.conn:
+            with self.conn.cursor() as cur:
 
-            if self.postgres_no_duplicates:
-                # If no dupicates, we search for a duplicate
-                cur.execute(self.statement_peptides_select, peptides_tup)
-                peptides_id_fetched = cur.fetchone()
-                if peptides_id_fetched is None:
-                    # No entry, insert!
-                    try:
+                if self.postgres_no_duplicates:
+                    # If no dupicates, we search for a duplicate
+                    cur.execute(self.statement_peptides_select, peptides_tup)
+                    peptides_id_fetched = cur.fetchone()
+                    if peptides_id_fetched is None:
+                        # No entry, insert!
                         cur.execute(self.statement_peptides, peptides_tup)
                         peptides_id_fetched = cur.fetchone()
-                    except Exception:
-                        self.export_peptide(prot_graph, path_nodes, path_edges, peptide, miscleavages)
-                        return
-            else:
-                # simply insert it into the database
-                cur.execute(self.statement_peptides, peptides_tup)
-                peptides_id_fetched = cur.fetchone()
-            peptides_id = peptides_id_fetched[0]
+                else:
+                    # simply insert it into the database
+                    cur.execute(self.statement_peptides, peptides_tup)
+                    peptides_id_fetched = cur.fetchone()
+                peptides_id = peptides_id_fetched[0]
 
-            # Inster meta data information of peptide ALWAYS
-            peptides_meta_tup = (
-                peptides_id,
-                self.accession_id,
-                path_nodes,
-                miscleavages
-            )
-            cur.execute(self.statement_meta_peptides, peptides_meta_tup)
+                # Inster meta data information of peptide ALWAYS
+                peptides_meta_tup = (
+                    peptides_id,
+                    self.accession_id,
+                    path_nodes,
+                    miscleavages
+                )
+                cur.execute(self.statement_meta_peptides, peptides_meta_tup)
 
     def tear_down(self):
         # Close the connection to postgres
