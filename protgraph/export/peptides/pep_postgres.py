@@ -199,12 +199,13 @@ class PepPostgres(APeptideExporter):
     def export(self, prot_graph):
         # First insert accession into accession table and retrieve its id:
         # since we only do this per protein!
-        accession = prot_graph.vs[0]["accession"]
-        self.cursor.execute(
-            self.statement_accession,
-            (accession,)
-        )
-        self.accession_id = self.cursor.fetchone()[0]
+        with self.conn:
+            accession = prot_graph.vs[0]["accession"]
+            self.cursor.execute(
+                self.statement_accession,
+                (accession,)
+            )
+            self.accession_id = self.cursor.fetchone()[0]
 
         # Then we continue with the export function
         super().export(prot_graph)
