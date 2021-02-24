@@ -242,8 +242,12 @@ class PepPostgres(APeptideExporter):
                 peptides_id_fetched = cur.fetchone()
                 if peptides_id_fetched is None:
                     # No entry, insert!
-                    cur.execute(self.statement_peptides, peptides_tup)
-                    peptides_id_fetched = cur.fetchone()
+                    try:
+                        cur.execute(self.statement_peptides, peptides_tup)
+                        peptides_id_fetched = cur.fetchone()
+                    except Exception:
+                        self.export_peptide(prot_graph, path_nodes, path_edges, peptide, miscleavages)
+                        return
             else:
                 # simply insert it into the database
                 cur.execute(self.statement_peptides, peptides_tup)
