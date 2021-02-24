@@ -181,22 +181,14 @@ class PepPostgres(APeptideExporter):
         # Set insert statement for peptides
         self.statement_accession = "INSERT INTO accessions(accession) VALUES (%s) RETURNING id;"
 
-        if self.postgres_no_duplicates:
-            # Set statement, where we LOCK the table to exclude duplicates
-            self.statement_peptides = " LOCK TABLE peptides IN SHARE ROW EXCLUSIVE MODE; INSERT INTO peptides (" \
-                + ",".join(self.peptides_keys) \
-                + ") VALUES (" \
-                + ",".join(["%s"]*len(self.peptides_keys)) \
-                + ") ON CONFLICT (" \
-                + ",".join(self.peptides_keys) \
-                + ") do update set {0} = EXCLUDED.{0} ".format(self.peptides_keys[0]) \
-                + "RETURNING id;"
-        else:
-            self.statement_peptides = "INSERT INTO peptides (" \
-                + ",".join(self.peptides_keys) \
-                + ") VALUES (" \
-                + ",".join(["%s"]*len(self.peptides_keys)) \
-                + ") returning id"
+        self.statement_peptides_select = "SELECT id from peptides where " \
+            + " and ".join([x + "=" + y for x, y in zip(self.peptides_keys, ["%s"]*len(self.peptides_keys))])
+
+        self.statement_peptides = "INSERT INTO peptides (" \
+            + ",".join(self.peptides_keys) \
+            + ") VALUES (" \
+            + ",".join(["%s"]*len(self.peptides_keys)) \
+            + ") returning id"
 
         self.statement_meta_peptides = "INSERT INTO peptides_meta (" \
             + ",".join(self.peptides_meta_keys) \
@@ -243,26 +235,22 @@ class PepPostgres(APeptideExporter):
 
         # Insert new entry into database:
         with self.conn.cursor() as cur:
-            cur.execute(
-                "SELECT id from peptides where " +
-                " and ".join([x + "=" + y for x, y in zip(self.peptides_keys, ["%s"]*len(self.peptides_keys))]),
-                peptides_tup
-            )
-            peptides_id_fetched = cur.fetchone()
-            if peptides_id_fetched is None:
-                # No entry, insert!
-                cur.execute(
-                    "INSERT INTO peptides ("
-                    + ",".join(self.peptides_keys)
-                    + ") VALUES ("
-                    + ",".join(["%s"]*len(self.peptides_keys))
-                    + ") RETURNING id;",
-                    peptides_tup
-                )
+
+            if self.postgres_no_duplicates:
+                # If no dupicates, we search for a duplicate
+                cur.execute(self.statement_peptides_select, peptides_tup)
+                peptides_id_fetched = cur.fetchone()
+                if peptides_id_fetched is None:
+                    # No entry, insert!
+                    cur.execute(self.statement_peptides, peptides_tup)
+                    peptides_id_fetched = cur.fetchone()
+            else:
+                # simply insert it into the database
+                cur.execute(self.statement_peptides, peptides_tup)
                 peptides_id_fetched = cur.fetchone()
             peptides_id = peptides_id_fetched[0]
 
-            # Inster meta data
+            # Inster meta data information of peptide ALWAYS
             peptides_meta_tup = (
                 peptides_id,
                 self.accession_id,
@@ -270,20 +258,6 @@ class PepPostgres(APeptideExporter):
                 miscleavages
             )
             cur.execute(self.statement_meta_peptides, peptides_meta_tup)
-
-        # # Insert new entry into database:
-        # self.cursor.execute(self.statement_peptides, peptides_tup)
-        # peptides_id_fetched = self.cursor.fetchone()
-        # peptides_id = peptides_id_fetched[0]
-
-        # # Inster meta data
-        # peptides_meta_tup = (
-        #     peptides_id,
-        #     self.accession_id,
-        #     path_nodes,
-        #     miscleavages
-        # )
-        # self.cursor.execute(self.statement_meta_peptides, peptides_meta_tup)
 
     def tear_down(self):
         # Close the connection to postgres
