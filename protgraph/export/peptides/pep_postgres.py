@@ -36,6 +36,10 @@ class PepPostgres(APeptideExporter):
     def peptide_max_length(self) -> int:
         return self.get_peptide_length
 
+    @property
+    def batch_size(self) -> int:
+        return self.get_batch_size
+
     def start_up(self, **kwargs):
         # Here we generate a connection to postgres
         # and generate the corresponding tables
@@ -54,6 +58,7 @@ class PepPostgres(APeptideExporter):
         self.get_peptide_min_length = kwargs["pep_postgres_min_pep_length"]  # Peptide minimum length
         self.get_postgres_skip_x = kwargs["pep_postgres_skip_x"]
         self.get_use_igraph = kwargs["pep_postgres_use_igraph"]
+        self.get_batch_size = kwargs["pep_postgres_batch_size"]
 
         # Initialize connection
         try:
@@ -145,14 +150,15 @@ class PepPostgres(APeptideExporter):
                 "q_count", "r_count", "s_count", "t_count", "u_count", "v_count", "w_count", "x_count",
                 "y_count", "z_count", "n_terminus", "c_terminus"
             ]
-        try:
-            cur = self.conn.cursor()
-            cur.execute("CREATE INDEX ON peptides ({})".format(",".join(self.peptides_keys)))
-        except Exception as e:
-            print("Error createing peptides index. Continuing... (Reason: {})".format(str(e)))
-        finally:
-            self.conn.commit()
-            cur.close()
+        if self.postgres_no_duplicates:
+            try:
+                cur = self.conn.cursor()
+                cur.execute("CREATE INDEX ON peptides ({})".format(",".join(self.peptides_keys)))
+            except Exception as e:
+                print("Error createing peptides index. Continuing... (Reason: {})".format(str(e)))
+            finally:
+                self.conn.commit()
+                cur.close()
 
         try:
             # Create the peptides meta information (can also be extremely large)
@@ -184,17 +190,14 @@ class PepPostgres(APeptideExporter):
         self.statement_peptides_select = "SELECT id from peptides where " \
             + " and ".join([x + "=" + y for x, y in zip(self.peptides_keys, ["%s"]*len(self.peptides_keys))])
 
+        self.statement_peptides_inner_values = "(" + ",".join(["%s"]*len(self.peptides_keys)) + ")"
         self.statement_peptides = "INSERT INTO peptides (" \
             + ",".join(self.peptides_keys) \
-            + ") VALUES (" \
-            + ",".join(["%s"]*len(self.peptides_keys)) \
-            + ") returning id"
+            + ") VALUES " \
+            + self.statement_peptides_inner_values \
+            + " returning id"
 
-        self.statement_meta_peptides = "INSERT INTO peptides_meta (" \
-            + ",".join(self.peptides_meta_keys) \
-            + ") VALUES (" \
-            + ",".join(["%s"]*len(self.peptides_meta_keys)) \
-            + ")"
+        self.statement_peptides_meta_inner_values = "(" + ",".join(["%s"]*len(self.peptides_meta_keys)) + ")"
 
     def export(self, prot_graph):
         # First insert accession into accession table and retrieve its id:
@@ -213,57 +216,87 @@ class PepPostgres(APeptideExporter):
         # and commit everything in the conenction for a protein
         self.conn.commit()
 
-    def export_peptide(self, prot_graph, path_nodes, path_edges, peptide, miscleavages):
+    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
         # Get the weight
-        if "mono_weight" in prot_graph.es[path_edges[0]].attributes():
-            weight = sum(prot_graph.es[path_edges]["mono_weight"])
+        if "mono_weight" in prot_graph.es[l_path_edges[0][0]].attributes():
+            l_weight = [sum(prot_graph.es[x]["mono_weight"]) for x in l_path_edges]
         else:
-            weight = -1
+            l_weight = [-1]*len(l_path_nodes)
 
-        # Set the output tuple
-        peptides_tup = (
-            weight,
-            # Counts of Aminoacids
-            peptide.count("A"), peptide.count("B"), peptide.count("C"), peptide.count("D"), peptide.count("E"),
-            peptide.count("F"), peptide.count("G"), peptide.count("H"), peptide.count("I"), peptide.count("J"),
-            peptide.count("K"), peptide.count("L"), peptide.count("M"), peptide.count("N"), peptide.count("O"),
-            peptide.count("P"), peptide.count("Q"), peptide.count("R"), peptide.count("S"), peptide.count("T"),
-            peptide.count("U"), peptide.count("V"), peptide.count("W"), peptide.count("X"), peptide.count("Y"),
-            peptide.count("Z"),
-            # N and C Terminus
-            peptide[0], peptide[-1]
-        )
+        # Set the output tuple list
+        l_peptides_tup = [
+            (
+                weight,  # Counts of Aminoacids
+                peptide.count("A"), peptide.count("B"), peptide.count("C"), peptide.count("D"), peptide.count("E"),
+                peptide.count("F"), peptide.count("G"), peptide.count("H"), peptide.count("I"), peptide.count("J"),
+                peptide.count("K"), peptide.count("L"), peptide.count("M"), peptide.count("N"), peptide.count("O"),
+                peptide.count("P"), peptide.count("Q"), peptide.count("R"), peptide.count("S"), peptide.count("T"),
+                peptide.count("U"), peptide.count("V"), peptide.count("W"), peptide.count("X"), peptide.count("Y"),
+                peptide.count("Z"),  # N and C Terminus
+                peptide[0], peptide[-1]
+            )
+            for peptide, weight in zip(l_peptide, l_weight)
+        ]
 
         # Insert new entry into database:
+        if self.postgres_no_duplicates:
+            l_peptides_id = []
+            for peptides_tup, path_nodes, miscleavages in zip(l_peptides_tup, l_path_nodes, l_miscleavages):
+                x = self._export_peptide_no_duplicate(peptides_tup, path_nodes, miscleavages)
+                l_peptides_id.append(x)
+        else:
+            l_peptides_id = self._export_peptide_simple_insert(l_peptides_tup, l_path_nodes, l_miscleavages)
+
+        # Bulk insert meta data information of peptides (ALWAYS)
+        l_peptides_meta_tup = [
+            (
+                peptides_id,
+                self.accession_id,
+                path_nodes,
+                miscleavages
+            )
+            for peptides_id, path_nodes, miscleavages in zip(l_peptides_id, l_path_nodes, l_miscleavages)
+        ]
+        # Bulk insert statement and execute
+        stmt = "INSERT INTO peptides_meta (" \
+            + ",".join(self.peptides_meta_keys) \
+            + ") VALUES " \
+            + ",".join([self.statement_peptides_meta_inner_values]*len(l_peptides_id))
+        self.cursor.execute(stmt, [y for x in l_peptides_meta_tup for y in x])
+
+    def _export_peptide_simple_insert(self, l_peptides_tup, l_path_nodes, l_miscleavages):
+        """ Simply export them by using simple bulk insert statements """
+        stmt = "INSERT INTO peptides (" \
+            + ",".join(self.peptides_keys) \
+            + ") VALUES " \
+            + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
+            + " returning id"
+        self.cursor.execute(stmt, [y for x in l_peptides_tup for y in x])
+        peptides_id_fetched = self.cursor.fetchall()
+        return [x[0] for x in peptides_id_fetched]
+
+    def _export_peptide_no_duplicate(self, peptides_tup, path_nodes, miscleavages):
+        """ Export peptides ONLY if it is not already inserted into the peptides table """
+        # TODO dl untested
         with self.conn:
             with self.conn.cursor() as cur:
-                if self.postgres_no_duplicates:
-                    # If no dupicates, we search for a duplicate
-                    cur.execute(self.statement_peptides_select, peptides_tup)
-                    peptides_id_fetched = cur.fetchone()
-                    if peptides_id_fetched is None:
-                        # No entry, insert!
-                        try:
-                            cur.execute(self.statement_peptides, peptides_tup)
-                            peptides_id_fetched = cur.fetchone()
-                        except Exception:
-                            self.conn.rollback()
-                            self.export_peptide(prot_graph, path_nodes, path_edges, peptide, miscleavages)
-                            return
-                else:
-                    # simply insert it into the database
-                    cur.execute(self.statement_peptides, peptides_tup)
-                    peptides_id_fetched = cur.fetchone()
-                peptides_id = peptides_id_fetched[0]
+                # If no dupicates, we search for a duplicate
+                cur.execute(self.statement_peptides_select, peptides_tup)
+                peptides_id_fetched = cur.fetchone()
+                if peptides_id_fetched is None:
+                    # No entry, insert!
+                    try:
+                        cur.execute(self.statement_peptides, peptides_tup)
+                        peptides_id_fetched = cur.fetchone()
+                    except Exception:
+                        self.conn.rollback()
+                        self._export_peptide_no_duplicate(peptides_tup, path_nodes, miscleavages)
+                        return
+                # peptides_id = peptides_id_fetched[0]
 
-                # Inster meta data information of peptide ALWAYS
-                peptides_meta_tup = (
-                    peptides_id,
-                    self.accession_id,
-                    path_nodes,
-                    miscleavages
-                )
-                cur.execute(self.statement_meta_peptides, peptides_meta_tup)
+        self.cursor.execute(self.statement_peptides, peptides_tup)
+        peptides_id_fetched = self.cursor.fetchone()
+        return peptides_id_fetched[0]
 
     def tear_down(self):
         # Close the connection to postgres

@@ -41,9 +41,15 @@ class APeptideExporter(AExporter):
         """ Maximum peptide length to limit possibilites. None to consider all. """
         pass
 
+    @property
     @abstractmethod
-    def export_peptide(self, prot_graph, path_nodes, path_edges, peptide, miscleavages):
-        """ Here goes the actual implementation of exporting a peptide into a file/folder/database etc. """
+    def batch_size(self) -> int:
+        """ Batch size of peptides which will be processed at once. (list length)"""
+        pass
+
+    @abstractmethod
+    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
+        """ Here goes the actual implementation of exporting a list of peptides into a file/folder/database etc. """
         pass
 
     def export(self, prot_graph):
@@ -55,6 +61,11 @@ class APeptideExporter(AExporter):
         [__start_node__] = prot_graph.vs.select(aminoacid="__start__")
         [__stop_node__] = prot_graph.vs.select(aminoacid="__end__")
 
+        # Set batch lists
+        l_path = []
+        l_edge_ids = []
+        l_aas = []
+        l_cleaved = []
         # Iterate over all peptides
         for path in self._get_peps(prot_graph, __start_node__, __stop_node__):
 
@@ -83,8 +94,23 @@ class APeptideExporter(AExporter):
                 if cleaved > self.max_miscleavages:
                     continue
 
-            # If we still want to consider this peptide, we export it here:
-            self.export_peptide(prot_graph, path, edge_ids, aas, cleaved)
+            # Append information to list
+            l_path.append(path)
+            l_edge_ids.append(edge_ids)
+            l_aas.append(aas)
+            l_cleaved.append(cleaved)
+
+            if len(l_path) >= self.batch_size:
+                # We export the list of peptides here and reset those lists afterwards
+                self.export_peptides(prot_graph, l_path, l_edge_ids, l_aas, l_cleaved)
+                l_path = []
+                l_edge_ids = []
+                l_aas = []
+                l_cleaved = []
+
+        if len(l_path) > 0:
+            # Special case, we might have some peptides left
+            self.export_peptides(prot_graph, l_path, l_edge_ids, l_aas, l_cleaved)
 
     def _get_peps(self, prot_graph, s, e):
         """ Get peptides depending on selected method """

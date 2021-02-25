@@ -5,6 +5,7 @@ from protgraph.export.gml import GML
 from protgraph.export.graphml import GraphML
 from protgraph.export.gremlin import Gremlin
 from protgraph.export.mysql import MySQL
+from protgraph.export.peptides.pep_mysql import PepMySQL
 from protgraph.export.peptides.pep_postgres import PepPostgres
 from protgraph.export.pickle import Pickle
 from protgraph.export.postgres import Postgres
@@ -39,6 +40,8 @@ class Exporters(ContextDecorator):
             self.export_classes.append(Gremlin())
         if kwargs["export_peptide_postgres"]:
             self.export_classes.append(PepPostgres())
+        if kwargs["export_peptide_mysql"]:
+            self.export_classes.append(PepMySQL())
 
         # Also start up all exporters
         for ec in self.export_classes:

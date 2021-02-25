@@ -378,6 +378,73 @@ def parse_args(args=None):
         "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
     )
     parser.add_argument(
+        "--pep_postgres_batch_size", type=int, default=10000,
+        help="Set the batch size. This defines how many peptides are inserted at once. "
+        "Default: 10000"
+    )
+    parser.add_argument(
+        "--export_peptide_mysql", "-epepmysql", default=False, action="store_true",
+        help="Set this flag to export peptides (specifically paths) to a MySQL server."
+        "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
+        " Make sure the database in which the data should be saved also exists. If problems occur, try "
+        "to delete the generated tables and retry again."
+    )
+    parser.add_argument(
+        "--pep_mysql_host", type=str, default="127.0.0.1",
+        help="Set the host name for the mysql server. Default: 127.0.0.1"
+    )
+    parser.add_argument(
+        "--pep_mysql_port", type=int, default=3306,
+        help="Set the port for the mysql server. Default: 3306"
+    )
+    parser.add_argument(
+        "--pep_mysql_user", type=str, default="root",
+        help="Set the username for the mysql server. Default: root"
+    )
+    parser.add_argument(
+        "--pep_mysql_password", type=str, default="",
+        help="Set the password for the mysql server. Default: ''"
+    )
+    parser.add_argument(
+        "--pep_mysql_database", type=str, default="proteins",
+        help="Set the database which will be used for the mysql server. Default: proteins"
+    )
+    parser.add_argument(
+        "--pep_mysql_hops", type=int, default=None,
+        help="Set the number of hops (max length of path) which should be used to get paths "
+        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
+        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
+    )
+    parser.add_argument(
+        "--pep_mysql_miscleavages", type=int, default=-1,
+        help="Set this number to filter the generated paths by their miscleavages."
+        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
+        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
+        "number of miscleavages, if needed."
+    )
+    parser.add_argument(
+        "--pep_mysql_skip_x",  default=False, action="store_true",
+        help="Set this flag to skip to skip all entries, which contain an X"
+    )
+    parser.add_argument(
+        "--pep_mysql_no_duplicates",  default=False, action="store_true",
+        help="Set this flag to not insert duplicates into the database. "
+        "NOTE: Setting this value decreases the performance drastically"
+    )
+    parser.add_argument(
+        "--pep_mysql_use_igraph",  default=False, action="store_true",
+        help="Set this flag to use igraph instead of netx. "
+        "NOTE: If setting this flag, the peptide generation will be considerably faster "
+        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
+        "over each single edge, so some (repeating results) may never be discovered when using "
+        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
+    )
+    parser.add_argument(
+        "--pep_mysql_min_pep_length", type=int, default=0,
+        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
+        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
+    )
+    parser.add_argument(
         "--export_gremlin", "-egremlin", default=False, action="store_true",
         help="Set this flag to export the graphs via gremlin to a gremlin server."
         "NOTE: The export is very slow, since it executes each node as a single query "
@@ -465,6 +532,20 @@ def parse_args(args=None):
         pep_postgres_no_duplicates=args.pep_postgres_no_duplicates,
         pep_postgres_use_igraph=args.pep_postgres_use_igraph,
         pep_postgres_min_pep_length=args.pep_postgres_min_pep_length,
+        pep_postgres_batch_size=args.pep_postgres_batch_size,
+        # Export peptides on mysql
+        export_peptide_mysql=args.export_peptide_mysql,
+        pep_mysql_host=args.pep_mysql_host,
+        pep_mysql_port=args.pep_mysql_port,
+        pep_mysql_user=args.pep_mysql_user,
+        pep_mysql_password=args.pep_mysql_password,
+        pep_mysql_database=args.pep_mysql_database,
+        pep_mysql_hops=args.pep_mysql_hops,
+        pep_mysql_miscleavages=args.pep_mysql_miscleavages,
+        pep_mysql_skip_x=args.pep_mysql_skip_x,
+        pep_mysql_no_duplicates=args.pep_mysql_no_duplicates,
+        pep_mysql_use_igraph=args.pep_mysql_use_igraph,
+        pep_mysql_min_pep_length=args.pep_mysql_min_pep_length,
         # Export Gremlin (partially finished)
         export_gremlin=args.export_gremlin,
         gremlin_url=args.gremlin_url,
