@@ -183,7 +183,6 @@ class PepMySQL(APeptideExporter):
         self.statement_peptides_select = "SELECT id from peptides where " \
             + " and ".join([x + "=" + y for x, y in zip(self.peptides_keys, ["%s"]*len(self.peptides_keys))])
 
-
         self.statement_peptides_insert_no_dup = "INSERT INTO peptides (" \
             + ",".join(self.peptides_keys) \
             + ") SELECT " \

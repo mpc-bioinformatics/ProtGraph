@@ -240,10 +240,8 @@ class PepPostgres(APeptideExporter):
 
         # Insert new entry into database:
         if self.postgres_no_duplicates:
-            l_peptides_id = []
-            for peptides_tup, path_nodes, miscleavages in zip(l_peptides_tup, l_path_nodes, l_miscleavages):
-                x = self._export_peptide_no_duplicate(peptides_tup, path_nodes, miscleavages)
-                l_peptides_id.append(x)
+            self.conn.commit()  # Commit changes, we may need to reapply peptides
+            l_peptides_id = self._export_peptide_no_duplicate(l_peptides_tup, l_path_nodes, l_miscleavages)
         else:
             l_peptides_id = self._export_peptide_simple_insert(l_peptides_tup, l_path_nodes, l_miscleavages)
 
@@ -275,28 +273,37 @@ class PepPostgres(APeptideExporter):
         peptides_id_fetched = self.cursor.fetchall()
         return [x[0] for x in peptides_id_fetched]
 
-    def _export_peptide_no_duplicate(self, peptides_tup, path_nodes, miscleavages):
+    def _export_peptide_no_duplicate(self, l_peptides_tup, l_path_nodes, l_miscleavages):
         """ Export peptides ONLY if it is not already inserted into the peptides table """
-        # TODO dl untested
-        with self.conn:
-            with self.conn.cursor() as cur:
-                # If no dupicates, we search for a duplicate
-                cur.execute(self.statement_peptides_select, peptides_tup)
-                peptides_id_fetched = cur.fetchone()
-                if peptides_id_fetched is None:
-                    # No entry, insert!
-                    try:
-                        cur.execute(self.statement_peptides, peptides_tup)
-                        peptides_id_fetched = cur.fetchone()
-                    except Exception:
-                        self.conn.rollback()
-                        self._export_peptide_no_duplicate(peptides_tup, path_nodes, miscleavages)
-                        return
-                # peptides_id = peptides_id_fetched[0]
 
-        self.cursor.execute(self.statement_peptides, peptides_tup)
-        peptides_id_fetched = self.cursor.fetchone()
-        return peptides_id_fetched[0]
+        # Use two statements and no function and type
+        ins_stmt = " INSERT INTO peptides (" \
+            + ",".join(self.peptides_keys) \
+            + ") VALUES " \
+            + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
+            + " ON CONFLICT DO NOTHING"
+        try:
+            self.cursor.execute(ins_stmt, [y for x in l_peptides_tup for y in x])
+            # self.cursor.execute(err_stmt, [y for x in l_peptides_tup[:2] for y in x])
+        except Exception:
+            # REDO INSERT, we had errors, inserting them
+            self.conn.rollback()
+            return self._export_peptide_no_duplicate(l_peptides_tup, l_path_nodes, l_miscleavages)
+
+        # TODO REFACTOR AND CLEAN UP
+        sel_stmt_in = "SELECT * from peptides where ({}) in (".format(",".join(self.peptides_keys)) \
+            + ",".join(["(" + ",".join(["%s"]*len(self.peptides_keys)) + ")"]*len(l_peptides_tup)) \
+            + ")"
+        self.cursor.execute(sel_stmt_in, [y for x in l_peptides_tup for y in x])
+        results = self.cursor.fetchall()
+
+        d = dict()
+        for idx, x in enumerate(results):
+            d[hash(x[1:])] = idx
+
+        mapping = [d[hash(x)] for x in l_peptides_tup]
+
+        return [results[x][0] for x in mapping]
 
     def tear_down(self):
         # Close the connection to postgres

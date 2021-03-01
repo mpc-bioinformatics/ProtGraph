@@ -378,9 +378,10 @@ def parse_args(args=None):
         "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
     )
     parser.add_argument(
-        "--pep_postgres_batch_size", type=int, default=10000,
+        "--pep_postgres_batch_size", type=int, default=7500,
         help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 10000"
+        "NOTE:You may also need to increase the parameter \"max_stack_depth\" in Postgres if increasing this value. "
+        "Default: 7500"
     )
     parser.add_argument(
         "--export_peptide_mysql", "-epepmysql", default=False, action="store_true",
