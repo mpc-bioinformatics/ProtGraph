@@ -36,6 +36,10 @@ class PepMySQL(APeptideExporter):
     def peptide_max_length(self) -> int:
         return self.get_peptide_length
 
+    @property
+    def batch_size(self) -> int:
+        return self.get_batch_size
+
     def start_up(self, **kwargs):
         # Here we generate a connection to mysql
         # and generate the corresponding tables
@@ -54,6 +58,7 @@ class PepMySQL(APeptideExporter):
         self.get_peptide_min_length = kwargs["pep_mysql_min_pep_length"]  # Peptide minimum length
         self.get_skip_x = kwargs["pep_mysql_skip_x"]
         self.get_use_igraph = kwargs["pep_mysql_use_igraph"]
+        self.get_batch_size = 10000  # TODO do this as a Parameter!
 
         # Initialize connection
         try:
@@ -143,15 +148,15 @@ class PepMySQL(APeptideExporter):
                 "q_count", "r_count", "s_count", "t_count", "u_count", "v_count", "w_count", "x_count",
                 "y_count", "z_count", "n_terminus", "c_terminus"
             ]
-        # TODO DL create Index for select statement!
-        # try:
-        #     cur = self.conn.cursor()
-        #     cur.execute("CREATE INDEX ON peptides ({})".format(",".join(self.peptides_keys)))
-        # except Exception as e:
-        #     print("Error createing peptides index. Continuing... (Reason: {})".format(str(e)))
-        # finally:
-        #     self.conn.commit()
-        #     cur.close()
+        # TODO DL create Index for select statement! only if no duplicates
+        try:
+            cur = self.conn.cursor()
+            cur.execute("CREATE INDEX peptide_idx ON peptides ({})".format(",".join(self.peptides_keys)))
+        except Exception as e:
+            print("Error createing peptides index. Continuing... (Reason: {})".format(str(e)))
+        finally:
+            self.conn.commit()
+            cur.close()
 
         try:
             # Create the peptides meta information (can also be extremely large)
@@ -216,6 +221,12 @@ class PepMySQL(APeptideExporter):
 
         # and commit everything in the conenction for a protein
         self.conn.commit()
+
+
+    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
+        for a, b, c, d in zip(l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
+            self.export_peptide(prot_graph, a, b, c, d)
+
 
     def export_peptide(self, prot_graph, path_nodes, path_edges, peptide, miscleavages):
         # Get the weight

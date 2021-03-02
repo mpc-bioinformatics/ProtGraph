@@ -81,7 +81,7 @@ class PepPostgres(APeptideExporter):
             raise Exception("Could not create tables in Postgres (Peptides).", e)
 
     def _create_tables(self, **kwargs):
-        """ Create the accessions and peptides tables """
+        """ Create the accessions and peptides and peptides_meta tables """
         try:
             # create accessions, so that we only save numbers in the large table!
             cur = self.conn.cursor()
@@ -101,8 +101,8 @@ class PepPostgres(APeptideExporter):
             cur = self.conn.cursor()
             cur.execute("""
             CREATE TABLE  if not exists peptides (
-                id BIGSERIAL UNIQUE,
-                weight {0} NOT NULL,
+                id {0},
+                weight {1} NOT NULL,
                 a_count SMALLINT NOT NULL,
                 b_count SMALLINT NOT NULL,
                 c_count SMALLINT NOT NULL,
@@ -131,12 +131,9 @@ class PepPostgres(APeptideExporter):
                 z_count SMALLINT NOT NULL,
                 n_terminus character(1) NOT NULL,
                 c_terminus character(1) NOT NULL,
-                PRIMARY KEY ({1}));""".format(
-                "BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE PRECISION",
-                """ weight, a_count, b_count, c_count, d_count, e_count, f_count, g_count,
-                h_count, i_count, j_count, k_count, l_count, m_count, n_count, o_count,
-                p_count, q_count, r_count, s_count, t_count, u_count, v_count, w_count,
-                x_count, y_count, z_count, n_terminus, c_terminus""" if self.postgres_no_duplicates else "id"
+                PRIMARY KEY (id));""".format(
+                "BIT(452)" if self.postgres_no_duplicates else "BIGSERIAL",
+                "BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE PRECISION"
                 ))
         except Exception as e:
             print("Error createing peptides table. Continuing... (Reason: {})".format(str(e)))
@@ -150,28 +147,28 @@ class PepPostgres(APeptideExporter):
                 "q_count", "r_count", "s_count", "t_count", "u_count", "v_count", "w_count", "x_count",
                 "y_count", "z_count", "n_terminus", "c_terminus"
             ]
-        if self.postgres_no_duplicates:
-            try:
-                cur = self.conn.cursor()
-                cur.execute("CREATE INDEX ON peptides ({})".format(",".join(self.peptides_keys)))
-            except Exception as e:
-                print("Error createing peptides index. Continuing... (Reason: {})".format(str(e)))
-            finally:
-                self.conn.commit()
-                cur.close()
+            if self.postgres_no_duplicates:
+                self.peptides_keys = [
+                    "id", "weight",
+                    "a_count", "b_count", "c_count", "d_count", "e_count", "f_count", "g_count", "h_count",
+                    "i_count", "j_count", "k_count", "l_count", "m_count", "n_count", "o_count", "p_count",
+                    "q_count", "r_count", "s_count", "t_count", "u_count", "v_count", "w_count", "x_count",
+                    "y_count", "z_count", "n_terminus", "c_terminus"
+                ]
 
         try:
-            # Create the peptides meta information (can also be extremely large)
+            # Create the peptides meta information (can also be extremely large), larger than the peptides tables
             cur = self.conn.cursor()
             cur.execute("""
             CREATE TABLE  if not exists peptides_meta (
                 id BIGSERIAL,
-                peptides_id BIGINT,
+                peptides_id {0},
                 accession_id INT,
                 path INT[] NOT NULL,
                 miscleavages INT NOT NULL,
                 PRIMARY KEY (id)
-            );""")  # References to peptide and accession removed for performance reasons
+            );""".format("BIT(452)" if self.postgres_no_duplicates else "BIGINT"))
+            # References to peptide and accession removed for performance reasons
         except Exception as e:
             print("Error createing peptides_meta table. Continuing... (Reason: {})".format(str(e)))
         finally:
@@ -184,19 +181,9 @@ class PepPostgres(APeptideExporter):
                 "miscleavages"
             ]
 
-        # Set insert statement for peptides
+        # Set statements for inserting or selecting
         self.statement_accession = "INSERT INTO accessions(accession) VALUES (%s) RETURNING id;"
-
-        self.statement_peptides_select = "SELECT id from peptides where " \
-            + " and ".join([x + "=" + y for x, y in zip(self.peptides_keys, ["%s"]*len(self.peptides_keys))])
-
         self.statement_peptides_inner_values = "(" + ",".join(["%s"]*len(self.peptides_keys)) + ")"
-        self.statement_peptides = "INSERT INTO peptides (" \
-            + ",".join(self.peptides_keys) \
-            + ") VALUES " \
-            + self.statement_peptides_inner_values \
-            + " returning id"
-
         self.statement_peptides_meta_inner_values = "(" + ",".join(["%s"]*len(self.peptides_meta_keys)) + ")"
 
     def export(self, prot_graph):
@@ -240,7 +227,7 @@ class PepPostgres(APeptideExporter):
 
         # Insert new entry into database:
         if self.postgres_no_duplicates:
-            self.conn.commit()  # Commit changes, we may need to reapply peptides
+            # self.conn.commit()  # Commit changes, we may need to reapply peptides
             l_peptides_id = self._export_peptide_no_duplicate(l_peptides_tup, l_path_nodes, l_miscleavages)
         else:
             l_peptides_id = self._export_peptide_simple_insert(l_peptides_tup, l_path_nodes, l_miscleavages)
@@ -275,35 +262,28 @@ class PepPostgres(APeptideExporter):
 
     def _export_peptide_no_duplicate(self, l_peptides_tup, l_path_nodes, l_miscleavages):
         """ Export peptides ONLY if it is not already inserted into the peptides table """
+        # Map peptides to 452 many bits (as id)
+        pep_ids = [
+            "".join(
+                # Here we use for the aa-counts 17 bits (each)
+                # followed by 5 bits for the n and c terminus (ascii_code - 65)
+                # The weight is disregarded, since it is composed by the aa counts
+                [format(i, 'b').zfill(17) for i in x[1:-2]] \
+                + [format(ord(i) - 65, 'b').zfill(5) for i in x[-2:]]
+            )
+            for x in l_peptides_tup
+        ]
 
-        # Use two statements and no function and type
+        # Bulk insert into the peptides table
         ins_stmt = " INSERT INTO peptides (" \
             + ",".join(self.peptides_keys) \
             + ") VALUES " \
             + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
             + " ON CONFLICT DO NOTHING"
-        try:
-            self.cursor.execute(ins_stmt, [y for x in l_peptides_tup for y in x])
-            # self.cursor.execute(err_stmt, [y for x in l_peptides_tup[:2] for y in x])
-        except Exception:
-            # REDO INSERT, we had errors, inserting them
-            self.conn.rollback()
-            return self._export_peptide_no_duplicate(l_peptides_tup, l_path_nodes, l_miscleavages)
+        self.cursor.execute(ins_stmt, [y for a, b in zip(l_peptides_tup, pep_ids) for y in [b] + list(a)])
 
-        # TODO REFACTOR AND CLEAN UP
-        sel_stmt_in = "SELECT * from peptides where ({}) in (".format(",".join(self.peptides_keys)) \
-            + ",".join(["(" + ",".join(["%s"]*len(self.peptides_keys)) + ")"]*len(l_peptides_tup)) \
-            + ")"
-        self.cursor.execute(sel_stmt_in, [y for x in l_peptides_tup for y in x])
-        results = self.cursor.fetchall()
-
-        d = dict()
-        for idx, x in enumerate(results):
-            d[hash(x[1:])] = idx
-
-        mapping = [d[hash(x)] for x in l_peptides_tup]
-
-        return [results[x][0] for x in mapping]
+        # No need to fetch ids, since we generate them ourselves!
+        return pep_ids
 
     def tear_down(self):
         # Close the connection to postgres
