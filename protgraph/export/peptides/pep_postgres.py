@@ -227,7 +227,7 @@ class PepPostgres(APeptideExporter):
 
         # Insert new entry into database:
         if self.postgres_no_duplicates:
-            # self.conn.commit()  # Commit changes, we may need to reapply peptides
+            self.conn.commit()  # Commit changes, we may need to reapply peptides (when deadlocks are caused)
             l_peptides_id = self._export_peptide_no_duplicate(l_peptides_tup, l_path_nodes, l_miscleavages)
         else:
             l_peptides_id = self._export_peptide_simple_insert(l_peptides_tup, l_path_nodes, l_miscleavages)
@@ -280,10 +280,19 @@ class PepPostgres(APeptideExporter):
             + ") VALUES " \
             + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
             + " ON CONFLICT DO NOTHING"
-        self.cursor.execute(ins_stmt, [y for a, b in zip(l_peptides_tup, pep_ids) for y in [b] + list(a)])
+        self._execute_export_no_duplicates(ins_stmt, [y for a, b in zip(l_peptides_tup, pep_ids) for y in [b] + list(a)])
 
         # No need to fetch ids, since we generate them ourselves!
         return pep_ids
+
+    def _execute_export_no_duplicates(self, statement, entries):
+        # Execute statement. Retry if failed.
+        try:
+            self.cursor.execute(statement, entries)
+        except Exception:
+            self.conn.rollback()
+            self._execute_export_no_duplicates(statement, entries)
+
 
     def tear_down(self):
         # Close the connection to postgres
