@@ -222,11 +222,9 @@ class PepMySQL(APeptideExporter):
         # and commit everything in the conenction for a protein
         self.conn.commit()
 
-
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
         for a, b, c, d in zip(l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
             self.export_peptide(prot_graph, a, b, c, d)
-
 
     def export_peptide(self, prot_graph, path_nodes, path_edges, peptide, miscleavages):
         # Get the weight

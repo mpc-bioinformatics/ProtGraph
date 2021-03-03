@@ -280,7 +280,10 @@ class PepPostgres(APeptideExporter):
             + ") VALUES " \
             + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
             + " ON CONFLICT DO NOTHING"
-        self._execute_export_no_duplicates(ins_stmt, [y for a, b in zip(l_peptides_tup, pep_ids) for y in [b] + list(a)])
+        self._execute_export_no_duplicates(
+            ins_stmt,
+            [y for a, b in zip(l_peptides_tup, pep_ids) for y in [b] + list(a)]
+        )
 
         # No need to fetch ids, since we generate them ourselves!
         return pep_ids
@@ -292,7 +295,6 @@ class PepPostgres(APeptideExporter):
         except Exception:
             self.conn.rollback()
             self._execute_export_no_duplicates(statement, entries)
-
 
     def tear_down(self):
         # Close the connection to postgres
