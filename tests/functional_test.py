@@ -15,7 +15,7 @@ class FunctionalTest(unittest.TestCase):
             os.path.abspath(os.path.join(cls.examples_path, "e_coli.dat")),
             os.path.abspath(os.path.join(cls.examples_path, "p53_human.txt"))
         ]
-        cls.procs_num = ["-n", "2"]
+        cls.procs_num = ["-n", "1"]
 
     def test_minimal(self):
         args = protgraph.parse_args([] + self.procs_num + self.example_files)
