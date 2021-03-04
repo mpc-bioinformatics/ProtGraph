@@ -16,7 +16,7 @@ class GraphML(AExporter):
 
         self.flat = not kwargs["export_in_directories"]
 
-    def export(self, prot_graph):
+    def export(self, prot_graph, _):
         if self.flat:
             accession = prot_graph.vs["accession"][0]
             prot_graph.write_graphml(os.path.join(self.out_folder, accession + ".graphml"))

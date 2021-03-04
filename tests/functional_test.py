@@ -85,6 +85,10 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-egml"] + self.procs_num + self.example_files)
         protgraph.prot_graph(args)
 
+    def test_export_pep_fasta(self):
+        args = protgraph.parse_args(["-epepfasta", "--pep_fasta_hops", "2"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(args)
+
     def test_issue8(self):
         args = protgraph.parse_args(["-n", "1", os.path.join(self.examples_path, "Q9QXS1.txt")])
         protgraph.prot_graph(args)

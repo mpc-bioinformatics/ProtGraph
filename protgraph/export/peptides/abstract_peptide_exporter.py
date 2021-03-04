@@ -48,11 +48,11 @@ class APeptideExporter(AExporter):
         pass
 
     @abstractmethod
-    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
+    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, queue):
         """ Here goes the actual implementation of exporting a list of peptides into a file/folder/database etc. """
         pass
 
-    def export(self, prot_graph):
+    def export(self, prot_graph, queue):
         """
         This abstract exporter implements the actual peptide traversal
         in a graph and calls the peptide exporter
@@ -102,7 +102,7 @@ class APeptideExporter(AExporter):
 
             if len(l_path) >= self.batch_size:
                 # We export the list of peptides here and reset those lists afterwards
-                self.export_peptides(prot_graph, l_path, l_edge_ids, l_aas, l_cleaved)
+                self.export_peptides(prot_graph, l_path, l_edge_ids, l_aas, l_cleaved, queue)
                 l_path = []
                 l_edge_ids = []
                 l_aas = []
@@ -110,7 +110,7 @@ class APeptideExporter(AExporter):
 
         if len(l_path) > 0:
             # Special case, we might have some peptides left
-            self.export_peptides(prot_graph, l_path, l_edge_ids, l_aas, l_cleaved)
+            self.export_peptides(prot_graph, l_path, l_edge_ids, l_aas, l_cleaved, queue)
 
     def _get_peps(self, prot_graph, s, e):
         """ Get peptides depending on selected method """

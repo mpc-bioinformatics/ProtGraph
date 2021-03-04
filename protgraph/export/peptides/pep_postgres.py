@@ -180,7 +180,7 @@ class PepPostgres(APeptideExporter):
         self.statement_peptides_inner_values = "(" + ",".join(["%s"]*len(self.peptides_keys)) + ")"
         self.statement_peptides_meta_inner_values = "(" + ",".join(["%s"]*len(self.peptides_meta_keys)) + ")"
 
-    def export(self, prot_graph):
+    def export(self, prot_graph, queue):
         # First insert accession into accession table and retrieve its id:
         # since we only do this per protein!
         with self.conn:
@@ -192,12 +192,12 @@ class PepPostgres(APeptideExporter):
             self.accession_id = self.cursor.fetchone()[0]
 
         # Then we continue with the export function
-        super().export(prot_graph)
+        super().export(prot_graph, queue)
 
         # and commit everything in the conenction for a protein
         self.conn.commit()
 
-    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
+    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
         # Get the weight
         if "mono_weight" in prot_graph.es[l_path_edges[0][0]].attributes():
             l_weight = [sum(prot_graph.es[x]["mono_weight"]) for x in l_path_edges]

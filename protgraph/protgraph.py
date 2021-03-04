@@ -21,6 +21,7 @@ def prot_graph(prot_graph_args):
 
     entry_queue = Queue(1000)  # TODO limit? or not limit
     statistics_queue = Queue()
+    common_out_file_queue = Queue()
 
     number_of_procs = \
         cpu_count() - 1 if prot_graph_args["num_of_processes"] is None else prot_graph_args["num_of_processes"]
@@ -30,16 +31,23 @@ def prot_graph(prot_graph_args):
         target=read_embl,
         args=(
             prot_graph_args["files"], prot_graph_args["num_of_entries"],
-            prot_graph_args["exclude_accessions"], entry_queue,
+            prot_graph_args["exclude_accessions"], entry_queue
         )
     )
     graph_gen = [
-        Process(target=generate_graph_consumer, args=(entry_queue, statistics_queue), kwargs=prot_graph_args)
+        Process(
+            target=generate_graph_consumer, args=(entry_queue, statistics_queue, common_out_file_queue),
+            kwargs=prot_graph_args
+        )
         for _ in range(number_of_procs)
     ]
     main_write_thread = Thread(
         target=write_output_csv_thread,
         args=(statistics_queue, prot_graph_args["output_csv"], prot_graph_args["num_of_entries"],)
+    )
+    common_out_thread = Thread(
+        target=write_to_common_file,
+        args=(common_out_file_queue,)
     )
 
     # Start Processes/threads in reverse!
@@ -47,23 +55,25 @@ def prot_graph(prot_graph_args):
         p.start()
     entry_reader.start()
     main_write_thread.start()
+    common_out_thread.start()
 
     # Check Processes and Threads in Reverse
     graph_gen_stop_sent = False
-    main_write_thread_stop_send = False
+    main_write_threads_stop_send = False
     while True:
         time.sleep(1)
 
         # Is the writing thread alive?
-        if not main_write_thread.is_alive():
+        if not main_write_thread.is_alive() and not common_out_thread.is_alive():
             # Then exit the program
             break
 
         # Are Consumers alive?
-        if all([not x.is_alive() for x in graph_gen]) and not main_write_thread_stop_send:
+        if all([not x.is_alive() for x in graph_gen]) and not main_write_threads_stop_send:
             # Add None to the last queue to stop thread
             statistics_queue.put(None)
-            main_write_thread_stop_send = True
+            common_out_file_queue.put(None)
+            main_write_threads_stop_send = True
             continue
 
         # Is Producer alive?
@@ -445,6 +455,51 @@ def parse_args(args=None):
         "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
     )
     parser.add_argument(
+        "--export_peptide_fasta", "-epepfasta", default=False, action="store_true",
+        help="Set this flag to export peptides into a single fasta file."
+    )
+    parser.add_argument(
+        "--pep_fasta_out", default=os.path.join(os.getcwd(), "peptides.fasta"),
+        type=str,
+        help="Set the output file for the peptide fasta export. Default: '${pwd}/peptides.fasta'. "
+        "NOTE: This will overwrite existing files."
+    )
+    parser.add_argument(
+        "--pep_fasta_hops", type=int, default=None,
+        help="Set the number of hops (max length of path) which should be used to get paths "
+        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
+        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
+    )
+    parser.add_argument(
+        "--pep_fasta_miscleavages", type=int, default=-1,
+        help="Set this number to filter the generated paths by their miscleavages."
+        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
+        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
+        "number of miscleavages, if needed."
+    )
+    parser.add_argument(
+        "--pep_fasta_skip_x",  default=False, action="store_true",
+        help="Set this flag to skip to skip all entries, which contain an X"
+    )
+    parser.add_argument(
+        "--pep_fasta_use_igraph",  default=False, action="store_true",
+        help="Set this flag to use igraph instead of netx. "
+        "NOTE: If setting this flag, the peptide generation will be considerably faster "
+        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
+        "over each single edge, so some (repeating results) may never be discovered when using "
+        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
+    )
+    parser.add_argument(
+        "--pep_fasta_min_pep_length", type=int, default=0,
+        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
+        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
+    )
+    parser.add_argument(
+        "--pep_fasta_batch_size", type=int, default=25000,
+        help="Set the batch size. This defines how many peptides are processed and written at once. "
+        "Default: 25000"
+    )
+    parser.add_argument(
         "--export_gremlin", "-egremlin", default=False, action="store_true",
         help="Set this flag to export the graphs via gremlin to a gremlin server."
         "NOTE: The export is very slow, since it executes each node as a single query "
@@ -546,6 +601,15 @@ def parse_args(args=None):
         pep_mysql_no_duplicates=args.pep_mysql_no_duplicates,
         pep_mysql_use_igraph=args.pep_mysql_use_igraph,
         pep_mysql_min_pep_length=args.pep_mysql_min_pep_length,
+        # Export peptides to fasta file
+        export_peptide_fasta=args.export_peptide_fasta,
+        pep_fasta_out=args.pep_fasta_out,
+        pep_fasta_hops=args.pep_fasta_hops,
+        pep_fasta_miscleavages=args.pep_fasta_miscleavages,
+        pep_fasta_skip_x=args.pep_fasta_skip_x,
+        pep_fasta_use_igraph=args.pep_fasta_use_igraph,
+        pep_fasta_min_pep_length=args.pep_fasta_min_pep_length,
+        pep_fasta_batch_size=args.pep_fasta_batch_size,
         # Export Gremlin (partially finished)
         export_gremlin=args.export_gremlin,
         gremlin_url=args.gremlin_url,
@@ -601,6 +665,42 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
 
     # Close pbar, since we finished
     pbar.close()
+
+
+def write_to_common_file(queue):
+    """
+    This method accepts a tuple from a queue where:
+    the first element in tuple contains the destination of the file
+    and the second the content which should be writton on
+    """
+    out_dict = dict()
+
+    while True:
+        # Wait and get next result entry
+        entry = queue.get()
+
+        # check if entry is None
+        # If it is, we stop
+        if entry is None:
+            break
+
+        # Write Data Row and update progress
+        try:
+            out_dict[entry[0]].write(entry[1])
+        except Exception:
+            # Create folder if needed
+            os.makedirs(
+                os.path.dirname(entry[0]),
+                exist_ok=True
+            )
+            # Set entry
+            out_dict[entry[0]] = open(entry[0], "w")
+            # Rewrite first line!
+            out_dict[entry[0]].write(entry[1])
+
+    # Close all opened files
+    for _, val in out_dict.items():
+        val.close()
 
 
 if __name__ == "__main__":

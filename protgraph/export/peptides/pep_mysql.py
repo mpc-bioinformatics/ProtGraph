@@ -206,7 +206,7 @@ class PepMySQL(APeptideExporter):
             + ",".join(["%s"]*len(self.peptides_meta_keys)) \
             + ")"
 
-    def export(self, prot_graph):
+    def export(self, prot_graph, queue):
         # First insert accession into accession table and retrieve its id:
         # since we only do this per protein!
         accession = prot_graph.vs[0]["accession"]
@@ -217,12 +217,12 @@ class PepMySQL(APeptideExporter):
         self.accession_id = self.cursor.lastrowid
 
         # Then we continue with the export function
-        super().export(prot_graph)
+        super().export(prot_graph, queue)
 
         # and commit everything in the conenction for a protein
         self.conn.commit()
 
-    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
+    def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
         for a, b, c, d in zip(l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
             self.export_peptide(prot_graph, a, b, c, d)
 

@@ -110,7 +110,7 @@ class MySQL(AExporter):
                 "qualifiers"
             ]
 
-    def export(self, prot_graph):
+    def export(self, prot_graph, _):
         # Export the protein
         self._export(prot_graph)
 
