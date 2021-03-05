@@ -1,3 +1,6 @@
+import itertools
+import multiprocessing
+
 import mysql.connector
 
 from protgraph.export.peptides.abstract_peptide_exporter import \
@@ -40,6 +43,19 @@ class PepMySQL(APeptideExporter):
     def batch_size(self) -> int:
         return self.get_batch_size
 
+    def unique_id_gen(self):
+        value = self.id_size * self.proc_id
+
+        times = 0
+        while True:
+            if times == self.id_size:
+                value = value + ((self.num_procs-1) * self.id_size)
+                times = 0
+
+            yield value
+            value += 1
+            times += 1
+
     def start_up(self, **kwargs):
         # Here we generate a connection to mysql
         # and generate the corresponding tables
@@ -58,7 +74,13 @@ class PepMySQL(APeptideExporter):
         self.get_peptide_min_length = kwargs["pep_mysql_min_pep_length"]  # Peptide minimum length
         self.get_skip_x = kwargs["pep_mysql_skip_x"]
         self.get_use_igraph = kwargs["pep_mysql_use_igraph"]
-        self.get_batch_size = 10000  # TODO do this as a Parameter!
+        self.get_batch_size = kwargs["pep_mysql_batch_size"]
+
+        # Get Unique generator, since mysql can ONLY! return 1 id at once after bulk inserting entries..
+        self.proc_id = multiprocessing.current_process()._identity[0] - 2  # Offset, dur to Main and Reading Thread
+        self.id_size = 1000000  # Set sufficiently enough. Fails, if it is called with more than 1 Million processes
+        self.num_procs = kwargs["num_of_processes"]
+        self.id_gen = self.unique_id_gen()
 
         # Initialize connection
         try:
@@ -102,8 +124,8 @@ class PepMySQL(APeptideExporter):
             cur = self.conn.cursor()
             cur.execute("""
             CREATE TABLE  if not exists peptides (
-                id BIGINT UNIQUE AUTO_INCREMENT,
-                weight {0} NOT NULL,
+                id {0},
+                weight {1} NOT NULL,
                 a_count SMALLINT NOT NULL,
                 b_count SMALLINT NOT NULL,
                 c_count SMALLINT NOT NULL,
@@ -132,31 +154,23 @@ class PepMySQL(APeptideExporter):
                 z_count SMALLINT NOT NULL,
                 n_terminus VARCHAR(1) CHARACTER SET ascii NOT NULL,
                 c_terminus VARCHAR(1) CHARACTER SET ascii NOT NULL,
-                PRIMARY KEY ({1}));""".format(
-                "BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE",
-                """id""" if self.no_duplicates else "id"
-                ))
+                PRIMARY KEY (id));""".format(
+                    "BINARY(57)" if self.no_duplicates else "BIGINT",
+                    "BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE"
+                    )
+                )
         except Exception as e:
             print("Error createing peptides table. Continuing... (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
             self.peptides_keys = [
-                "weight",
+                "id", "weight",
                 "a_count", "b_count", "c_count", "d_count", "e_count", "f_count", "g_count", "h_count",
                 "i_count", "j_count", "k_count", "l_count", "m_count", "n_count", "o_count", "p_count",
                 "q_count", "r_count", "s_count", "t_count", "u_count", "v_count", "w_count", "x_count",
                 "y_count", "z_count", "n_terminus", "c_terminus"
             ]
-        # TODO DL create Index for select statement! only if no duplicates
-        try:
-            cur = self.conn.cursor()
-            cur.execute("CREATE INDEX peptide_idx ON peptides ({})".format(",".join(self.peptides_keys)))
-        except Exception as e:
-            print("Error createing peptides index. Continuing... (Reason: {})".format(str(e)))
-        finally:
-            self.conn.commit()
-            cur.close()
 
         try:
             # Create the peptides meta information (can also be extremely large)
@@ -164,12 +178,15 @@ class PepMySQL(APeptideExporter):
             cur.execute("""
             CREATE TABLE  if not exists peptides_meta (
                 id BIGINT AUTO_INCREMENT,
-                peptides_id BIGINT,
+                peptides_id {0},
                 accession_id INT,
                 path MEDIUMTEXT CHARACTER SET ascii NOT NULL,
                 miscleavages INT NOT NULL,
                 PRIMARY KEY (id)
-            );""")  # References to peptide and accession removed for performance reasons
+            );""".format(
+                    "BINARY(57)" if self.no_duplicates else "BIGINT",
+                )
+            )  # References to peptide and accession removed for performance reasons
         except Exception as e:
             print("Error createing peptides_meta table. Continuing... (Reason: {})".format(str(e)))
         finally:
@@ -184,27 +201,8 @@ class PepMySQL(APeptideExporter):
 
         # Set insert statement for peptides
         self.statement_accession = "INSERT INTO accessions(accession) VALUES (%s);"
-
-        self.statement_peptides_select = "SELECT id from peptides where " \
-            + " and ".join([x + "=" + y for x, y in zip(self.peptides_keys, ["%s"]*len(self.peptides_keys))])
-
-        self.statement_peptides_insert_no_dup = "INSERT INTO peptides (" \
-            + ",".join(self.peptides_keys) \
-            + ") SELECT " \
-            + ",".join(["%s"]*len(self.peptides_keys)) \
-            + " WHERE NOT EXISTS( " + self.statement_peptides_select + ") LIMIT 1 "
-
-        self.statement_peptides = "INSERT INTO peptides (" \
-            + ",".join(self.peptides_keys) \
-            + ") VALUES (" \
-            + ",".join(["%s"]*len(self.peptides_keys)) \
-            + ")"
-
-        self.statement_meta_peptides = "INSERT INTO peptides_meta (" \
-            + ",".join(self.peptides_meta_keys) \
-            + ") VALUES (" \
-            + ",".join(["%s"]*len(self.peptides_meta_keys)) \
-            + ")"
+        self.statement_peptides_inner_values = "(" + ",".join(["%s"]*len(self.peptides_keys)) + ")"
+        self.statement_peptides_meta_inner_values = "(" + ",".join(["%s"]*len(self.peptides_meta_keys)) + ")"
 
     def export(self, prot_graph, queue):
         # First insert accession into accession table and retrieve its id:
@@ -223,58 +221,102 @@ class PepMySQL(APeptideExporter):
         self.conn.commit()
 
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
-        for a, b, c, d in zip(l_path_nodes, l_path_edges, l_peptide, l_miscleavages):
-            self.export_peptide(prot_graph, a, b, c, d)
-
-    def export_peptide(self, prot_graph, path_nodes, path_edges, peptide, miscleavages):
         # Get the weight
-        if "mono_weight" in prot_graph.es[path_edges[0]].attributes():
-            weight = sum(prot_graph.es[path_edges]["mono_weight"])
+        if "mono_weight" in prot_graph.es[l_path_edges[0][0]].attributes():
+            l_weight = [sum(prot_graph.es[x]["mono_weight"]) for x in l_path_edges]
         else:
-            weight = -1
+            l_weight = [-1]*len(l_path_nodes)
 
-        # Set the output tuple
-        peptides_tup = (
-            weight,
-            # Counts of Aminoacids
-            peptide.count("A"), peptide.count("B"), peptide.count("C"), peptide.count("D"), peptide.count("E"),
-            peptide.count("F"), peptide.count("G"), peptide.count("H"), peptide.count("I"), peptide.count("J"),
-            peptide.count("K"), peptide.count("L"), peptide.count("M"), peptide.count("N"), peptide.count("O"),
-            peptide.count("P"), peptide.count("Q"), peptide.count("R"), peptide.count("S"), peptide.count("T"),
-            peptide.count("U"), peptide.count("V"), peptide.count("W"), peptide.count("X"), peptide.count("Y"),
-            peptide.count("Z"),
-            # N and C Terminus
-            peptide[0], peptide[-1]
-        )
+        # Generate large list of tuples, which should be added to mysql
+        l_peptides_tup = [
+            (
+                weight,  # Counts of Aminoacids
+                peptide.count("A"), peptide.count("B"), peptide.count("C"), peptide.count("D"), peptide.count("E"),
+                peptide.count("F"), peptide.count("G"), peptide.count("H"), peptide.count("I"), peptide.count("J"),
+                peptide.count("K"), peptide.count("L"), peptide.count("M"), peptide.count("N"), peptide.count("O"),
+                peptide.count("P"), peptide.count("Q"), peptide.count("R"), peptide.count("S"), peptide.count("T"),
+                peptide.count("U"), peptide.count("V"), peptide.count("W"), peptide.count("X"), peptide.count("Y"),
+                peptide.count("Z"),  # N and C Terminus
+                peptide[0], peptide[-1]
+            )
+            for peptide, weight in zip(l_peptide, l_weight)
+        ]
 
         # Insert new entry into database:
         if self.no_duplicates:
-            # If no dupicates, we search for a duplicate
-            self.cursor.execute(self.statement_peptides_insert_no_dup, peptides_tup*2)
-            self.conn.commit()
-            peptides_id = self.cursor.lastrowid
-            if peptides_id < 1:
-                # No entry, insert!
-                try:
-                    self.cursor.execute(self.statement_peptides_select, peptides_tup)
-                    peptides_id = next(self.cursor)[0]
-                except Exception:
-                    # Skip rollback, since we can simly reexecute the statements here for the same peptide
-                    self.export_peptide(prot_graph, path_nodes, path_edges, peptide, miscleavages)
-                    return
+            l_peptides_id = self._export_peptide_no_duplicate(l_peptides_tup, l_path_nodes, l_miscleavages)
         else:
-            # simply insert it into the database
-            self.cursor.execute(self.statement_peptides, peptides_tup)
-            peptides_id = self.cursor.lastrowid
+            l_peptides_id = self._export_peptide_simple(l_peptides_tup, l_path_nodes, l_miscleavages)
 
-        # Insert meta data information of peptide ALWAYS
-        peptides_meta_tup = (
-            peptides_id,
-            self.accession_id,
-            ",".join(map(str, path_nodes)),
-            miscleavages
+        # Bulk insert meta data information of peptides (ALWAYS)
+        l_peptides_meta_tup = [
+            (
+                peptides_id,
+                self.accession_id,
+                ",".join(map(str, path_nodes)),
+                miscleavages
+            )
+            for peptides_id, path_nodes, miscleavages in zip(l_peptides_id, l_path_nodes, l_miscleavages)
+        ]
+        # Bulk insert statement and execute
+        stmt = "INSERT INTO peptides_meta (" \
+            + ",".join(self.peptides_meta_keys) \
+            + ") VALUES " \
+            + ",".join([self.statement_peptides_meta_inner_values]*len(l_peptides_id))
+        self.cursor.execute(stmt, [y for x in l_peptides_meta_tup for y in x])
+
+    def _export_peptide_simple(self, l_peptides_tup, l_path_nodes, l_miscleavages):
+        # Get ids of each simple peptide
+        unique_pep_ids = list(itertools.islice(self.id_gen, len(l_peptides_tup)))
+
+        # Bulk Insert them
+        stmt = "INSERT INTO peptides (" \
+            + ",".join(self.peptides_keys) \
+            + ") VALUES " \
+            + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
+            + ";"
+        self.cursor.execute(
+            stmt,
+            [y for a, b in zip(l_peptides_tup, unique_pep_ids) for y in [b] + list(a)]
         )
-        self.cursor.execute(self.statement_meta_peptides, peptides_meta_tup)
+
+        # return generated ids
+        return unique_pep_ids
+
+    def _export_peptide_no_duplicate(self, l_peptides_tup, l_path_nodes, l_miscleavages):
+        # Map peptides to 452 + 4 (multiple of 8) many bits (as id)
+        pep_ids = [
+            "0000" + "".join(
+                # Here we use for the aa-counts 17 bits (each)
+                # followed by 5 bits for the n and c terminus (ascii_code - 65)
+                # The weight is disregarded, since it is composed by the aa counts
+                [format(i, 'b').zfill(17) for i in x[1:-2]] \
+                + [format(ord(i) - 65, 'b').zfill(5) for i in x[-2:]]
+            )
+            for x in l_peptides_tup
+        ]
+
+        pep_ids = [int(x, 2).to_bytes(len(x) // 8, byteorder='big') for x in pep_ids]
+        # Bulk Insert them
+        stmt = "INSERT IGNORE INTO peptides (" \
+            + ",".join(self.peptides_keys) \
+            + ") VALUES " \
+            + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
+            + ";"
+        self._execute_retry(
+            stmt,
+            [y for a, b in zip(l_peptides_tup, pep_ids) for y in [b] + list(a)]
+        )
+
+        # return generated ids
+        return pep_ids
+
+    def _execute_retry(self, statement, entries):
+        # Execute statement. Retry if failed.
+        try:
+            self.cursor.execute(statement, entries)
+        except Exception:
+            self._execute_retry(statement, entries)
 
     def tear_down(self):
         # Close the connection to mysql

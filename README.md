@@ -48,16 +48,16 @@ ProtGraph will generate a statistics file when generating a graph from an UniPro
 
 Here are some examples, which can be retrieved from the statistics:
 
-If executing via the flag `-cnp`, the total number of possible non-repeating paths between `s` and `e` are calculated. In this example, `43` paths are possible. With the number of possible paths, we know that the graph contains `43` peptides (some of them repeating).
-It may be interesting to know how many (repeating) peptides with a certain number of miscleavages are present in a protein. To calculate this statistic, simply provide the flag `-cnpm`. In this example: `21` peptides with 0 miscleavages, `18` with 1 miscleavage and `4` with 2 miscleavages are present.
+If executing via the flag `-cnp`, the total number of possible non-repeating paths between `s` and `e` are calculated. In this example, `46` paths are possible. With the number of possible paths, we know that the graph contains `46` peptides (some of them repeating).
+It may be interesting to know how many (repeating) peptides with a certain number of miscleavages are present in a protein. To calculate this statistic, simply provide the flag `-cnpm`. In this example: `23` peptides with 0 miscleavages, `19` with 1 miscleavage and `4` with 2 miscleavages are present.
 
 By combining multiple flags, it is possible to retrieve the number of  peptides having a specific length (counting aminoacids). With the flags `-cnph` and `-nm`, ProtGraph would write into the statistics file the needed information to retrieve the following:
 | Peptide Length | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |----------------|---|---|---|---|---|---|---|---|
-| #Peptides      | 2 | 5 | 8 | 6 | 6 | 4 | 8 | 4 |
+| #Peptides      | 3 | 5 | 8 | 8 | 6 | 4 | 8 | 4 |
 
 
-Dividing this table by `43` would give us the distribution of the peptide lengths for the given protein.
+Dividing this table by `46` would give us the distribution of the peptide lengths for the given protein.
 
 
 

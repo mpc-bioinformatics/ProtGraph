@@ -455,6 +455,11 @@ def parse_args(args=None):
         "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
     )
     parser.add_argument(
+        "--pep_mysql_batch_size", type=int, default=25000,
+        help="Set the batch size. This defines how many peptides are inserted at once. "
+        "Default: 25000"
+    )
+    parser.add_argument(
         "--export_peptide_fasta", "-epepfasta", default=False, action="store_true",
         help="Set this flag to export peptides into a single fasta file."
     )
@@ -601,6 +606,7 @@ def parse_args(args=None):
         pep_mysql_no_duplicates=args.pep_mysql_no_duplicates,
         pep_mysql_use_igraph=args.pep_mysql_use_igraph,
         pep_mysql_min_pep_length=args.pep_mysql_min_pep_length,
+        pep_mysql_batch_size=args.pep_mysql_batch_size,
         # Export peptides to fasta file
         export_peptide_fasta=args.export_peptide_fasta,
         pep_fasta_out=args.pep_fasta_out,
