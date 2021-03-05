@@ -1,4 +1,4 @@
-# [WIP] ProtGraph - A Graph-Generator for Proteins
+# ProtGraph - A Graph-Generator for Proteins
 
 This project aims to efficiently generate graphs of proteins using text entries from [UniProt](https://www.uniprot.org/). These text files usually end with the extension: `.dat` or `.txt`.
 
