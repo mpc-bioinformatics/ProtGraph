@@ -25,7 +25,7 @@ class Gremlin(AExporter):
         self.conn = DriverRemoteConnection(kwargs["gremlin_url"], kwargs["gremlin_traversal_source"], pool_size=1)
         self.remote_graph = traversal().withRemote(self.conn)
 
-    def export(self, prot_graph):
+    def export(self, prot_graph, _):
         try:
             # Non Bulk approach
             nodes = [

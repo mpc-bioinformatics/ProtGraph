@@ -20,7 +20,7 @@ class AExporter(ABC):
         pass
 
     @abstractmethod
-    def export(self, prot_graph):
+    def export(self, prot_graph, out_queue):
         """ Here goes the actual implementation for exporting! """
         pass
 

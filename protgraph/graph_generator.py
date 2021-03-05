@@ -85,7 +85,7 @@ def _include_ft_information(entry, graph, kwargs):
     return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant
 
 
-def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
+def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, **kwargs):
     """
     TODO
     describe kwargs and consumer until a graph is generated and digested etc ...
@@ -130,7 +130,7 @@ def generate_graph_consumer(entry_queue, graph_queue, **kwargs):
             verify_graph(graph)
 
         # Persist or export graphs with speicified exporters
-        graph_exporters.export_graph(graph)
+        graph_exporters.export_graph(graph, common_out_queue)
 
         # Output statistics we gathered during processing
         entry_protein_desc = entry.description.split(";", 1)[0]

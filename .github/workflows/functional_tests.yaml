@@ -1,4 +1,4 @@
-name: Python Tests on Version 3.8
+name: Python Tests on Version 3.X
 on: [push, pull_request]
 
 jobs:

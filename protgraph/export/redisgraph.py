@@ -21,7 +21,7 @@ class RedisGraph(AExporter):
         except Exception as e:
             raise Exception("Could not establish a connection to redis", e)
 
-    def export(self, prot_graph):
+    def export(self, prot_graph, _):
         # Export The protein
         self._export(prot_graph)
 
