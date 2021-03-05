@@ -115,45 +115,73 @@ Let's use the provided example `e_coli.dat` located in `examples/e_coli.dat` (Or
 
 The graph generation can be executed via: `protgraph examples/e_coli.dat`. This will generate the graphs and the additional statistics file. You can inspect the statistics file after it has finished. This should only take a few seconds/minutes.
 
----
-
-During execution it could be seen that now information was provided, when ProtGraph finishes.
-
-Sadly, `Biopython` does not provide information of how many entries are available in a `.txt` or `.dat` file. Therefore this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
+A progressbar was not shown during execution which is due to `Biopython` not provide information of how many entries are available in a `.txt` or `.dat` file.Therefore this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
 
 To retrieve the number of entries beforehand, you could e.g. use `cat examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files. The number of entries for each file then need to be summed: `protgraph -n 18868 examples/e_coli.dat examples/e_coli.dat`
 
----
-
 If to many (or to few) processes are executed, then it can be adjusted via the parameter `--num_of_processes` or `-np`. E.G. `protgraph --num_of_processes 3 --num_of_entries 9434 examples/e_coli.dat` will use 4 (`3` + 1 reading process) processes.
-
----
 
 To fully annotate the graphs with weights and to retrieve currently all available statistics, use the following: `protgraph -amwe -aawe -cnp -cnpm -cnph -n 9434 examples/e_coli.dat`
 
-## Exporting graphs
+---
 
-While executing ProtGraph, generated graphs are not saved.
+Fasta export examples:
 
-This is the default behaviour of `protgraph`. It excludes the generated graphs, since those can explode in size and the disk space on machines  may also be limited. Currently a few export functionalities are available and it is planned to extend this functionality.
+Use Protgraph to get all possible peptides from isoforms and canonoical for `e_coli.dat` into a fasta file:
+> protgraph -n 9434 -sv -ss -sm -epepfasta examples/e_coli.dat
+
+Instead of having only peptides, get all possible proteins with isoforms and canonoical for `e_coli.dat` into a fasta file:
+> protgraph -n 9434 -sv -ss -sm -d skip -epepfasta examples/e_coli.dat
+
+It could also be interesing to get a fasta file of proteins with all variants, isoforms, cleaved or not cleaved signal peptide/initiator methionine:
+> protgraph -n 9434 -d skip -epepfasta examples/e_coli.dat
+
+(This generates a 5.2G Fasta file!)
+
+Maybe it is neccessary to retrieve all possible peptide combinations of arbitrary cut peptides in proteins. This can be achieved via `-d full`. However, this would take a lot of time and a lot of disk space for the whole protein (even for `e_coli.dat`). Instead we extract all possible peptides which do not have more than `100` aminoacids:
+> protgraph -n 9434 -sv -ss -sm -si -d full -epepfasta --pep_fasta_hops 100 examples/e_coli.dat
+
+(This generates a 20G Fasta file with 244 985 079 peptides!)
+
+Here the example with all possible peptide combinations for `e_coli.dat` to illustrate how quickly it can explode:
+> protgraph -n 9434 -sv -ss -sm -si -d full -epepfasta - examples/e_coli.dat
+
+(This generates a 219G Fasta file with 694 844 270 peptides!)
+
+It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) before exporting a peptides/proteins to have an overview of how many peptides/proteins are currently represented by all graphs.
+
+## ProtGraph Exporters
+
+While executing ProtGraph, generated graphs are not saved. This is also true for peptides or proteins, which are represented by the graphs.
+
+This is the default behaviour of `protgraph`. It excludes the generated graphs/proteins/peptides, since those can explode in size and the disk space on machines may also be limited. This is illustrated in examples.
+
+However, those exporting functionalities can be used. Those differ in two categories: `-e*` for graph exports and `-epep` for peptide/protein exports. For the peptide/protein exports limitations can be set on the graph-traversal itself.
+
+
+**NOTE:** Graphs can contain unmanagable amounts of peptides/proteins. Do a dry run WITHOUT the export functionality first and examine the statistics output. Each peptide/protein exporter has multiple parameters to further limit the number of results.
+Without a dry run it may happen that a protein like P04637 (P53 Human) with all possible peptides and variants is exported, which would take up all disk space.
+
+
+It is planned to add further export functionalities if needed.
+
 
 ### File Exports
 
-To export each protein graph into a file, simply set the flags `-edot`, `-egraphml` and/or `-egml`, which will create the corresponding dot, GraphML or GML files into a output folder.
-Exporting to GraphML is recommended since this is the only export method able to serialize all properties in a file which can be set in the graph.
+To export each protein graph into a file, simply set the flags `-edot`, `-egraphml` and/or `-egml`, which will create the corresponding dot, GraphML or GML files into a output folder. With the flag `-epickle` it is also possible to generate a binary pickle file of the graph (which can be used by other python programs with `igraph`).
+If processing many proteins (over 1 000 000) it is recommended to set the flag `-edirs` to save the graphs into multiple files, since the underlying filesystem may be overwhelmed with so many files in one folder.
+
+Exporting to GraphML is recommended since this is the only export method able to serialize all properties in a file which may be set in a graph. However, keep in mind that this export needs the most disk space out of the other graph exporters.
+
+There is also the possibility to directly export graphs into a `fasta` file. This can be achieved via: `-epepfasta`.
 
 ### Database Exporters
 
-The database exporters are currently under development. Two exports are currently available. `protgraph` allows to export the generated graphs into PostgreSQL as well as into RedisGraph. For configuring such export, please look into the `--help` output.
 
-Furthermore an export (experimental) via gremlin is provided as well as an peptide export into PostgreSQL (NOTE: Peptide exports may generate unmanagable amounts of peptides).
+ProtGraph offers multiple database-/storage-exporters. It is possible to export graphs into PostgreSQL/MySQL/RedisGraph and Gremlin (experimental). For PostgreSQL as well as MySQL two tables (`nodes`, `edges`) are generated and corresponding entries for each graph are added.
 
-Note: In PostgreSQL a database should be created with no tables to ensure that ProtGraph can generate the tables itself without errors.
+The export to RedisGraph, generates a graph which can be then accessed by other tools. The experimental export to Gremlin is in a working state, but is not further developed. It works with JanusGraph as well as with TinkerPop (Gremlin Server).
 
-Note: Currently no peptide export is available, but it is planned to be added into ProtGraph. However, using the peptide export to PostgreSQL, some can easily script a peptide export from the database and the corresponding graph files by iterating over each entry.
+Additionally peptides/proteins can be exported via PostgreSQL as well as with MySQL. Both contain the option to skip duplicated entries, which can reduce the size of those databases.
 
-
-## Missing Functionalities
-
-* Other export functionalities
-* Peptide export scripts/possibility for ProtGraph
+For more information of exporters and other functionalities of ProtGraph, execute: `protgraph --help`.
