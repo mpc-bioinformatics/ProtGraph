@@ -39,7 +39,7 @@ This entry contains the canonical sequence (described in section `SQ`), which is
 Additionally, 3 `VARIANT`s are present in this entry, informing about substituted aminoacids, which again may yield peptides that are not covered by the canonical sequence or by digestion.
 
 With `ProtGraph`, a graph can be generated. In this example, it would look like follows:
-![Example Graph](resources/example_graph.png)
+![Example Graph](https://raw.githubusercontent.com/mpc-bioinformatics/ProtGraph/master/resources/example_graph.png)
 
 With such a graph representation, the earlier mentioned peptides, which might not be covered are now covered and could be retrieved, by traversing from the dedicated `s`tart node to the dedicated `e`nd node. (These start and end nodes are internally denoted by: `__start__` and `__end__`).
 The `black drawn` edges (with the label `TRYPSIN`) indicate that this graph was additionally digested via the enzyme Trypsin (default) leading to a compact directed and acyclic graph (in short DAG). From such DAGs, all possible peptides and further statistics can be retrieved.
@@ -52,6 +52,7 @@ If executing via the flag `-cnp`, the total number of possible non-repeating pat
 It may be interesting to know how many (repeating) peptides with a certain number of miscleavages are present in a protein. To calculate this statistic, simply provide the flag `-cnpm`. In this example: `23` peptides with 0 miscleavages, `19` with 1 miscleavage and `4` with 2 miscleavages are present.
 
 By combining multiple flags, it is possible to retrieve the number of  peptides having a specific length (counting aminoacids). With the flags `-cnph` and `-nm`, ProtGraph would write into the statistics file the needed information to retrieve the following:
+
 | Peptide Length | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |----------------|---|---|---|---|---|---|---|---|
 | #Peptides      | 3 | 5 | 8 | 8 | 6 | 4 | 8 | 4 |
@@ -62,6 +63,11 @@ Dividing this table by `46` would give us the distribution of the peptide length
 
 
 ## Setting up ProtGraph
+You can download Protgraph directly from [pypi](https://pypi.org/project/protgraph).
+
+Simply execute: `pip install protgraph`  or `pip install --user protgraph`
+
+### Installing via pip from source (for usage)
 
 First clone this project and enter its directory via:
 
@@ -71,8 +77,6 @@ cd ProtGraph/
 ```
 
 Depending on how you want to use this project follow either the usage instructions for only using Protgraph or the development and tests instructions if you want to use it in a python project or even develop something in ProtGraph itself.
-
-### Installing via pip (for usage)
 
 If you only want to use ProtGraph from the command line, it is sufficient to simply execute: `pip install --user .`
 
@@ -89,10 +93,10 @@ If the command `protgraph` cannot be found, make sure that you have included the
 To set up ProtGraph make sure you have `pipenv` and `pyenv` installed. (via `pacman` `apt` and alike)
 
 
-The dependencies (and possibly Python) need to be installed first. This can be done with:
-> pipenv install
+First download this repository and then install needed dependencies with:
+> pipenv install  && pipenv install -d
 
-Afterwards execute to install the module ProtGraph:
+Afterwards execute the following to install the module ProtGraph:
 > pipenv run pip install -e .
 
 If both commands finished succesfully, activate the environment via:

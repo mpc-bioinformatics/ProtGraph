@@ -4,6 +4,7 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
+pytest = "*"
 
 [packages]
 python-igraph = "*"
@@ -16,4 +17,3 @@ psycopg2 = "*"
 networkx = "*"
 gremlinpython = "*"
 mysql-connector-python = "*"
-pytest = "*"
