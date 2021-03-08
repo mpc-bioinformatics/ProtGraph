@@ -1,0 +1,30 @@
+name: Publish to PyPI
+on: push
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest 
+
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Python 3.6
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+
+      - name: Install Python build
+        run: |
+          python -m pip install --upgrade build
+
+      - name: Build Package
+        run: |
+          python -m build --outdir dist/
+
+      - name: Publish to PyPI
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
