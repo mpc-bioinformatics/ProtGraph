@@ -127,7 +127,7 @@ def write_entry_to_fasta(peptide, accession_list, qualifier_list):
 def execute(in_q, out_q):
     while True:
         rows = in_q.get()
-        if in_q is None:
+        if rows is None:
             break
         # Export information per entry
         strings = []
@@ -146,7 +146,7 @@ def execute(in_q, out_q):
 def execute_compact(in_q, out_q):
     while True:
         rows = in_q.get()
-        if in_q is None:
+        if rows is None:
             break
         # Generate dict of peptides
         for row in rows:
