@@ -243,8 +243,8 @@ if __name__ == "__main__":
             # Iterate over each result from queue in parallel
             print("Waiting for database results...")
 
-            in_queue = multiprocessing.Queue()
-            out_queue = multiprocessing.Queue()
+            in_queue = multiprocessing.Queue(10000)
+            out_queue = multiprocessing.Queue(10000)
 
             number_of_procs = \
                 cpu_count() - 1 if args.number_procs is None else args.number_procs
@@ -271,9 +271,11 @@ if __name__ == "__main__":
             except StopIteration:
                 pass
 
-            out_queue.put(None)  # Inform threads/processes to stop
             for _ in range(number_of_procs):
                 in_queue.put(None)
-            main_write_thread.join()
             for p in pep_gen:
                 p.join()
+            
+            out_queue.put(None)  # Inform threads/processes to stop
+            main_write_thread.join()
+
