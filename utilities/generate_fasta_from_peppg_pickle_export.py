@@ -149,6 +149,7 @@ def execute_compact(in_q, out_q):
         if rows is None:
             break
         # Generate dict of peptides
+        strings = []
         for row in rows:
             d = dict()
             for path, accession in zip(row[0], row[1]):
@@ -161,7 +162,6 @@ def execute_compact(in_q, out_q):
                 d[peptide][1].append(qualifiers)
 
             # write dict entries to fasta
-            strings = []
             for key, val, in d.items():
                 strings.append(
                     write_entry_to_fasta(key, val[0], val[1])
@@ -190,6 +190,15 @@ def write_thread(queue, output_file, total_entries, b_size):
                 break
             fasta_out.write(lines)
             pbar.update(min(b_size, total_entries - pbar.n))
+
+
+def read_cursor(in_q, cursor, b_size):
+    batch_input = batch(cursor, b_size)
+    try:
+        while True:
+            in_q.put(next(batch_input))
+    except StopIteration:
+        pass
 
 
 if __name__ == "__main__":
@@ -246,6 +255,13 @@ if __name__ == "__main__":
             in_queue = multiprocessing.Queue(10000)
             out_queue = multiprocessing.Queue(10000)
 
+            # Create Processes
+            entry_reader = Process(
+                target=read_cursor,
+                args=(in_queue, cursor, args.batch_size,)
+            )
+            entry_reader.start()
+
             number_of_procs = \
                 cpu_count() - 1 if args.number_procs is None else args.number_procs
             pep_gen = [
@@ -264,18 +280,12 @@ if __name__ == "__main__":
             )
             main_write_thread.start()
 
-            batch_input = batch(cursor, args.batch_size)
-            try:
-                while True:
-                    in_queue.put(next(batch_input))
-            except StopIteration:
-                pass
-
+            entry_reader.join()
+            # Inform threads/processes to stop
             for _ in range(number_of_procs):
                 in_queue.put(None)
             for p in pep_gen:
                 p.join()
-            
-            out_queue.put(None)  # Inform threads/processes to stop
-            main_write_thread.join()
 
+            out_queue.put(None)
+            main_write_thread.join()
