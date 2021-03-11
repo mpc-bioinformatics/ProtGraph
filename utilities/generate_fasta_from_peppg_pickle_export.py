@@ -75,6 +75,11 @@ def parse_args():
         "--batch_size", "-b", type=int, default=10000,
         help="Number of entries which should be processed at once by a process"
     )
+    # Number of processes to be used
+    parser.add_argument(
+        "--number_procs", "-np", type=int, default=None,
+        help="Number of processes to be used"
+    )
     return parser.parse_args()
 
 
@@ -234,7 +239,7 @@ if __name__ == "__main__":
             # Iterate over each result from queue in parallel
             print("Waiting for database results...")
             queue = multiprocessing.Queue()
-            pool = multiprocessing.Pool(None, proc_init, (queue,))
+            pool = multiprocessing.Pool(args.number_procs, proc_init, (queue,))
             pool.map_async(exe, batch(cursor, args.batch_size))
 
             # Write output via extra thread
