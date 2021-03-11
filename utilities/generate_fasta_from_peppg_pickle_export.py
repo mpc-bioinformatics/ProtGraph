@@ -1,6 +1,8 @@
 import argparse
+import multiprocessing
 import os
 from functools import lru_cache
+from threading import Thread
 
 import igraph
 import psycopg2
@@ -68,6 +70,11 @@ def parse_args():
         help="Set this flag to generate a more compact fasta file, generating entries having multiple proteins "
         "per peptide. This can reduce the size of the fasta by half and also reduce the overall runtime."
     )
+    # Number of peptides to be processed at once
+    parser.add_argument(
+        "--batch_size", "-b", type=int, default=10000,
+        help="Number of entries which should be processed at once by a process"
+    )
     return parser.parse_args()
 
 
@@ -104,37 +111,76 @@ def get_graph(base_dir, accession):
     return igraph.read(get_graph_file(base_dir, accession))
 
 
-def write_entry_to_fasta(writer, peptide, accession_list, qualifier_list):
+def write_entry_to_fasta(peptide, accession_list, qualifier_list):
     content = ">lcl|ACCESSIONS=" + ",".join(accession_list) \
         + "|QUALIFIERS=" + ",".join(";".join(x) if x is not None else "" for x in qualifier_list)
     content += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
-    writer.write(content)
+    return content
 
 
-def execute(row, fasta):
+def execute(rows):
     # Export information per entry
-    accession = row[1]
-    graph = get_graph(args.base_export_folder[0], accession)
-    peptide = "".join(graph.vs[row[0][1:-1]]["aminoacid"])
-    qualifiers = get_qualifiers(graph, row[0])
-    write_entry_to_fasta(fasta, peptide, [accession], [qualifiers])
-
-
-def execute_compact(row, fasta):
-    # Generate dict of peptides
-    d = dict()
-    for path, accession in zip(row[0], row[1]):
+    strings = []
+    for row in rows:
+        accession = row[1]
         graph = get_graph(args.base_export_folder[0], accession)
-        peptide = "".join(graph.vs[path[1:-1]]["aminoacid"])
-        qualifiers = get_qualifiers(graph, path)
-        if peptide not in d:
-            d[peptide] = [[], []]
-        d[peptide][0].append(accession)
-        d[peptide][1].append(qualifiers)
+        peptide = "".join(graph.vs[row[0][1:-1]]["aminoacid"])
+        qualifiers = get_qualifiers(graph, row[0])
+        strings.append(
+            write_entry_to_fasta(peptide, [accession], [qualifiers])
+        )
 
-    # write dict entries to fasta
-    for key, val, in d.items():
-        write_entry_to_fasta(fasta, key, val[0], val[1])
+    execute.queue.put("".join(strings))
+
+
+def execute_compact(rows):
+    # Generate dict of peptides
+    for row in rows:
+        d = dict()
+        for path, accession in zip(row[0], row[1]):
+            graph = get_graph(args.base_export_folder[0], accession)
+            peptide = "".join(graph.vs[path[1:-1]]["aminoacid"])
+            qualifiers = get_qualifiers(graph, path)
+            if peptide not in d:
+                d[peptide] = [[], []]
+            d[peptide][0].append(accession)
+            d[peptide][1].append(qualifiers)
+
+        # write dict entries to fasta
+        strings = []
+        for key, val, in d.items():
+            strings.append(
+                write_entry_to_fasta(key, val[0], val[1])
+            )
+
+    execute_compact.queue.put("".join(strings))
+
+
+def proc_init(queue):
+    execute.queue = queue
+    execute_compact.queue = queue
+
+
+def batch(iterable, n):
+    try:
+        while True:
+            b = []
+            for _ in range(n):
+                b.append(next(iterable))
+            yield b
+    except StopIteration:
+        yield b
+
+
+def write_thread(queue, output_file, total_entries, b_size):
+    pbar = tqdm.tqdm(total=total_entries, mininterval=0.5, unit="peptides")
+    with open(output_file, "w") as fasta_out:
+        while True:
+            lines = queue.get()
+            if lines is None:
+                break
+            fasta_out.write(lines)
+            pbar.update(min(b_size, total_entries - pbar.n))
 
 
 if __name__ == "__main__":
@@ -185,8 +231,20 @@ if __name__ == "__main__":
             # Execute query:
             cursor.execute(query)
 
-            with open(args.output_file, "w") as fasta_out:
-                print("Iterating over results...")
-                # Execute for each row:
-                for row in tqdm.tqdm(cursor, mininterval=0.5, total=args.num_entries, unit="peptides", initial=0):
-                    exe(row, fasta_out)
+            # Iterate over each result from queue in parallel
+            print("Waiting for database results...")
+            queue = multiprocessing.Queue()
+            pool = multiprocessing.Pool(None, proc_init, (queue,))
+            pool.map_async(exe, batch(cursor, args.batch_size))
+
+            # Write output via extra thread
+            main_write_thread = Thread(
+                target=write_thread,
+                args=(queue, args.output_file, args.num_entries, args.batch_size,)
+            )
+            main_write_thread.start()
+
+            pool.close()
+            pool.join()  # Wait until pool finished
+            queue.put(None)  # Inform write thread to stop
+            main_write_thread.join()
