@@ -65,7 +65,7 @@ def parse_args():
         "--num_entries", "-n", type=int, default=None,
         help="Number of entries in the database. It will be retrieved via 'count(*)' if not provided"
     )
-    # Flag to export the compact form or all peptide
+    # Flag to export the compact form or all peptides
     parser.add_argument(
         "--compact", "-c", default=False, action="store_true",
         help="Set this flag to generate a more compact fasta file, generating entries having multiple proteins "
@@ -79,7 +79,7 @@ def parse_args():
     # Number of processes to be used
     parser.add_argument(
         "--number_procs", "-np", type=int, default=None,
-        help="Number of processes to be used"
+        help="Number of processes to be used during generation of the FASTA file"
     )
     return parser.parse_args()
 
@@ -117,7 +117,7 @@ def get_graph(base_dir, accession):
     return igraph.read(get_graph_file(base_dir, accession))
 
 
-def write_entry_to_fasta(peptide, accession_list, qualifier_list):
+def convert_entry_to_fasta(peptide, accession_list, qualifier_list):
     content = ">lcl|ACCESSIONS=" + ",".join(accession_list) \
         + "|QUALIFIERS=" + ",".join(";".join(x) if x is not None else "" for x in qualifier_list)
     content += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
@@ -125,6 +125,7 @@ def write_entry_to_fasta(peptide, accession_list, qualifier_list):
 
 
 def execute(in_q, out_q):
+    """ Process all peptides """
     while True:
         rows = in_q.get()
         if rows is None:
@@ -137,13 +138,14 @@ def execute(in_q, out_q):
             peptide = "".join(graph.vs[row[0][1:-1]]["aminoacid"])
             qualifiers = get_qualifiers(graph, row[0])
             strings.append(
-                write_entry_to_fasta(peptide, [accession], [qualifiers])
+                convert_entry_to_fasta(peptide, [accession], [qualifiers])
             )
 
         out_q.put("".join(strings))
 
 
 def execute_compact(in_q, out_q):
+    """ Process all peptides and compress them """
     while True:
         rows = in_q.get()
         if rows is None:
@@ -164,13 +166,14 @@ def execute_compact(in_q, out_q):
             # write dict entries to fasta
             for key, val, in d.items():
                 strings.append(
-                    write_entry_to_fasta(key, val[0], val[1])
+                    convert_entry_to_fasta(key, val[0], val[1])
                 )
 
         out_q.put("".join(strings))
 
 
 def batch(iterable, n):
+    """ Batch entries into equally sized lists """
     try:
         while True:
             b = []
@@ -182,6 +185,7 @@ def batch(iterable, n):
 
 
 def write_thread(queue, output_file, total_entries, b_size):
+    """ Write thread to write into the fasta file"""
     pbar = tqdm.tqdm(total=total_entries, mininterval=0.5, unit="peptides")
     with open(output_file, "w") as fasta_out:
         while True:
@@ -193,6 +197,7 @@ def write_thread(queue, output_file, total_entries, b_size):
 
 
 def read_cursor(in_q, cursor, b_size):
+    """ Read Process to read from the cursor (Generator) """
     batch_input = batch(cursor, b_size)
     try:
         while True:
@@ -256,12 +261,14 @@ if __name__ == "__main__":
             out_queue = multiprocessing.Queue(10000)
 
             # Create Processes
+            # Reader (Generator)
             entry_reader = Process(
                 target=read_cursor,
                 args=(in_queue, cursor, args.batch_size,)
             )
             entry_reader.start()
 
+            # Worker (Consumer -> Generator)
             number_of_procs = \
                 cpu_count() - 1 if args.number_procs is None else args.number_procs
             pep_gen = [
@@ -273,19 +280,22 @@ if __name__ == "__main__":
             for p in pep_gen:
                 p.start()
 
-            # Write output via extra thread
+            # Writer to fasta format (Consumer)
             main_write_thread = Thread(
                 target=write_thread,
                 args=(out_queue, args.output_file, args.num_entries, args.batch_size,)
             )
             main_write_thread.start()
 
+            # Wait until read thread finished
             entry_reader.join()
-            # Inform threads/processes to stop
+
+            # Inform other generators to stop
             for _ in range(number_of_procs):
                 in_queue.put(None)
             for p in pep_gen:
-                p.join()
+                p.join()  # Wait for them
 
+            # Inform writer thread to stop
             out_queue.put(None)
             main_write_thread.join()
