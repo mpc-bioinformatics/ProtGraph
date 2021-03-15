@@ -64,7 +64,7 @@ def parse_args():
         "--num_entries", "-n", type=int, default=None,
         help="Number of entries in the database. It will be retrieved via 'count(*)' if not provided"
     )
-    # Flag to export the compact form or all peptide
+    # Flag to export the compact form or all peptides
     parser.add_argument(
         "--compact", "-c", default=False, action="store_true",
         help="Set this flag to generate a more compact fasta file, generating entries having multiple proteins "
@@ -72,13 +72,13 @@ def parse_args():
     )
     # Number of peptides to be processed at once
     parser.add_argument(
-        "--batch_size", "-b", type=int, default=10000,
+        "--batch_size", "-b", type=int, default=1024,
         help="Number of entries which should be processed at once by a process"
     )
     # Number of processes to be used
     parser.add_argument(
         "--number_procs", "-np", type=int, default=None,
-        help="Number of processes to be used"
+        help="Number of processes to be used during generation of the FASTA file"
     )
     return parser.parse_args()
 
@@ -116,7 +116,7 @@ def get_graph(base_dir, accession):
     return igraph.read(get_graph_file(base_dir, accession))
 
 
-def write_entry_to_fasta(peptide, accession_list, qualifier_list):
+def convert_entry_to_fasta(peptide, accession_list, qualifier_list):
     content = ">lcl|ACCESSIONS=" + ",".join(accession_list) \
         + "|QUALIFIERS=" + ",".join(";".join(x) if x is not None else "" for x in qualifier_list)
     content += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
@@ -136,7 +136,7 @@ def execute(in_q, out_q, base_folder):
             peptide = "".join(graph.vs[row[0][1:-1]]["aminoacid"])
             qualifiers = get_qualifiers(graph, row[0])
             strings.append(
-                write_entry_to_fasta(peptide, [accession], [qualifiers])
+                convert_entry_to_fasta(peptide, [accession], [qualifiers])
             )
 
         out_q.put("".join(strings))
@@ -163,13 +163,14 @@ def execute_compact(in_q, out_q, base_folder):
             # write dict entries to fasta
             for key, val, in d.items():
                 strings.append(
-                    write_entry_to_fasta(key, val[0], val[1])
+                    convert_entry_to_fasta(key, val[0], val[1])
                 )
 
         out_q.put("".join(strings))
 
 
 def batch(iterable, n):
+    """ Batch entries into equally sized lists """
     try:
         while True:
             b = []
@@ -181,6 +182,7 @@ def batch(iterable, n):
 
 
 def write_thread(queue, output_file, total_entries, b_size):
+    """ Write thread to write into the fasta file"""
     pbar = tqdm.tqdm(total=total_entries, mininterval=0.5, unit="peptides")
     with open(output_file, "w") as fasta_out:
         while True:
