@@ -3,7 +3,6 @@ import multiprocessing
 import os
 from functools import lru_cache
 from multiprocessing import Process, cpu_count
-from threading import Thread
 
 import igraph
 import psycopg2
@@ -124,7 +123,7 @@ def write_entry_to_fasta(peptide, accession_list, qualifier_list):
     return content
 
 
-def execute(in_q, out_q):
+def execute(in_q, out_q, base_folder):
     while True:
         rows = in_q.get()
         if rows is None:
@@ -133,7 +132,7 @@ def execute(in_q, out_q):
         strings = []
         for row in rows:
             accession = row[1]
-            graph = get_graph(args.base_export_folder[0], accession)
+            graph = get_graph(base_folder, accession)
             peptide = "".join(graph.vs[row[0][1:-1]]["aminoacid"])
             qualifiers = get_qualifiers(graph, row[0])
             strings.append(
@@ -143,7 +142,7 @@ def execute(in_q, out_q):
         out_q.put("".join(strings))
 
 
-def execute_compact(in_q, out_q):
+def execute_compact(in_q, out_q, base_folder):
     while True:
         rows = in_q.get()
         if rows is None:
@@ -153,7 +152,7 @@ def execute_compact(in_q, out_q):
         for row in rows:
             d = dict()
             for path, accession in zip(row[0], row[1]):
-                graph = get_graph(args.base_export_folder[0], accession)
+                graph = get_graph(base_folder, accession)
                 peptide = "".join(graph.vs[path[1:-1]]["aminoacid"])
                 qualifiers = get_qualifiers(graph, path)
                 if peptide not in d:
@@ -192,16 +191,7 @@ def write_thread(queue, output_file, total_entries, b_size):
             pbar.update(min(b_size, total_entries - pbar.n))
 
 
-def read_cursor(in_q, cursor, b_size):
-    batch_input = batch(cursor, b_size)
-    try:
-        while True:
-            in_q.put(next(batch_input))
-    except StopIteration:
-        pass
-
-
-if __name__ == "__main__":
+def main():
     # Parse args
     args = parse_args()
 
@@ -225,67 +215,72 @@ if __name__ == "__main__":
                 args.num_entries = n
 
         print("Executing statement...")
-        with conn.cursor(name="fetch_peptides_size") as cursor:
-            # Set cursor iteration size (fetch x many entries at once)
-            cursor.itersize = 250000
 
-            # Get query function, depending on compact or not
-            if args.compact:
-                query = """
-                SELECT json_agg(peptides_meta.path), ARRAY_AGG(accessions.accession) FROM peptides
-                JOIN peptides_meta ON peptides.id = peptides_meta.peptides_id
-                JOIN accessions ON accessions.id = peptides_meta.accession_id
-                GROUP BY peptides.id
-                """
-                exe = execute_compact
-            else:
-                query = """
-                SELECT path, accession FROM peptides_meta
-                LEFT JOIN peptides ON peptides.id = peptides_meta.peptides_id
-                LEFT JOIN accessions ON accessions.id = peptides_meta.accession_id
-                """
-                exe = execute
+        # Get query function, depending on compact or not
+        if args.compact:
+            query = """
+            SELECT json_agg(peptides_meta.path), ARRAY_AGG(accessions.accession) FROM peptides
+            JOIN peptides_meta ON peptides.id = peptides_meta.peptides_id
+            JOIN accessions ON accessions.id = peptides_meta.accession_id
+            GROUP BY peptides.id
+            """
+            exe = execute_compact
+        else:
+            query = """
+            SELECT path, accession FROM peptides_meta
+            LEFT JOIN peptides ON peptides.id = peptides_meta.peptides_id
+            LEFT JOIN accessions ON accessions.id = peptides_meta.accession_id
+            """
+            exe = execute
 
-            # Execute query:
-            cursor.execute(query)
+        # Execute query:
+        with conn.cursor() as cursor:
+            cursor.execute("DECLARE foo CURSOR FOR " + query)
 
-            # Iterate over each result from queue in parallel
-            print("Waiting for database results...")
+        # Iterate over each result from queue in parallel
+        print("Waiting for database results...")
 
-            in_queue = multiprocessing.Queue(10000)
-            out_queue = multiprocessing.Queue(10000)
+        in_queue = multiprocessing.Queue(1000)
+        out_queue = multiprocessing.Queue(1000)
 
-            # Create Processes
-            entry_reader = Process(
-                target=read_cursor,
-                args=(in_queue, cursor, args.batch_size,)
+        number_of_procs = \
+            cpu_count() - 1 if args.number_procs is None else args.number_procs
+        pep_gen = [
+            Process(
+                target=exe, args=(in_queue, out_queue, args.base_export_folder[0])
             )
-            entry_reader.start()
+            for _ in range(number_of_procs)
+        ]
+        for p in pep_gen:
+            p.start()
 
-            number_of_procs = \
-                cpu_count() - 1 if args.number_procs is None else args.number_procs
-            pep_gen = [
-                Process(
-                    target=exe, args=(in_queue, out_queue)
+        # Write output via extra thread
+        main_write_thread = Process(
+            target=write_thread,
+            args=(out_queue, args.output_file, args.num_entries, args.batch_size,)
+        )
+        main_write_thread.start()
+
+        # be generator as main thread
+        with conn.cursor() as cursor:
+            while True:
+                cursor.execute("FETCH FORWARD %s FROM foo", [args.batch_size, ])
+                result = cursor.fetchall()  # <-- HIER!
+                if len(result) == 0:
+                    break
+                in_queue.put(
+                    result
                 )
-                for _ in range(number_of_procs)
-            ]
-            for p in pep_gen:
-                p.start()
 
-            # Write output via extra thread
-            main_write_thread = Thread(
-                target=write_thread,
-                args=(out_queue, args.output_file, args.num_entries, args.batch_size,)
-            )
-            main_write_thread.start()
+        # Inform threads/processes to stop
+        for _ in range(number_of_procs):
+            in_queue.put(None)
+        for p in pep_gen:
+            p.join()
 
-            entry_reader.join()
-            # Inform threads/processes to stop
-            for _ in range(number_of_procs):
-                in_queue.put(None)
-            for p in pep_gen:
-                p.join()
+        out_queue.put(None)
+        main_write_thread.join()
 
-            out_queue.put(None)
-            main_write_thread.join()
+
+if __name__ == "__main__":
+    main()
