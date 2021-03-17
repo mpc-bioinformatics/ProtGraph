@@ -152,7 +152,7 @@ Here the example with all possible peptide combinations for `e_coli.dat` to illu
 
 (This generates a 219G Fasta file with 694 844 270 peptides!)
 
-It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) before exporting a peptides/proteins to have an overview of how many peptides/proteins are currently represented by all graphs.
+It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) before exporting peptides/proteins to have an overview of how many peptides/proteins are currently represented by all graphs.
 
 ## ProtGraph Exporters
 

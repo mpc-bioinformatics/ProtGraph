@@ -695,10 +695,11 @@ def write_to_common_file(queue):
             out_dict[entry[0]].write(entry[1])
         except Exception:
             # Create folder if needed
-            os.makedirs(
-                os.path.dirname(entry[0]),
-                exist_ok=True
-            )
+            if os.path.dirname(entry[0]) != "":
+                os.makedirs(
+                    os.path.dirname(entry[0]),
+                    exist_ok=True
+                )
             # Set entry
             out_dict[entry[0]] = open(entry[0], "w")
             # Rewrite first line!
