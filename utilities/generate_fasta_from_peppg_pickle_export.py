@@ -267,7 +267,7 @@ def main():
         with conn.cursor() as cursor:
             while True:
                 cursor.execute("FETCH FORWARD %s FROM foo", [args.batch_size, ])
-                result = cursor.fetchall()  # <-- HIER!
+                result = cursor.fetchall()
                 if len(result) == 0:
                     break
                 in_queue.put(
