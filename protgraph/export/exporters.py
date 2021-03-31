@@ -5,14 +5,13 @@ from protgraph.export.gml import GML
 from protgraph.export.graphml import GraphML
 from protgraph.export.gremlin import Gremlin
 from protgraph.export.mysql import MySQL
+from protgraph.export.peptides.pep_citus import PepCitus
 from protgraph.export.peptides.pep_fasta import PepFasta
 from protgraph.export.peptides.pep_mysql import PepMySQL
 from protgraph.export.peptides.pep_postgres import PepPostgres
 from protgraph.export.pickle import Pickle
 from protgraph.export.postgres import Postgres
 from protgraph.export.redisgraph import RedisGraph
-
-from protgraph.export.peptides.pep_citus import PepCitus
 
 
 class Exporters(ContextDecorator):
