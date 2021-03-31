@@ -109,6 +109,18 @@ def get_qualifiers(graph, path: list):
         return qualifiers
     return None  # We return None if not present
 
+def unique_id_gen(id_size, proc_id, num_procs):
+    value = id_size * proc_id
+
+    times = 0
+    while True:
+        if times == id_size:
+            value = value + ((num_procs-1) * id_size)
+            times = 0
+
+        yield value
+        value += 1
+        times += 1
 
 @lru_cache(maxsize=25000)
 def get_graph(base_dir, accession):
@@ -116,14 +128,16 @@ def get_graph(base_dir, accession):
     return igraph.read(get_graph_file(base_dir, accession))
 
 
-def convert_entry_to_fasta(peptide, accession_list, qualifier_list):
-    content = ">lcl|ACCESSIONS=" + ",".join(accession_list) \
+def convert_entry_to_fasta(peptide, accession_list, qualifier_list, pep_id):
+    content = ">lcl|PEPTIDE" + str(pep_id) + " ACCESSIONS=" + ",".join(accession_list) \
         + "|QUALIFIERS=" + ",".join(";".join(x) if x is not None else "" for x in qualifier_list)
     content += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
     return content
 
 
-def execute(in_q, out_q, base_folder):
+def execute(in_q, out_q, base_folder, id_size, proc_id, num_procs):
+    id_generator = unique_id_gen(id_size, proc_id, num_procs)
+
     while True:
         rows = in_q.get()
         if rows is None:
@@ -136,13 +150,14 @@ def execute(in_q, out_q, base_folder):
             peptide = "".join(graph.vs[row[0][1:-1]]["aminoacid"])
             qualifiers = get_qualifiers(graph, row[0])
             strings.append(
-                convert_entry_to_fasta(peptide, [accession], [qualifiers])
+                convert_entry_to_fasta(peptide, [accession], [qualifiers], next(id_generator))
             )
 
         out_q.put("".join(strings))
 
 
-def execute_compact(in_q, out_q, base_folder):
+def execute_compact(in_q, out_q, base_folder, id_size, proc_id, num_procs):
+    id_generator = unique_id_gen(id_size, proc_id, num_procs)
     while True:
         rows = in_q.get()
         if rows is None:
@@ -163,7 +178,7 @@ def execute_compact(in_q, out_q, base_folder):
             # write dict entries to fasta
             for key, val, in d.items():
                 strings.append(
-                    convert_entry_to_fasta(key, val[0], val[1])
+                    convert_entry_to_fasta(key, val[0], val[1], next(id_generator))
                 )
 
         out_q.put("".join(strings))
@@ -249,9 +264,9 @@ def main():
             cpu_count() - 1 if args.number_procs is None else args.number_procs
         pep_gen = [
             Process(
-                target=exe, args=(in_queue, out_queue, args.base_export_folder[0])
+                target=exe, args=(in_queue, out_queue, args.base_export_folder[0], 1000000, x, number_of_procs)
             )
-            for _ in range(number_of_procs)
+            for x in range(number_of_procs)
         ]
         for p in pep_gen:
             p.start()
