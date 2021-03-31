@@ -505,6 +505,73 @@ def parse_args(args=None):
         "Default: 25000"
     )
     parser.add_argument(
+        "--export_peptide_citus", "-epepcit", default=False, action="store_true",
+        help="Set this flag to export peptides (specifically paths) to a postgresql server."
+        "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
+        " Make sure the database in which the data should be saved also exists. If problems occur, try "
+        "to delete the generated tables and retry again."
+    )
+    parser.add_argument(
+        "--pep_citus_host", type=str, default="127.0.0.1",
+        help="Set the host name for the postgresql server with citus. Default: 127.0.0.1"
+    )
+    parser.add_argument(
+        "--pep_citus_port", type=int, default=5433,
+        help="Set the port for the postgresql server with citus. Default: 5433"
+    )
+    parser.add_argument(
+        "--pep_citus_user", type=str, default="postgres",
+        help="Set the username for the postgresql server with citus. Default: postgres"
+    )
+    parser.add_argument(
+        "--pep_citus_password", type=str, default="developer",
+        help="Set the password for the postgresql server with citus. Default: developer"
+    )
+    parser.add_argument(
+        "--pep_citus_database", type=str, default="proteins",
+        help="Set the database which will be used for the postgresql server with citus. Default: proteins"
+    )
+    parser.add_argument(
+        "--pep_citus_hops", type=int, default=None,
+        help="Set the number of hops (max length of path) which should be used to get paths "
+        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
+        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
+    )
+    parser.add_argument(
+        "--pep_citus_miscleavages", type=int, default=-1,
+        help="Set this number to filter the generated paths by their miscleavages."
+        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
+        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
+        "number of miscleavages, if needed."
+    )
+    parser.add_argument(
+        "--pep_citus_skip_x",  default=False, action="store_true",
+        help="Set this flag to skip to skip all entries, which contain an X"
+    )
+    parser.add_argument(
+        "--pep_citus_no_duplicates",  default=False, action="store_true",
+        help="Set this flag to not insert duplicates into the database. "
+        "NOTE: Setting this value decreases the performance drastically"
+    )
+    parser.add_argument(
+        "--pep_citus_use_igraph",  default=False, action="store_true",
+        help="Set this flag to use igraph instead of netx. "
+        "NOTE: If setting this flag, the peptide generation will be considerably faster "
+        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
+        "over each single edge, so some (repeating results) may never be discovered when using "
+        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
+    )
+    parser.add_argument(
+        "--pep_citus_min_pep_length", type=int, default=0,
+        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
+        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
+    )
+    parser.add_argument(
+        "--pep_citus_batch_size", type=int, default=25000,
+        help="Set the batch size. This defines how many peptides are inserted at once. "
+        "Default: 25000"
+    )
+    parser.add_argument(
         "--export_gremlin", "-egremlin", default=False, action="store_true",
         help="Set this flag to export the graphs via gremlin to a gremlin server."
         "NOTE: The export is very slow, since it executes each node as a single query "
@@ -616,6 +683,20 @@ def parse_args(args=None):
         pep_fasta_use_igraph=args.pep_fasta_use_igraph,
         pep_fasta_min_pep_length=args.pep_fasta_min_pep_length,
         pep_fasta_batch_size=args.pep_fasta_batch_size,
+        # Export peptides on postgresql
+        export_peptide_citus=args.export_peptide_citus,
+        pep_citus_host=args.pep_citus_host,
+        pep_citus_port=args.pep_citus_port,
+        pep_citus_user=args.pep_citus_user,
+        pep_citus_password=args.pep_citus_password,
+        pep_citus_database=args.pep_citus_database,
+        pep_citus_hops=args.pep_citus_hops,
+        pep_citus_miscleavages=args.pep_citus_miscleavages,
+        pep_citus_skip_x=args.pep_citus_skip_x,
+        pep_citus_no_duplicates=args.pep_citus_no_duplicates,
+        pep_citus_use_igraph=args.pep_citus_use_igraph,
+        pep_citus_min_pep_length=args.pep_citus_min_pep_length,
+        pep_citus_batch_size=args.pep_citus_batch_size,
         # Export Gremlin (partially finished)
         export_gremlin=args.export_gremlin,
         gremlin_url=args.gremlin_url,

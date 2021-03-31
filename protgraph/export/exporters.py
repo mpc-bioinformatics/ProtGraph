@@ -12,6 +12,8 @@ from protgraph.export.pickle import Pickle
 from protgraph.export.postgres import Postgres
 from protgraph.export.redisgraph import RedisGraph
 
+from protgraph.export.peptides.pep_citus import PepCitus
+
 
 class Exporters(ContextDecorator):
     """
@@ -45,6 +47,8 @@ class Exporters(ContextDecorator):
             self.export_classes.append(PepMySQL())
         if kwargs["export_peptide_fasta"]:
             self.export_classes.append(PepFasta())
+        if kwargs["export_peptide_citus"]:
+            self.export_classes.append(PepCitus())
 
         # Also start up all exporters
         for ec in self.export_classes:

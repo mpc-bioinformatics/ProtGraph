@@ -109,6 +109,7 @@ def get_qualifiers(graph, path: list):
         return qualifiers
     return None  # We return None if not present
 
+
 def unique_id_gen(id_size, proc_id, num_procs):
     value = id_size * proc_id
 
@@ -121,6 +122,7 @@ def unique_id_gen(id_size, proc_id, num_procs):
         yield value
         value += 1
         times += 1
+
 
 @lru_cache(maxsize=25000)
 def get_graph(base_dir, accession):
