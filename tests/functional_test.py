@@ -89,7 +89,7 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-epickle"] + self.procs_num + self.example_files)
         protgraph.prot_graph(args)
 
-    def test_export_pickel(self):
+    def test_export_pickle(self):
         args = protgraph.parse_args(["-egml"] + self.procs_num + self.example_files)
         protgraph.prot_graph(args)
 
