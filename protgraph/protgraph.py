@@ -25,6 +25,7 @@ def prot_graph(prot_graph_args):
 
     number_of_procs = \
         cpu_count() - 1 if prot_graph_args["num_of_processes"] is None else prot_graph_args["num_of_processes"]
+    prot_graph_args["num_of_processes"] = number_of_procs
 
     # Create Processes
     entry_reader = Process(
@@ -36,10 +37,10 @@ def prot_graph(prot_graph_args):
     )
     graph_gen = [
         Process(
-            target=generate_graph_consumer, args=(entry_queue, statistics_queue, common_out_file_queue),
+            target=generate_graph_consumer, args=(entry_queue, statistics_queue, common_out_file_queue, i),
             kwargs=prot_graph_args
         )
-        for _ in range(number_of_procs)
+        for i in range(number_of_procs)
     ]
     main_write_thread = Thread(
         target=write_output_csv_thread,
@@ -244,6 +245,14 @@ def parse_args(args=None):
     parser.add_argument(
         "--export_dot", "-edot", default=False, action="store_true",
         help="Set this flag to export a dot file for each protein"
+    )
+    parser.add_argument(
+        "--export_csv", "-ecsv", default=False, action="store_true",
+        help="Set this flag to export a nodes-/edges-csv file for each protein"
+    )
+    parser.add_argument(
+        "--export_large_csv", "-elcsv", default=False, action="store_true",
+        help="Set this flag to export a large nodes/edges-csv file, which contains every protein."
     )
     parser.add_argument(
         "--export_graphml", "-egraphml", default=False, action="store_true",
@@ -624,6 +633,8 @@ def parse_args(args=None):
         export_output_folder=args.export_output_folder,
         export_in_directories=args.export_in_directories,
         export_dot=args.export_dot,
+        export_csv=args.export_csv,
+        export_large_csv=args.export_large_csv,
         export_graphml=args.export_graphml,
         export_gml=args.export_gml,
         export_pickle=args.export_pickle,
@@ -761,6 +772,7 @@ def write_to_common_file(queue):
     and the second the content which should be writton on
     """
     out_dict = dict()
+    header_dict = dict()
 
     while True:
         # Wait and get next result entry
@@ -770,6 +782,9 @@ def write_to_common_file(queue):
         # If it is, we stop
         if entry is None:
             break
+
+        if entry[2] and entry[0] in header_dict:
+            continue
 
         # Write Data Row and update progress
         try:
@@ -785,6 +800,9 @@ def write_to_common_file(queue):
             out_dict[entry[0]] = open(entry[0], "w")
             # Rewrite first line!
             out_dict[entry[0]].write(entry[1])
+
+        if entry[2] and entry[0] not in header_dict:
+            header_dict[entry[0]] = True
 
     # Close all opened files
     for _, val in out_dict.items():

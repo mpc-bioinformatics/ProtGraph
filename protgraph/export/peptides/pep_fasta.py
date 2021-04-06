@@ -69,7 +69,7 @@ class PepFasta(APeptideExporter):
                 entries += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
 
         # put the entries into the queue, so that the main thread can write the actual content.
-        queue.put((self.output_file, entries))
+        queue.put((self.output_file, entries, False))
 
     def tear_down(self):
         # We do not need to do something here, since we output it into

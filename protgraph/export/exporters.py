@@ -1,9 +1,11 @@
 from contextlib import ContextDecorator
 
+from protgraph.export.csv import CSV
 from protgraph.export.dot import Dot
 from protgraph.export.gml import GML
 from protgraph.export.graphml import GraphML
 from protgraph.export.gremlin import Gremlin
+from protgraph.export.large_csv import Large_CSV
 from protgraph.export.mysql import MySQL
 from protgraph.export.peptides.pep_citus import PepCitus
 from protgraph.export.peptides.pep_fasta import PepFasta
@@ -26,6 +28,10 @@ class Exporters(ContextDecorator):
 
         if kwargs["export_dot"]:
             self.export_classes.append(Dot())
+        if kwargs["export_csv"]:
+            self.export_classes.append(CSV())
+        if kwargs["export_large_csv"]:
+            self.export_classes.append(Large_CSV())
         if kwargs["export_graphml"]:
             self.export_classes.append(GraphML())
         if kwargs["export_gml"]:
