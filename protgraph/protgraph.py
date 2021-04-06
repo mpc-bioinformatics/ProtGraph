@@ -7,6 +7,7 @@ from threading import Thread
 
 from tqdm import tqdm
 
+import protgraph.cli as cli
 from protgraph.graph_generator import generate_graph_consumer
 from protgraph.read_embl import read_embl
 
@@ -86,519 +87,93 @@ def prot_graph(prot_graph_args):
             continue
 
 
-def check_if_file_exists(s: str):
-    """ checks if a file exists. If not: raise Exception """
-    if os.path.isfile(s):
-        return s
-    else:
-        raise Exception("File '{}' does not exists".format(s))
+def format_help(self, groups=None):
+    # self == parser
+    formatter = self._get_formatter()
+
+    formatter.add_usage(self.usage, [y for x in  groups for y in x._group_actions],
+                        self._mutually_exclusive_groups)
+
+    # description
+    formatter.add_text(self.description)
+
+    if groups is None:
+        groups = self._action_groups
+
+    # positionals, optionals and user-defined groups
+    for action_group in groups:
+        formatter.start_section(action_group.title)
+        formatter.add_text(action_group.description)
+        formatter.add_arguments(action_group._group_actions)
+        formatter.end_section()
+
+    # epilog
+    formatter.add_text(self.epilog)
+
+    # determine help from format above
+    return formatter.format_help()
 
 
 def parse_args(args=None):
     # Arguments for Parser
     parser = argparse.ArgumentParser(
-        description="Graph-Generator for Proteins/Peptides and Exporter to various formats"
+        description="ProtGraph: a graph generator for proteins and/or peptides and exporter to various formats",
+        add_help=False
     )
+    
 
-    # Needed Arguments for parsing (and additional information for it)
-    parser.add_argument(
-        "files", type=check_if_file_exists, nargs="+",
-        help="Files containing the Swissprot/EMBL-Entries (either in .dat or .txt)"
-    )
-    parser.add_argument(
-        "--num_of_entries", "-n", type=int, default=None,
-        help="Number of entries across all files (summed). if given, it will an estimation of the runtime"
-    )
-    parser.add_argument(
-        "--exclude_accessions", "-exclude", type=str, default=None,
-        help="A csv file only containing accessions in the first row which should be excluded for processsing."
-        " Setting this value may reduce the reading performance and therefore the throughput performance overall."
-    )
+    class HelpAction(argparse.Action):
+        def __init__(self, option_strings, dest, nargs=0, **kwargs):
+            super(HelpAction, self).__init__(option_strings, dest, nargs=0, **kwargs)
+        def __call__(self, parser, namespace, values, option_string=None):
+            print(format_help(parser, parser._action_groups[:3]))
+            parser.exit()
 
-    # Argument for number of Processes
-    parser.add_argument(
-        "--num_of_processes", "-np", type=int, default=None,
-        help="The number of processes used to process entries. Each process can process an entry individually. "
-        "The default value is 'cores - 1', since one process is reserved for reading entries"
-    )
+    # Add basic cli options
+    parser.add_argument("--help", "-h", action=HelpAction, help="Show the shortened help message")
+    cli.add_main_args(parser)
 
-    # Flag to check if generated graphs are correctly generated
-    parser.add_argument(
-        "--verify_graph", "--verify", default=False, action="store_true",
-        help="Set this flag to perform a check whether the graph was generated correctly. Here we explicitly check "
-        "for parallel edges, for DAG and other properties."
-    )
 
-    # Arguments for graph generation
-    parser.add_argument(
-        "--skip_isoforms", "-si", default=False, action="store_true",
-        help="Set this flag to exclude isoforms 'VAR_SEQ' (and possible modification on them like variations, etc...) "
-        "from the FeatureTable"
-    )
-    parser.add_argument(
-        "--skip_variants", "-sv", default=False, action="store_true",
-        help="Set this flag to exclude 'VARIANT' from the FeatureTable"
-    )
-    parser.add_argument(
-        "--skip_init_met", "-sm", default=False, action="store_true",
-        help="Set this flag to exclude the skipping of the initiator methionine ('INIT_M' in "
-        "FeatureTable) for proteins"
-    )
-    parser.add_argument(
-        "--skip_signal", "-ss", default=False, action="store_true",
-        help="Set this flag to exclude skipping the signal peptide ('SIGNAL' in FeatureTable) of specific proteins"
-    )
 
-    # Arguments for graph processing/digestion
-    parser.add_argument(
-        "--digestion", "-d", type=str.lower, default="trypsin",
-        choices=["trypsin", "skip", "full"],
-        help="Set the digestion method. The full digestion cleaves at every edge, which can be useful for retrieving "
-        "all possible peptides with arbitrary cutting points. The digestion method skip skips the digestion "
-        "completely. Default: Trypsin"
-    )
-    parser.add_argument(
-        "--no_merge", "-nm", default=False, action="store_true",
-        help="Set this flag to skip the merging process for chains of nodes and edges into a single node. Setting "
-        "this option could drastically increase the size of the graph, especially its depth."
-    )
+    # Get group names and the corresponding function
+    cli_groups = [
+        ("graph_generation", cli.add_graph_generation),
+        ("statistics", cli.add_statistics),
+        ("graph_exports", cli.add_graph_exports),
+        ("redis_graph_export", cli.add_redis_graph_export),
+        ("postgres_graph_export", cli.add_postgres_graph_export),
+        ("mysql_graph_export", cli.add_mysql_graph_export),
+        ("postgres_peptide_export", cli.add_postgres_peptide_export),
+        ("mysql_peptide_export", cli.add_mysql_peptide_export),
+        ("fasta_peptide_export", cli.add_fasta_peptide_export),
+        ("citus_peptide_export", cli.add_citus_peptide_export),
+        ("gremlin_graph_export", cli.add_gremlin_graph_export),
+    ]
+    
 
-    # Arguments for node and edge weights
-    parser.add_argument(
-        "--annotate_mono_weights", "-amw", default=False, action="store_true",
-        help="Set this to annotate nodes and edges with the monoisotopic weights. (Values are taken from "
-        "the mass dictionary)"
-    )
-    parser.add_argument(
-        "--annotate_avrg_weights", "-aaw", default=False, action="store_true",
-        help="Set this to annotate nodes and edges with the average weights. (Values are taken from "
-        "the mass dictionary)"
-    )
-    parser.add_argument(
-        "--annotate_mono_weight_to_end", "-amwe", default=False, action="store_true",
-        help="Set this to annotate nodes and edges with the monoisotopic end weights. This weight informs about "
-        "how much weight is at least left to get to the end Node. NOTE: Applying this, also sets the monoisotopic "
-        "weights"
-    )
-    parser.add_argument(
-        "--annotate_avrg_weight_to_end", "-aawe", default=False, action="store_true",
-        help="Set this to annotate nodes and edges with the average end weights. This weight informs about "
-        "how much weight is at least left to get to the end Node. NOTE: Applying this, also sets the average weights"
-    )
-    parser.add_argument(
-        "--mass_dict_type", "-mdt",
-        type=lambda s: int if s.lower() == "int" else (float if s.lower() == "float" else None), default="int",
-        choices=[int, float], metavar="{int,float}",
-        help="Set the type of the mass dictionary for amino acid. Default is set to int"
-    )
-    parser.add_argument(
-        "--mass_dict_factor", "-mdf", type=float, default=1000000000,
-        help="Set the factor for the masses inside the mass_dictionary. The default is set to 1 000 000 000, "
-        "so that each mass can be converted into integers."
-    )
+    helpgroup = parser.add_argument_group("Enter one of these flags for detailed information")
+    helpgroup.add_argument("--help_all", action='help', help="Show the complete help message for all possible arguments")
 
-    # Arguments for generation of graph statistics
-    parser.add_argument(
-        "--calc_num_possibilities", "-cnp", default=False, action="store_true",
-        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
-        " be calculated. This uses a dynamic programming approach to calculate this in an efficient manner."
-    )
-    parser.add_argument(
-        "--calc_num_possibilities_miscleavages", "-cnpm", default=False, action="store_true",
-        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
-        " be calculated. This returns a list, sorted by the number of miscleavages (beginning at 0). "
-        "Example: Returns: [1, 3, 5, 2] -> 1 path with 0 miscleavages, 3 paths with 1 miscleavage, 5 paths "
-        "with 2 miscleavages, etc ... This uses a dynamic programming approach to calculate this in an efficient "
-        "manner. NOTE: This may get memory heavy, depending on the proteins (especially on Titin)"
-    )
-    parser.add_argument(
-        "--calc_num_possibilities_hops", "-cnph", default=False, action="store_true",
-        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
-        " be calculated. This returns a list, sorted by the number of hops (beginning at 0). "
-        "Example: Returns: [0, 3, 5, 2] -> 0 paths with 0 hops, 3 paths with 1 hop, 5 paths "
-        "with 2 hops, etc ... This uses a dynamic programming approach to calculate this in an efficient "
-        "manner. NOTE: This mis even more memory heavy then binning on miscleavages. Of course it depends "
-        "on the proteins (especially on Titin) NOTE: The dedicated start and end node is not counted here. "
-        "If you traverse a graph, expect +2 more nodes in a path!"
-    )
 
-    parser.add_argument(
-        "--output_csv", "-o", default=os.path.join(os.getcwd(), "protein_graph_statistics.csv"),
-        type=str,
-        help="Set the output file, which will contain information about the ProteinGaph (in csv) NOTE: "
-        "It will write to 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is "
-        "set to the current working directory"
-    )
+    class DetailHelpAction(argparse.Action):
+        def __init__(self, option_strings, dest, nargs=0, **kwargs):
+            super(DetailHelpAction, self).__init__(option_strings, dest, nargs=0, **kwargs)
+        def __call__(self, parser, namespace, values, option_string=None):
+            idx = [x[0] for x in cli_groups].index(option_string[len("--help_"):])
+            print(format_help(parser, [*parser._action_groups[:2], parser._action_groups[idx+3]]))
+            parser.exit()    
 
-    # Arguments for exporting
-    parser.add_argument(
-        "--export_output_folder", "-eo", default=os.path.join(os.getcwd(), "exported_graphs"), type=str,
-        help="Set the output folder to specify the dirctory of exported graphs (dot, graphml, gml) NOTE: It will "
-        "overwrite exisiting files. Default is set the current working directory"
-    )
-    parser.add_argument(
-        "--export_in_directories", "-edirs", default=False, action="store_true",
-        help="Set this flag to export files in directories (coded by accession) instead of directly by "
-        "the accession name. This could be useful if millions of proteins are added into this tool, since "
-        "a folder with millions of entries can be problematic in some cases."
-    )
-    parser.add_argument(
-        "--export_dot", "-edot", default=False, action="store_true",
-        help="Set this flag to export a dot file for each protein"
-    )
-    parser.add_argument(
-        "--export_csv", "-ecsv", default=False, action="store_true",
-        help="Set this flag to export a nodes-/edges-csv file for each protein"
-    )
-    parser.add_argument(
-        "--export_large_csv", "-elcsv", default=False, action="store_true",
-        help="Set this flag to export a large nodes/edges-csv file, which contains every protein."
-    )
-    parser.add_argument(
-        "--export_graphml", "-egraphml", default=False, action="store_true",
-        help="Set this flag to export a GraphML file for each protein. This is the recommended export method."
-    )
-    parser.add_argument(
-        "--export_gml", "-egml", default=False, action="store_true",
-        help="Set this flag to export a GML file for each protein"
-    )
-    parser.add_argument(
-        "--export_pickle", "-epickle", default=False, action="store_true",
-        help="Set this flag to export a Pickle file for each protein"
-    )
-    parser.add_argument(
-        "--export_redisgraph", "-eredisg", default=False, action="store_true",
-        help="Set this flag to export to a redis-server having the module RedisGraph loaded."
-    )
-    parser.add_argument(
-        "--redisgraph_host", type=str, default="localhost",
-        help="Set the host name for the redis-server having the module RedisGraph. Default: localhost"
-    )
-    parser.add_argument(
-        "--redisgraph_port", type=int, default=6379,
-        help="Set the port for the redis-server having the module RedisGraph. Default: 6379"
-    )
-    parser.add_argument(
-        "--redisgraph_graph", type=str, default="proteins",
-        help="Set the graph name on the redis-server having the module RedisGraph. Default 'proteins'"
-    )
-    parser.add_argument(
-        "--export_postgres", "-epg", default=False, action="store_true",
-        help="Set this flag to export to a postgresql server."
-        "NOTE: This will try to create the tables 'nodes' and 'edges' on a specified database."
-        " Make sure the database in which the data should be saved also exists."
-    )
-    parser.add_argument(
-        "--postgres_host", type=str, default="127.0.0.1",
-        help="Set the host name for the postgresql server. Default: 127.0.0.1"
-    )
-    parser.add_argument(
-        "--postgres_port", type=int, default=5433,
-        help="Set the port for the postgresql server. Default: 5433"
-    )
-    parser.add_argument(
-        "--postgres_user", type=str, default="postgres",
-        help="Set the username for the postgresql server. Default: postgres"
-    )
-    parser.add_argument(
-        "--postgres_password", type=str, default="developer",
-        help="Set the password for the postgresql server. Default: developer"
-    )
-    parser.add_argument(
-        "--postgres_database", type=str, default="proteins",
-        help="Set the database which will be used for the postgresql server. Default: proteins"
-    )
-    parser.add_argument(
-        "--export_mysql", "-emysql", default=False, action="store_true",
-        help="Set this flag to export to a MySQL server."
-        "NOTE: This will try to create the tables 'nodes' and 'edges' on a specified database."
-        " Make sure the database in which the data should be saved also exists."
-    )
-    parser.add_argument(
-        "--mysql_host", type=str, default="127.0.0.1",
-        help="Set the host name for the MySQL server. Default: 127.0.0.1"
-    )
-    parser.add_argument(
-        "--mysql_port", type=int, default=3306,
-        help="Set the port for the MySQL server. Default: 3306"
-    )
-    parser.add_argument(
-        "--mysql_user", type=str, default="root",
-        help="Set the username for the MySQL server. Default: root"
-    )
-    parser.add_argument(
-        "--mysql_password", type=str, default="",
-        help="Set the password for the MySQL server. Default: <empty>"
-    )
-    parser.add_argument(
-        "--mysql_database", type=str, default="proteins",
-        help="Set the database which will be used for the MySQL server. Default: proteins"
-    )
-    parser.add_argument(
-        "--export_peptide_postgres", "-epeppg", default=False, action="store_true",
-        help="Set this flag to export peptides (specifically paths) to a postgresql server."
-        "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
-        " Make sure the database in which the data should be saved also exists. If problems occur, try "
-        "to delete the generated tables and retry again."
-    )
-    parser.add_argument(
-        "--pep_postgres_host", type=str, default="127.0.0.1",
-        help="Set the host name for the postgresql server. Default: 127.0.0.1"
-    )
-    parser.add_argument(
-        "--pep_postgres_port", type=int, default=5433,
-        help="Set the port for the postgresql server. Default: 5433"
-    )
-    parser.add_argument(
-        "--pep_postgres_user", type=str, default="postgres",
-        help="Set the username for the postgresql server. Default: postgres"
-    )
-    parser.add_argument(
-        "--pep_postgres_password", type=str, default="developer",
-        help="Set the password for the postgresql server. Default: developer"
-    )
-    parser.add_argument(
-        "--pep_postgres_database", type=str, default="proteins",
-        help="Set the database which will be used for the postgresql server. Default: proteins"
-    )
-    parser.add_argument(
-        "--pep_postgres_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    parser.add_argument(
-        "--pep_postgres_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    parser.add_argument(
-        "--pep_postgres_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    parser.add_argument(
-        "--pep_postgres_no_duplicates",  default=False, action="store_true",
-        help="Set this flag to not insert duplicates into the database. "
-        "NOTE: Setting this value decreases the performance drastically"
-    )
-    parser.add_argument(
-        "--pep_postgres_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    parser.add_argument(
-        "--pep_postgres_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    parser.add_argument(
-        "--pep_postgres_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 25000"
-    )
-    parser.add_argument(
-        "--export_peptide_mysql", "-epepmysql", default=False, action="store_true",
-        help="Set this flag to export peptides (specifically paths) to a MySQL server."
-        "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
-        " Make sure the database in which the data should be saved also exists. If problems occur, try "
-        "to delete the generated tables and retry again."
-    )
-    parser.add_argument(
-        "--pep_mysql_host", type=str, default="127.0.0.1",
-        help="Set the host name for the mysql server. Default: 127.0.0.1"
-    )
-    parser.add_argument(
-        "--pep_mysql_port", type=int, default=3306,
-        help="Set the port for the mysql server. Default: 3306"
-    )
-    parser.add_argument(
-        "--pep_mysql_user", type=str, default="root",
-        help="Set the username for the mysql server. Default: root"
-    )
-    parser.add_argument(
-        "--pep_mysql_password", type=str, default="",
-        help="Set the password for the mysql server. Default: ''"
-    )
-    parser.add_argument(
-        "--pep_mysql_database", type=str, default="proteins",
-        help="Set the database which will be used for the mysql server. Default: proteins"
-    )
-    parser.add_argument(
-        "--pep_mysql_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    parser.add_argument(
-        "--pep_mysql_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    parser.add_argument(
-        "--pep_mysql_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    parser.add_argument(
-        "--pep_mysql_no_duplicates",  default=False, action="store_true",
-        help="Set this flag to not insert duplicates into the database. "
-        "NOTE: Setting this value decreases the performance drastically"
-    )
-    parser.add_argument(
-        "--pep_mysql_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    parser.add_argument(
-        "--pep_mysql_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    parser.add_argument(
-        "--pep_mysql_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 25000"
-    )
-    parser.add_argument(
-        "--export_peptide_fasta", "-epepfasta", default=False, action="store_true",
-        help="Set this flag to export peptides into a single fasta file."
-    )
-    parser.add_argument(
-        "--pep_fasta_out", default=os.path.join(os.getcwd(), "peptides.fasta"),
-        type=str,
-        help="Set the output file for the peptide fasta export. Default: '${pwd}/peptides.fasta'. "
-        "NOTE: This will overwrite existing files."
-    )
-    parser.add_argument(
-        "--pep_fasta_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    parser.add_argument(
-        "--pep_fasta_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    parser.add_argument(
-        "--pep_fasta_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    parser.add_argument(
-        "--pep_fasta_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    parser.add_argument(
-        "--pep_fasta_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    parser.add_argument(
-        "--pep_fasta_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are processed and written at once. "
-        "Default: 25000"
-    )
-    parser.add_argument(
-        "--export_peptide_citus", "-epepcit", default=False, action="store_true",
-        help="Set this flag to export peptides (specifically paths) to a postgresql server."
-        "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
-        " Make sure the database in which the data should be saved also exists. If problems occur, try "
-        "to delete the generated tables and retry again."
-    )
-    parser.add_argument(
-        "--pep_citus_host", type=str, default="127.0.0.1",
-        help="Set the host name for the postgresql server with citus. Default: 127.0.0.1"
-    )
-    parser.add_argument(
-        "--pep_citus_port", type=int, default=5433,
-        help="Set the port for the postgresql server with citus. Default: 5433"
-    )
-    parser.add_argument(
-        "--pep_citus_user", type=str, default="postgres",
-        help="Set the username for the postgresql server with citus. Default: postgres"
-    )
-    parser.add_argument(
-        "--pep_citus_password", type=str, default="developer",
-        help="Set the password for the postgresql server with citus. Default: developer"
-    )
-    parser.add_argument(
-        "--pep_citus_database", type=str, default="proteins",
-        help="Set the database which will be used for the postgresql server with citus. Default: proteins"
-    )
-    parser.add_argument(
-        "--pep_citus_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    parser.add_argument(
-        "--pep_citus_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    parser.add_argument(
-        "--pep_citus_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    parser.add_argument(
-        "--pep_citus_no_duplicates",  default=False, action="store_true",
-        help="Set this flag to not insert duplicates into the database. "
-        "NOTE: Setting this value decreases the performance drastically"
-    )
-    parser.add_argument(
-        "--pep_citus_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    parser.add_argument(
-        "--pep_citus_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    parser.add_argument(
-        "--pep_citus_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 25000"
-    )
-    parser.add_argument(
-        "--export_gremlin", "-egremlin", default=False, action="store_true",
-        help="Set this flag to export the graphs via gremlin to a gremlin server."
-        "NOTE: The export is very slow, since it executes each node as a single query "
-        "(tested on JanusGraph and Apache Gremlin Server). This exporter is not well implemented and may not work. "
-        "This is due to difficulties implementing such an exporter in a global manner. "
-        "To reduce the number of errors: Try to have a stable connection to the gremlin-server and also allocate "
-        "enough resource for it, so that it can process the queries quick enough."
-    )
-    parser.add_argument(
-        "--gremlin_url", type=str, default="ws://localhost:8182/gremlin",
-        help="Set the url to the gremlin URL (no authentication). Default: 'ws://localhost:8182/gremlin'"
-    )
-    parser.add_argument(
-        "--gremlin_traversal_source", type=str, default="g",
-        help="Set the traversal source for remote. Default 'g'"
-    )
+    check_helps = []
+    for name, func in cli_groups:
+        helpgroup.add_argument("--help_{}".format(name), action=DetailHelpAction)
+        group = parser.add_argument_group(name)
+        func(group)
+        check_helps.append("help_{}".format(name))
 
+
+    # Parse Arguments
     args = parser.parse_args(args)
+
 
     # Graph generation arguments in dict:
     graph_gen_args = dict(

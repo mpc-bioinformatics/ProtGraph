@@ -43,19 +43,6 @@ class PepMySQL(APeptideExporter):
     def batch_size(self) -> int:
         return self.get_batch_size
 
-    def unique_id_gen(self):
-        value = self.id_size * self.proc_id
-
-        times = 0
-        while True:
-            if times == self.id_size:
-                value = value + ((self.num_procs-1) * self.id_size)
-                times = 0
-
-            yield value
-            value += 1
-            times += 1
-
     def start_up(self, **kwargs):
         # Here we generate a connection to mysql
         # and generate the corresponding tables
