@@ -73,6 +73,14 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-edot"] + self.procs_num + self.example_files)
         protgraph.prot_graph(args)
 
+    def test_export_csv(self):
+        args = protgraph.parse_args(["-ecsv"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(args)
+
+    def test_export_lcsv(self):
+        args = protgraph.parse_args(["-elcsv"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(args)
+
     def test_export_graphml(self):
         args = protgraph.parse_args(["-egraphml"] + self.procs_num + self.example_files)
         protgraph.prot_graph(args)
