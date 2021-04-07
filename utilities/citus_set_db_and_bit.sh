@@ -77,9 +77,6 @@ drop_database (){
     for cluster_machine in "${CLUSTER_MACHINES[@]}"
     do
         PGPASSWORD=${CLUSTER_PWD} psql -h "$cluster_machine" -p 5432 -U postgres -c "DROP DATABASE IF EXISTS ${DB_NAME};"
-        PGPASSWORD=${CLUSTER_PWD} psql -h "$cluster_machine" -p 5432 -U postgres -c "DROP operator class new_op_fam_hash_class using hash;"
-        PGPASSWORD=${CLUSTER_PWD} psql -h "$cluster_machine" -p 5432 -U postgres -c "DROP function bit_hash;"
-        PGPASSWORD=${CLUSTER_PWD} psql -h "$cluster_machine" -p 5432 -U postgres -c "drop function equal_test_bit_function cascade;"
     done
 }
 
