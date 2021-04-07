@@ -1,5 +1,6 @@
 import os
 
+
 def check_if_file_exists(s: str):
     """ checks if a file exists. If not: raise Exception """
     if os.path.isfile(s):
@@ -9,7 +10,7 @@ def check_if_file_exists(s: str):
 
 
 def add_main_args(parser):
-    # Needed Arguments for parsing (and additional information for it)
+    # Needed Arguments for parsing (and other general/global arguments)
     parser.add_argument(
         "files", type=check_if_file_exists, nargs="+",
         help="Files containing the Swissprot/EMBL-Entries (either in .dat or .txt)"
@@ -23,8 +24,6 @@ def add_main_args(parser):
         help="A csv file only containing accessions in the first row which should be excluded for processsing."
         " Setting this value may reduce the reading performance and therefore the throughput performance overall."
     )
-
-    # Argument for number of Processes
     parser.add_argument(
         "--num_of_processes", "-np", type=int, default=None,
         help="The number of processes used to process entries. Each process can process an entry individually. "
@@ -37,7 +36,8 @@ def add_main_args(parser):
         "It will write to 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is "
         "set to the current working directory"
     )
-    # Arguments for graph generation
+
+
 def add_graph_generation(group):
     group.add_argument(
         "--skip_isoforms", "-si", default=False, action="store_true",
@@ -113,7 +113,7 @@ def add_graph_generation(group):
         "so that each mass can be converted into integers."
     )
 
-    # Arguments for generation of graph statistics
+
 def add_statistics(group):
     group.add_argument(
         "--calc_num_possibilities", "-cnp", default=False, action="store_true",
@@ -140,7 +140,6 @@ def add_statistics(group):
     )
 
 
-    # Arguments for exporting
 def add_graph_exports(group):
     group.add_argument(
         "--export_output_folder", "-eo", default=os.path.join(os.getcwd(), "exported_graphs"), type=str,
