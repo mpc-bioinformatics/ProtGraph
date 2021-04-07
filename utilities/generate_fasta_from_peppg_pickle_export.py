@@ -130,9 +130,9 @@ def get_graph(base_dir, accession):
     return igraph.read(get_graph_file(base_dir, accession))
 
 
-def convert_entry_to_fasta(peptide, accession_list, qualifier_list, pep_id):
-    content = ">lcl|PEPTIDE" + str(pep_id) + " ACCESSIONS=" + ",".join(accession_list) \
-        + "|QUALIFIERS=" + ",".join(";".join(x) if x is not None else "" for x in qualifier_list)
+def convert_entry_to_fasta(peptide, part_headers, pep_id):
+    # Generate header: >pg|ENTRY_ID|UNIPROT_ISO(START:END, mssclvg:MISS; QUALIFIERS)
+    content = ">pg|ID_" + str(pep_id) + "|" + ",".join(part_headers)
     content += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
     return content
 
@@ -150,9 +150,32 @@ def execute(in_q, out_q, base_folder, id_size, proc_id, num_procs):
             accession = row[1]
             graph = get_graph(base_folder, accession)
             peptide = "".join(graph.vs[row[0][1:-1]]["aminoacid"])
-            qualifiers = get_qualifiers(graph, row[0])
+            nodes = row[0]
+            edges = graph.get_eids(path=row[0])
+            if "cleaved" in graph.es[edges[0]].attributes():
+                misses = sum(filter(None, graph.es[edges]["cleaved"]))
+            else:
+                misses = -1
+
+            acc = _get_accession_or_isoform(graph.vs[nodes[1]])
+            start_pos = _get_position_or_isoform_position(graph.vs[nodes[1]])
+            end_pos = _get_position_or_isoform_position(graph.vs[nodes[-2]], end=True)
+            l_str_qualifiers = _get_qualifiers(graph, edges)
+            quali_entries = ",".join(l_str_qualifiers)
+            if quali_entries:
+                quali_entries = "," + quali_entries
+
+            # Generate partial header UNIPROT_ISO(START:END, mssclvg:MSS, QUALIFIERS)
+            part_header = "".join(
+                    [
+                        acc, "(", str(start_pos), ":", str(end_pos), ",",
+                        "mssclvg:", str(misses),
+                        quali_entries,  ")"
+                    ]
+                )
+
             strings.append(
-                convert_entry_to_fasta(peptide, [accession], [qualifiers], next(id_generator))
+                convert_entry_to_fasta(peptide, [part_header], next(id_generator))
             )
 
         out_q.put("".join(strings))
@@ -171,19 +194,110 @@ def execute_compact(in_q, out_q, base_folder, id_size, proc_id, num_procs):
             for path, accession in zip(row[0], row[1]):
                 graph = get_graph(base_folder, accession)
                 peptide = "".join(graph.vs[path[1:-1]]["aminoacid"])
-                qualifiers = get_qualifiers(graph, path)
+                nodes = path
+                edges = graph.get_eids(path=path)
+                if "cleaved" in graph.es[edges[0]].attributes():
+                    misses = sum(filter(None, graph.es[edges]["cleaved"]))
+                else:
+                    misses = -1
+
+                acc = _get_accession_or_isoform(graph.vs[nodes[1]])
+                start_pos = _get_position_or_isoform_position(graph.vs[nodes[1]])
+                end_pos = _get_position_or_isoform_position(graph.vs[nodes[-2]], end=True)
+                l_str_qualifiers = _get_qualifiers(graph, edges)
+                quali_entries = ",".join(l_str_qualifiers)
+                if quali_entries:
+                    quali_entries = "," + quali_entries
+
+                # Generate partial header UNIPROT_ISO(START:END, mssclvg:MSS, QUALIFIERS)
+                part_header = "".join(
+                        [
+                            acc, "(", str(start_pos), ":", str(end_pos), ",",
+                            "mssclvg:", str(misses),
+                            quali_entries,  ")"
+                        ]
+                    )
                 if peptide not in d:
-                    d[peptide] = [[], []]
-                d[peptide][0].append(accession)
-                d[peptide][1].append(qualifiers)
+                    d[peptide] = [[]]
+                d[peptide][0].append(part_header)
 
             # write dict entries to fasta
             for key, val, in d.items():
                 strings.append(
-                    convert_entry_to_fasta(key, val[0], val[1], next(id_generator))
+                    convert_entry_to_fasta(key, val[0], next(id_generator))
                 )
 
         out_q.put("".join(strings))
+
+
+def _get_qualifiers(prot_graph, edges):
+    """ Generate a list of strings for all avilable qualifiers. """
+    if "qualifiers" not in prot_graph.es[0].attributes():
+        return []
+    str_qualifiers = []
+    for qualifier in prot_graph.es[edges]["qualifiers"]:
+        if qualifier is None:
+            continue
+        if len(qualifier) == 0:
+            continue
+
+        for f in qualifier:
+            if f.type == "VAR_SEQ":
+                continue  # Skip since we encode this differently
+
+            elif f.type == "VARIANT":
+                str_qualifiers.append(
+                    "VARIANT[" + str(f.location.start + 1) + ":"
+                    + str(f.location.end) + "," + _get_variant_qualifier(f) + "]"
+                )
+
+            elif f.type == "SIGNAL":
+                str_qualifiers.append(
+                    "SIGNAL[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                )
+
+            elif f.type == "INIT_MET":
+                str_qualifiers.append(
+                    "INIT_MET[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                )
+
+    return str_qualifiers
+
+
+def _get_variant_qualifier(feature):
+    """ Get x -> y or missing """
+    message = feature.qualifiers["note"]
+    message = message[:message.index("(")-1]
+
+    if feature.id is not None:
+        message + ", " + feature.id
+    return message
+
+
+def _get_accession_or_isoform(node):
+    """ get accesion in every case """
+    attrs = node.attributes()
+    if "isoform_accession" in attrs and attrs["isoform_accession"] is not None:
+        return attrs["isoform_accession"]
+    else:
+        return attrs["accession"]
+
+
+def _get_position_or_isoform_position(node, end=False):
+    """ get position, '?' if not specified"""
+    attrs = node.attributes()
+    val = -1
+    if "isoform_accession" in attrs and attrs["isoform_accession"] is not None:
+        val = attrs["isoform_position"]
+    elif attrs["position"] is not None:
+        val = attrs["position"]
+    else:
+        val = "?"
+
+    if type(val) != str and end:
+        return val + len(node["aminoacid"]) - 1
+    else:
+        return val
 
 
 def batch(iterable, n):

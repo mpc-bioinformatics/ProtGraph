@@ -60,7 +60,7 @@ class PepFasta(APeptideExporter):
             quali_entries = ",".join(l_str_qualifiers)
             if quali_entries:
                 quali_entries = "," + quali_entries
-            # Generate header: >pg|ENTRY_ID|UNIPROT_ISO(START, END, miss:MISS; QUALIFIERS)
+            # Generate header: >pg|ENTRY_ID|UNIPROT_ISO(START:END, mssclvg:MISS; QUALIFIERS)
             entries += "|".join(
                 [
                     ">pg",
