@@ -7,6 +7,7 @@ from multiprocessing import Process, cpu_count
 import igraph
 import psycopg2
 import tqdm
+
 from protgraph.export.peptides.pep_fasta import PepFasta
 
 PF = PepFasta()
