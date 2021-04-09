@@ -7,11 +7,13 @@ from multiprocessing import Process, cpu_count
 import igraph
 import psycopg2
 import tqdm
+from protgraph.export.peptides.pep_fasta import PepFasta
+
+PF = PepFasta()
 
 
-def _check_if_folder_exists(s: str):
-    """ checks if a file exists. If not: raise Exception """
-    # TODO copied from prot_graph.py
+def check_if_folder_exists(s: str):
+    """ checks if a folder exists. If not: raise Exception """
     if os.path.isdir(s):
         return s
     else:
@@ -49,7 +51,7 @@ def parse_args():
 
     # Base Folder of generated Pickle Files
     parser.add_argument(
-        "base_export_folder", type=_check_if_folder_exists, nargs=1,
+        "base_export_folder", type=check_if_folder_exists, nargs=1,
         help="Base folder of the exported graphs in pickle (exported by the flags '-epickle', '-edirs')"
     )
 
@@ -92,38 +94,6 @@ def get_graph_file(base_dir, accession):
     )
 
 
-def get_qualifiers(graph, path: list):
-    """ Returns the qualifiers attributes (edges; in order, if existent) """
-    # Get qualifier
-    qualifiers = []
-    for x, y in zip(path, path[1:]):
-        edge = graph.es.find(_between=((x,), (y,)))
-        # if it exits
-        if "qualifiers" in edge.attributes():
-            if edge["qualifiers"] is not None:
-                for q in edge["qualifiers"]:
-                    qualifiers.append(q.type)
-
-    # return the aminoacids of the path
-    if len(qualifiers) != 0:
-        return qualifiers
-    return None  # We return None if not present
-
-
-def unique_id_gen(id_size, proc_id, num_procs):
-    value = id_size * proc_id
-
-    times = 0
-    while True:
-        if times == id_size:
-            value = value + ((num_procs-1) * id_size)
-            times = 0
-
-        yield value
-        value += 1
-        times += 1
-
-
 @lru_cache(maxsize=25000)
 def get_graph(base_dir, accession):
     """ Usage of lru_cache to maximize the speed on frequently called graphs. """
@@ -138,7 +108,7 @@ def convert_entry_to_fasta(peptide, part_headers, pep_id):
 
 
 def execute(in_q, out_q, base_folder, id_size, proc_id, num_procs):
-    id_generator = unique_id_gen(id_size, proc_id, num_procs)
+    id_generator = PF.unique_id_gen(proc_id=proc_id, num_of_processes=num_procs)
 
     while True:
         rows = in_q.get()
@@ -147,33 +117,7 @@ def execute(in_q, out_q, base_folder, id_size, proc_id, num_procs):
         # Export information per entry
         strings = []
         for row in rows:
-            accession = row[1]
-            graph = get_graph(base_folder, accession)
-            peptide = "".join(graph.vs[row[0][1:-1]]["aminoacid"])
-            nodes = row[0]
-            edges = graph.get_eids(path=row[0])
-            if "cleaved" in graph.es[edges[0]].attributes():
-                misses = sum(filter(None, graph.es[edges]["cleaved"]))
-            else:
-                misses = -1
-
-            acc = _get_accession_or_isoform(graph.vs[nodes[1]])
-            start_pos = _get_position_or_isoform_position(graph.vs[nodes[1]])
-            end_pos = _get_position_or_isoform_position(graph.vs[nodes[-2]], end=True)
-            l_str_qualifiers = _get_qualifiers(graph, edges)
-            quali_entries = ",".join(l_str_qualifiers)
-            if quali_entries:
-                quali_entries = "," + quali_entries
-
-            # Generate partial header UNIPROT_ISO(START:END, mssclvg:MSS, QUALIFIERS)
-            part_header = "".join(
-                    [
-                        acc, "(", str(start_pos), ":", str(end_pos), ",",
-                        "mssclvg:", str(misses),
-                        quali_entries,  ")"
-                    ]
-                )
-
+            peptide, part_header = get_pep_and_header_def(row[0], row[1], base_folder)
             strings.append(
                 convert_entry_to_fasta(peptide, [part_header], next(id_generator))
             )
@@ -181,8 +125,34 @@ def execute(in_q, out_q, base_folder, id_size, proc_id, num_procs):
         out_q.put("".join(strings))
 
 
+def get_pep_and_header_def(path, accession, _base_folder):
+    graph = get_graph(_base_folder, accession)
+    peptide = "".join(graph.vs[path[1:-1]]["aminoacid"])
+    edges = graph.get_eids(path=path)
+    if "cleaved" in graph.es[edges[0]].attributes():
+        misses = sum(filter(None, graph.es[edges]["cleaved"]))
+    else:
+        misses = -1
+
+    acc = PF._get_accession_or_isoform(graph.vs[path[1]])
+    start_pos = PF._get_position_or_isoform_position(graph.vs[path[1]])
+    end_pos = PF._get_position_or_isoform_position(graph.vs[path[-2]], end=True)
+    l_str_qualifiers = PF._get_qualifiers(graph, edges)
+    quali_entries = ",".join(l_str_qualifiers)
+
+    part_header = "".join(
+        [
+            acc, "(", str(start_pos), ":", str(end_pos), ",",
+            "mssclvg:", str(misses),
+            quali_entries,  ")"
+        ]
+    )
+
+    return peptide, part_header
+
+
 def execute_compact(in_q, out_q, base_folder, id_size, proc_id, num_procs):
-    id_generator = unique_id_gen(id_size, proc_id, num_procs)
+    id_generator = PF.unique_id_gen(proc_id=proc_id, num_of_processes=num_procs)
     while True:
         rows = in_q.get()
         if rows is None:
@@ -192,31 +162,7 @@ def execute_compact(in_q, out_q, base_folder, id_size, proc_id, num_procs):
         for row in rows:
             d = dict()
             for path, accession in zip(row[0], row[1]):
-                graph = get_graph(base_folder, accession)
-                peptide = "".join(graph.vs[path[1:-1]]["aminoacid"])
-                nodes = path
-                edges = graph.get_eids(path=path)
-                if "cleaved" in graph.es[edges[0]].attributes():
-                    misses = sum(filter(None, graph.es[edges]["cleaved"]))
-                else:
-                    misses = -1
-
-                acc = _get_accession_or_isoform(graph.vs[nodes[1]])
-                start_pos = _get_position_or_isoform_position(graph.vs[nodes[1]])
-                end_pos = _get_position_or_isoform_position(graph.vs[nodes[-2]], end=True)
-                l_str_qualifiers = _get_qualifiers(graph, edges)
-                quali_entries = ",".join(l_str_qualifiers)
-                if quali_entries:
-                    quali_entries = "," + quali_entries
-
-                # Generate partial header UNIPROT_ISO(START:END, mssclvg:MSS, QUALIFIERS)
-                part_header = "".join(
-                        [
-                            acc, "(", str(start_pos), ":", str(end_pos), ",",
-                            "mssclvg:", str(misses),
-                            quali_entries,  ")"
-                        ]
-                    )
+                peptide, part_header = get_pep_and_header_def(path, accession, base_folder)
                 if peptide not in d:
                     d[peptide] = [[]]
                 d[peptide][0].append(part_header)
@@ -228,76 +174,6 @@ def execute_compact(in_q, out_q, base_folder, id_size, proc_id, num_procs):
                 )
 
         out_q.put("".join(strings))
-
-
-def _get_qualifiers(prot_graph, edges):
-    """ Generate a list of strings for all avilable qualifiers. """
-    if "qualifiers" not in prot_graph.es[0].attributes():
-        return []
-    str_qualifiers = []
-    for qualifier in prot_graph.es[edges]["qualifiers"]:
-        if qualifier is None:
-            continue
-        if len(qualifier) == 0:
-            continue
-
-        for f in qualifier:
-            if f.type == "VAR_SEQ":
-                continue  # Skip since we encode this differently
-
-            elif f.type == "VARIANT":
-                str_qualifiers.append(
-                    "VARIANT[" + str(f.location.start + 1) + ":"
-                    + str(f.location.end) + "," + _get_variant_qualifier(f) + "]"
-                )
-
-            elif f.type == "SIGNAL":
-                str_qualifiers.append(
-                    "SIGNAL[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
-                )
-
-            elif f.type == "INIT_MET":
-                str_qualifiers.append(
-                    "INIT_MET[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
-                )
-
-    return str_qualifiers
-
-
-def _get_variant_qualifier(feature):
-    """ Get x -> y or missing """
-    message = feature.qualifiers["note"]
-    message = message[:message.index("(")-1]
-
-    if feature.id is not None:
-        message + ", " + feature.id
-    return message
-
-
-def _get_accession_or_isoform(node):
-    """ get accesion in every case """
-    attrs = node.attributes()
-    if "isoform_accession" in attrs and attrs["isoform_accession"] is not None:
-        return attrs["isoform_accession"]
-    else:
-        return attrs["accession"]
-
-
-def _get_position_or_isoform_position(node, end=False):
-    """ get position, '?' if not specified"""
-    attrs = node.attributes()
-    val = -1
-    if "isoform_accession" in attrs and attrs["isoform_accession"] is not None:
-        val = attrs["isoform_position"]
-    elif attrs["position"] is not None:
-        val = attrs["position"]
-    else:
-        val = "?"
-
-    if type(val) != str and end:
-        return val + len(node["aminoacid"]) - 1
-    else:
-        return val
 
 
 def batch(iterable, n):
