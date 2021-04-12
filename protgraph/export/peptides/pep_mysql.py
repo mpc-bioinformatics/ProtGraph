@@ -67,7 +67,7 @@ class PepMySQL(APeptideExporter):
         self.proc_id = multiprocessing.current_process()._identity[0] - 2  # Offset, dur to Main and Reading Thread
         self.id_size = 1000000  # Set sufficiently enough. Fails, if it is called with more than 1 Million processes
         self.num_procs = kwargs["num_of_processes"]
-        self.id_gen = self.unique_id_gen()
+        self.id_gen = self.unique_id_gen(**kwargs)
 
         # Initialize connection
         try:
