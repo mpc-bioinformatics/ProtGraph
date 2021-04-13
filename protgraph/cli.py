@@ -456,8 +456,8 @@ def add_citus_peptide_export(group):
         help="Set the host name for the postgresql server with citus. Default: 127.0.0.1"
     )
     group.add_argument(
-        "--pep_citus_port", type=int, default=5433,
-        help="Set the port for the postgresql server with citus. Default: 5433"
+        "--pep_citus_port", type=int, default=5432,
+        help="Set the port for the postgresql server with citus. Default: 5432"
     )
     group.add_argument(
         "--pep_citus_user", type=str, default="postgres",
