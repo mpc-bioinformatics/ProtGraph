@@ -68,7 +68,7 @@ class PepFasta(APeptideExporter):
                     "".join(
                         [
                             acc, "(", str(start_pos), ":", str(end_pos), ",",
-                            "mssclvg:", str(misses),
+                            "mssclvg:", str(misses), ",",
                             quali_entries,  ")"
                         ]
                     )
