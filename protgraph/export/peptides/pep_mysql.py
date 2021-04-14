@@ -147,7 +147,7 @@ class PepMySQL(APeptideExporter):
                     )
                 )
         except Exception as e:
-            print("Error createing peptides table. Continuing... (Reason: {})".format(str(e)))
+            print("Error creating peptides table. Continuing... (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -175,7 +175,7 @@ class PepMySQL(APeptideExporter):
                 )
             )  # References to peptide and accession removed for performance reasons
         except Exception as e:
-            print("Error createing peptides_meta table. Continuing... (Reason: {})".format(str(e)))
+            print("Error creating peptides_meta table. Continuing... (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
