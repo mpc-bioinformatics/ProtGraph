@@ -34,3 +34,11 @@ class AExporter(ABC):
         causing exceptions for other processes!
         """
         pass
+
+    def unique_id_gen(self, **kwargs):
+        val = kwargs["proc_id"]
+        jump = kwargs["num_of_processes"]
+
+        while True:
+            yield val
+            val += jump

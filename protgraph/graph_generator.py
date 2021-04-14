@@ -85,11 +85,14 @@ def _include_ft_information(entry, graph, kwargs):
     return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant
 
 
-def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, **kwargs):
+def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id, **kwargs):
     """
     TODO
     describe kwargs and consumer until a graph is generated and digested etc ...
     """
+    # Set proc id
+    kwargs["proc_id"] = proc_id
+
     # Initialize the exporters for graphs
     graph_exporters = Exporters(**kwargs)
 

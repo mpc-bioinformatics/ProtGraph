@@ -43,33 +43,107 @@ class PepFasta(APeptideExporter):
         self.get_use_igraph = kwargs["pep_fasta_use_igraph"]
         self.get_batch_size = kwargs["pep_fasta_batch_size"]
 
+        self.id_gen = self.unique_id_gen(**kwargs)
+
         # Get output file from configuration
         self.output_file = kwargs["pep_fasta_out"]
 
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, queue):
-        # Export a batch of peptides at once
-        accession = prot_graph.vs[0]["accession"]
-
+        # Export a batch of peptides at onces
         # Build up the entries for the batch
         entries = ""
-        if "qualifiers" in prot_graph.es[0].attributes():
-            for peptide, edges in zip(l_peptide, l_path_edges):
-                qualifiers = prot_graph.es[edges]["qualifiers"]
-                # replace empty lists with None and get type
-                qualifiers = [None if x is None or len(x) == 0 else [y.type for y in x] for x in qualifiers]
-
-                entries += (
-                    ">lcl|ACCESSION=" + accession +
-                    "|QUALIFIERS=" + ",".join(";".join(x) if x is not None else "" for x in qualifiers)
-                )
-                entries += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
-        else:
-            for peptide, edges in zip(l_peptide, l_path_edges):
-                entries += ">lcl|ACCESSION=" + accession + "|QUALIFIERS="
-                entries += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
+        for peptide, nodes, edges, misses in zip(l_peptide, l_path_nodes, l_path_edges, l_miscleavages):
+            acc = self._get_accession_or_isoform(prot_graph.vs[nodes[1]])
+            start_pos = self._get_position_or_isoform_position(prot_graph.vs[nodes[1]])
+            end_pos = self._get_position_or_isoform_position(prot_graph.vs[nodes[-2]], end=True)
+            l_str_qualifiers = self._get_qualifiers(prot_graph, edges)
+            quali_entries = ",".join(l_str_qualifiers)
+            if quali_entries:
+                quali_entries = "," + quali_entries
+            # Generate header: >pg|ENTRY_ID|UNIPROT_ISO(START:END, mssclvg:MISS; QUALIFIERS)
+            entries += "|".join(
+                [
+                    ">pg",
+                    "ID_" + str(next(self.id_gen)),
+                    "".join(
+                        [
+                            acc, "(", str(start_pos), ":", str(end_pos), ",",
+                            "mssclvg:", str(misses),
+                            quali_entries,  ")"
+                        ]
+                    )
+                ]
+            )
+            entries += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
 
         # put the entries into the queue, so that the main thread can write the actual content.
-        queue.put((self.output_file, entries))
+        queue.put((self.output_file, entries, False))
+
+    def _get_qualifiers(self, prot_graph, edges):
+        """ Generate a list of strings for all avilable qualifiers. """
+        if "qualifiers" not in prot_graph.es[0].attributes():
+            return []
+        str_qualifiers = []
+        for qualifier in prot_graph.es[edges]["qualifiers"]:
+            if qualifier is None:
+                continue
+            if len(qualifier) == 0:
+                continue
+
+            for f in qualifier:
+                if f.type == "VAR_SEQ":
+                    continue  # Skip since we encode this differently
+
+                elif f.type == "VARIANT":
+                    str_qualifiers.append(
+                        "VARIANT[" + str(f.location.start + 1) + ":"
+                        + str(f.location.end) + "," + self._get_variant_qualifier(f) + "]"
+                    )
+
+                elif f.type == "SIGNAL":
+                    str_qualifiers.append(
+                        "SIGNAL[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                    )
+
+                elif f.type == "INIT_MET":
+                    str_qualifiers.append(
+                        "INIT_MET[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                    )
+
+        return str_qualifiers
+
+    def _get_variant_qualifier(self, feature):
+        """ Get x -> y or missing """
+        message = feature.qualifiers["note"]
+        message = message[:message.index("(")-1]
+
+        if feature.id is not None:
+            message + ", " + feature.id
+        return message
+
+    def _get_accession_or_isoform(self, node):
+        """ get accesion in every case """
+        attrs = node.attributes()
+        if "isoform_accession" in attrs and attrs["isoform_accession"] is not None:
+            return attrs["isoform_accession"]
+        else:
+            return attrs["accession"]
+
+    def _get_position_or_isoform_position(self, node, end=False):
+        """ get position, '?' if not specified"""
+        attrs = node.attributes()
+        val = -1
+        if "isoform_accession" in attrs and attrs["isoform_accession"] is not None:
+            val = attrs["isoform_position"]
+        elif attrs["position"] is not None:
+            val = attrs["position"]
+        else:
+            val = "?"
+
+        if type(val) != str and end:
+            return val + len(node["aminoacid"]) - 1
+        else:
+            return val
 
     def tear_down(self):
         # We do not need to do something here, since we output it into
