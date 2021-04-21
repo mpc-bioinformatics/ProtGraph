@@ -108,7 +108,7 @@ def _digest_via_full(graph):
         except Exception:
             print(
                 "WARNING: Graph has parallel edges, which may be due to the input file. "
-                "Please check if features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
+                "Please check that features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
             )
 
     # Do the same for end to get all nodes which need OUT edges
@@ -122,7 +122,7 @@ def _digest_via_full(graph):
         except Exception:
             print(
                 "WARNING: Graph has parallel edges, which may be due to the input file. "
-                "Please check if features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
+                "Please check that features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
             )
 
     # Get all edges, which should be cleaved and mark them
