@@ -28,7 +28,7 @@ FT                   /note="O -> L (in Example)"
 FT                   /evidence="EXAMPLE Variant 2"
 FT                   /id="VAR_XXXXX2"
 FT   VARIANT         5
-FT                   /note="L -> K (in Example)"
+FT                   /note="T -> K (in Example)"
 FT                   /evidence="EXAMPLE Variant 3"
 FT                   /id="VAR_XXXXX3"
 SQ   SEQUENCE   8 AA;  988 MW;  XXXXXXXXXXXXXXXX CRC64;
@@ -57,17 +57,17 @@ By combining multiple flags, it is possible to retrieve the number of  peptides 
 |----------------|---|---|---|---|---|---|---|---|
 | #Peptides      | 3 | 5 | 8 | 8 | 6 | 4 | 8 | 4 |
 
-
 Dividing this table by `46` would give us the distribution of the peptide lengths for the given protein.
 
-
-
 ## Setting up ProtGraph
+
 You can download Protgraph directly from [pypi](https://pypi.org/project/protgraph).
 
 Simply execute: `pip install protgraph`  or `pip install --user protgraph`
 
-### Installing via pip from source (for usage)
+It is also avialable in [bioconda](https://bioconda.github.io/). The installation instruction can be found here: [protgraph](https://anaconda.org/bioconda/protgraph)
+
+### Installing via pip from source (for usage and development)
 
 First clone this project and enter its directory via:
 
@@ -76,27 +76,22 @@ git clone git@github.com:mpc-bioinformatics/ProtGraph.git
 cd ProtGraph/
 ```
 
-Depending on how you want to use this project follow either the usage instructions for only using Protgraph or the development and tests instructions if you want to use it in a python project or even develop something in ProtGraph itself.
+Depending on how you want to use this project follow either the usage instructions or the development and tests instructions.
 
-If you only want to use ProtGraph from the command line, it is sufficient to simply execute: `pip install --user .`
+#### Installing for Usage
+
+If you only want to use ProtGraph from the command line, it is sufficient to simply execute: `pip install --user .`. Alternatively you can execute `python setup.py install`.
 
 The "binary" `protgraph` should be available in your command line after it finished. You can now convert UniProt-entries into graphs!
 
-#### Troubleshooting
-
-ProtGraph has many dependencies which are mostly due to the export functionalities. For the dependency `psycopg2`, it may be neccessary to install PostgreSQL on your operating system, so that the wheel can be built. It should be sufficient to install it as follows `sudo pacman -S postgres` (adapt this for `apt` and alike).
-
-If the command `protgraph` cannot be found, make sure that you have included the python executables folder in your environment variable `PATH`. (If pip was executed with the flag `--user`, then the binaries should be available in the folder: `~/.local/bin`)
-
-### Installing via pipenv and pyenv (for development and tests)
+#### Installing for Development and Test
 
 To set up ProtGraph make sure you have `pipenv` and `pyenv` installed. (via `pacman` `apt` and alike)
 
-
-First download this repository and then install needed dependencies with:
+First install needed dependencies with:
 > pipenv install  && pipenv install -d
 
-Afterwards execute the following to install the module ProtGraph:
+Afterwards execute the following to install the module ProtGraph inside the environment:
 > pipenv run pip install -e .
 
 If both commands finished succesfully, activate the environment via:
@@ -104,10 +99,13 @@ If both commands finished succesfully, activate the environment via:
 
 You should be able to run `protgraph` now. Via the flag `-e` the code from the projects directory is used, so you can edit the files directly and test the changes via your debugger of choice or via the command `protgraph`.
 
+Tests can be executed as follows: Make sure you are at the root folder of this project. Then execute `pytest .` to run the tests for ProtGraph.
 
-#### Testing
+#### Troubleshooting
 
-Make sure you are at the root folder of this project. Then execute `pytest .` to run the tests for ProtGraph.
+ProtGraph has many dependencies which are mostly due to the export functionalities. For the dependency `psycopg2`, it may be neccessary to install PostgreSQL on your operating system, so that the wheel can be built. It should be sufficient to install it as follows `sudo pacman -S postgres` (adapt this for `apt` and alike).
+
+If the command `protgraph` cannot be found, make sure that you have included the python executables folder in your environment variable `PATH`. (If pip was executed with the flag `--user`, then the binaries should be available in the folder: `~/.local/bin`)
 
 ## Usage
 
@@ -119,11 +117,11 @@ Let's use the provided example `e_coli.dat` located in `examples/e_coli.dat` (Or
 
 The graph generation can be executed via: `protgraph examples/e_coli.dat`. This will generate the graphs and the additional statistics file. You can inspect the statistics file after it has finished. This should only take a few seconds/minutes.
 
-A progressbar was not shown during execution which is due to `Biopython` not provide information of how many entries are available in a `.txt` or `.dat` file.Therefore this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
+A progressbar was not shown during execution which is due to `Biopython` not providing information of how many entries are available in a `.txt` or `.dat` file.Therefore this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
 
-To retrieve the number of entries beforehand, you could e.g. use `cat examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files. The number of entries for each file then need to be summed: `protgraph -n 18868 examples/e_coli.dat examples/e_coli.dat`
+To retrieve the number of entries beforehand, you could e.g. use `cat examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files into ProtGraph. The number of entries for each file then need to be summed: `protgraph -n 18868 examples/e_coli.dat examples/e_coli.dat`
 
-If to many (or to few) processes are executed, then it can be adjusted via the parameter `--num_of_processes` or `-np`. E.G. `protgraph --num_of_processes 3 --num_of_entries 9434 examples/e_coli.dat` will use 4 (`3` + 1 reading process) processes.
+If too many (or too few) processes are executed, then it can be adjusted via the parameter `--num_of_processes` or `-np`. E.G. `protgraph --num_of_processes 3 --num_of_entries 9434 examples/e_coli.dat` will use 4 (`3` + `1` reading) processes.
 
 To fully annotate the graphs with weights and to retrieve currently all available statistics, use the following: `protgraph -amwe -aawe -cnp -cnpm -cnph -n 9434 examples/e_coli.dat`
 
@@ -131,10 +129,10 @@ To fully annotate the graphs with weights and to retrieve currently all availabl
 
 Fasta export examples:
 
-Use Protgraph to get all possible peptides from isoforms and canonoical for `e_coli.dat` into a fasta file:
+Protgraph can be used to get all possible peptides from isoforms and canonoical for `e_coli.dat` into a fasta file:
 > protgraph -n 9434 -sv -ss -sm -epepfasta examples/e_coli.dat
 
-Instead of having only peptides, get all possible proteins with isoforms and canonoical for `e_coli.dat` into a fasta file:
+Instead of only containing peptides, ProtGraph can get all possible proteins with isoforms and canonoical for `e_coli.dat` into a fasta file:
 > protgraph -n 9434 -sv -ss -sm -d skip -epepfasta examples/e_coli.dat
 
 It could also be interesing to get a fasta file of proteins with all variants, isoforms, cleaved or not cleaved signal peptide/initiator methionine:
@@ -158,29 +156,25 @@ It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all
 
 While executing ProtGraph, generated graphs are not saved. This is also true for peptides or proteins, which are represented by the graphs.
 
-This is the default behaviour of `protgraph`. It excludes the generated graphs/proteins/peptides, since those can explode in size and the disk space on machines may also be limited. This is illustrated in examples.
+This is the default behaviour of `protgraph`. It excludes the generated graphs/proteins/peptides, since those can explode in size and the disk space on machines may also be limited. This is illustrated in the above examples.
 
-However, those exporting functionalities can be used. Those differ in two categories: `-e*` for graph exports and `-epep` for peptide/protein exports. For the peptide/protein exports limitations can be set on the graph-traversal itself.
-
+However, those exporting functionalities can be used. Those differ in two categories: `-e*` for graph exports and `-epep*` for peptide/protein exports. For the peptide/protein exports limitations can be set on the graph-traversal itself.
 
 **NOTE:** Graphs can contain unmanagable amounts of peptides/proteins. Do a dry run WITHOUT the export functionality first and examine the statistics output. Each peptide/protein exporter has multiple parameters to further limit the number of results.
-Without a dry run it may happen that a protein like P04637 (P53 Human) with all possible peptides and variants is exported, which would take up all disk space.
-
+Without a dry run it may happen that a protein like P04637 (P53 Human) with all possible peptides and variants is exported, which will very likely take up all disk space.
 
 It is planned to add further export functionalities if needed.
-
 
 ### File Exports
 
 To export each protein graph into a file, simply set the flags `-edot`, `-egraphml` and/or `-egml`, which will create the corresponding dot, GraphML or GML files into a output folder. With the flag `-epickle` it is also possible to generate a binary pickle file of the graph (which can be used by other python programs with `igraph`).
-If processing many proteins (over 1 000 000) it is recommended to set the flag `-edirs` to save the graphs into multiple files, since the underlying filesystem may be overwhelmed with so many files in one folder.
+If processing many proteins (over 1 000 000) it is recommended to set the flag `-edirs` to save the graphs into multiple folders, since the underlying filesystem may be overwhelmed with too many files in one folder.
 
 Exporting to GraphML is recommended since this is the only export method able to serialize all properties in a file which may be set in a graph. However, keep in mind that this export needs the most disk space out of the other graph exporters.
 
 There is also the possibility to directly export graphs into a `fasta` file. This can be achieved via: `-epepfasta`.
 
 ### Database Exporters
-
 
 ProtGraph offers multiple database-/storage-exporters. It is possible to export graphs into PostgreSQL/MySQL/RedisGraph and Gremlin (experimental). For PostgreSQL as well as MySQL two tables (`nodes`, `edges`) are generated and corresponding entries for each graph are added.
 

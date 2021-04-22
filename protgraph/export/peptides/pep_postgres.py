@@ -91,7 +91,7 @@ class PepPostgres(APeptideExporter):
                     accession VARCHAR(15) NOT NULL
                 );""")
         except Exception as e:
-            print("Error createing accessions table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'nodes' (accessions: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -136,7 +136,7 @@ class PepPostgres(APeptideExporter):
                 "BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE PRECISION"
                 ))
         except Exception as e:
-            print("Error createing peptides table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'peptides' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -164,7 +164,7 @@ class PepPostgres(APeptideExporter):
             );""".format("BIT(452)" if self.postgres_no_duplicates else "BIGINT"))
             # References to peptide and accession removed for performance reasons
         except Exception as e:
-            print("Error createing peptides_meta table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'peptides_meta' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()

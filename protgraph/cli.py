@@ -521,7 +521,7 @@ def add_gremlin_graph_export(group):
         "(tested on JanusGraph and Apache Gremlin Server). This exporter is not well implemented and may not work. "
         "This is due to difficulties implementing such an exporter in a global manner. "
         "To reduce the number of errors: Try to have a stable connection to the gremlin-server and also allocate "
-        "enough resource for it, so that it can process the queries quick enough."
+        "enough resources for it, so that it can process the queries quick enough."
     )
     group.add_argument(
         "--gremlin_url", type=str, default="ws://localhost:8182/gremlin",
