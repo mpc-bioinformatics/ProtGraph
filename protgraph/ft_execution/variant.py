@@ -1,3 +1,6 @@
+from protgraph.unexpected_exception import UnexpectedException
+
+
 def execute_variant(graph, variant_feature):
     """
     This function adds vertices and edges depending on the feature variant.
@@ -147,9 +150,14 @@ def _combine_vertices(list_a, list_b):
         if key not in out_d:
             out_d[key] = dict(inn=[a])
         else:
-            # TODO we cannot simply associate via accession!?!?
-            # TODO generate custom exception to report the occuring Error!
-            raise Exception("Exisiting Key would be overwritten.")
+            # We cannot simply associate via accession?
+            # Does this case ever happen !?!
+            raise UnexpectedException(
+                accession=None,
+                position=None,
+                message="Exisiting Key would be overwritten. Additional Info contains dict, lista and listb",
+                additional_info=str([out_d, list_a, list_b])
+            )
 
     # Sort the second list (outgoing, b)
     for b in list_b:

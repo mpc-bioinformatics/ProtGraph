@@ -67,7 +67,7 @@ class Postgres(AExporter):
                 );""")
 
         except Exception as e:
-            print("Error createing nodes table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'nodes' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -96,7 +96,7 @@ class Postgres(AExporter):
                 );""".format("BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE PRECISION"))
 
         except Exception as e:
-            print("Error createing edges table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'edges' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()

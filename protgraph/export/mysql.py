@@ -67,7 +67,7 @@ class MySQL(AExporter):
                 );""")
 
         except Exception as e:
-            print("Error creating nodes table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'nodes' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -97,7 +97,7 @@ class MySQL(AExporter):
                 );""".format("BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE"))
 
         except Exception as e:
-            print("Error creating edges table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'edges' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()

@@ -27,9 +27,9 @@ def prot_graph(**kwargs):
         raise TypeError("missing argument 'files'")
 
     # Set up queues
-    entry_queue = Queue(1000)  # TODO limit? or not to limit?
-    statistics_queue = Queue()
-    common_out_file_queue = Queue()
+    entry_queue = Queue(10000)
+    statistics_queue = Queue(10000)
+    common_out_file_queue = Queue(10000)
 
     # Get the number of processes.
     number_of_procs = \

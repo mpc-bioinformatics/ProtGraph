@@ -68,7 +68,7 @@ class PepFasta(APeptideExporter):
                     "".join(
                         [
                             acc, "(", str(start_pos), ":", str(end_pos), ",",
-                            "mssclvg:", str(misses),
+                            "mssclvg:", str(misses), ",",
                             quali_entries,  ")"
                         ]
                     )
@@ -115,7 +115,7 @@ class PepFasta(APeptideExporter):
     def _get_variant_qualifier(self, feature):
         """ Get x -> y or missing """
         message = feature.qualifiers["note"]
-        message = message[:message.index("(")-1]
+        message = message[:message.index("(")-1] if "(" in message else message
 
         if feature.id is not None:
             message + ", " + feature.id

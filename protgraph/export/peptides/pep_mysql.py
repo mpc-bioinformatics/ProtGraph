@@ -101,7 +101,7 @@ class PepMySQL(APeptideExporter):
                     PRIMARY KEY(id)
                 );""")
         except Exception as e:
-            print("Error creating accessions table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'nodes' (accessions: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -147,7 +147,7 @@ class PepMySQL(APeptideExporter):
                     )
                 )
         except Exception as e:
-            print("Error creating peptides table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'peptides' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -175,7 +175,7 @@ class PepMySQL(APeptideExporter):
                 )
             )  # References to peptide and accession removed for performance reasons
         except Exception as e:
-            print("Error creating peptides_meta table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'peptides_meta' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()

@@ -103,7 +103,13 @@ def _digest_via_full(graph):
     start_in.remove(__start_node__.index)
     start_in.remove(__end_node__.index)
     for i in graph.neighbors(__start_node__, mode="OUT"):
-        start_in.remove(i)
+        try:
+            start_in.remove(i)
+        except Exception:
+            print(
+                "WARNING: Graph has parallel edges, which may be due to the input file. "
+                "Please check that features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
+            )
 
     # Do the same for end to get all nodes which need OUT edges
     end_out = graph.vs.indices
@@ -111,7 +117,13 @@ def _digest_via_full(graph):
     end_out.remove(__start_node__.index)
     end_out.remove(__end_node__.index)
     for i in graph.neighbors(__end_node__, mode="IN"):
-        end_out.remove(i)
+        try:
+            end_out.remove(i)
+        except Exception:
+            print(
+                "WARNING: Graph has parallel edges, which may be due to the input file. "
+                "Please check that features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
+            )
 
     # Get all edges, which should be cleaved and mark them
     cleaved_edges = [

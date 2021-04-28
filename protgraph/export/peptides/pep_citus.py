@@ -91,7 +91,7 @@ class PepCitus(APeptideExporter):
                     accession VARCHAR(15) NOT NULL
                 );""")
         except Exception as e:
-            print("Error createing accessions table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'accessions' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -137,7 +137,7 @@ class PepCitus(APeptideExporter):
                 ))
             cur.execute("SELECT create_distributed_table(%s, %s);", ("peptides", "id", ))
         except Exception as e:
-            print("Error createing peptides table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'peptides' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
@@ -166,7 +166,7 @@ class PepCitus(APeptideExporter):
             # References to peptide and accession removed for performance reasons
             cur.execute("SELECT create_distributed_table(%s, %s);", ("peptides_meta", "peptides_id", ))
         except Exception as e:
-            print("Error createing peptides_meta table. Continuing... (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'peptides_meta' (Reason: {})".format(str(e)))
         finally:
             self.conn.commit()
             cur.close()
