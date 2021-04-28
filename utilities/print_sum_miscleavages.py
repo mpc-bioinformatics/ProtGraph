@@ -28,7 +28,7 @@ def parse_args():
     # Statistics file
     parser.add_argument(
         "input_csv", type=_check_if_file_exists, nargs=1,
-        help="File containing the statistics output from ProtGraph (generated via '-cnph')"
+        help="File containing the statistics output from ProtGraph (generated via '-cnpm')"
     )
 
     # Number of entries in csv
