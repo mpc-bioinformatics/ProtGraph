@@ -1,5 +1,6 @@
 from protgraph.unexpected_exception import UnexpectedException
 
+
 def execute_variant(graph, variant_feature):
     """
     This function adds vertices and edges depending on the feature variant.
