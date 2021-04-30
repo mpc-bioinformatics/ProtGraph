@@ -1,5 +1,10 @@
 # ProtGraph - A Graph-Generator for Proteins
 
+[![install with pip](https://img.shields.io/badge/Install%20with-pip-brightgreen)](https://pypi.org/project/protgraph/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/protgraph?label=PyPI%20-%20Downloads)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/protgraph/README.html)
+![Conda](https://img.shields.io/conda/dn/bioconda/protgraph?label=BioConda%20-%20Downloads)
+
 This project aims to efficiently generate graphs of proteins using text entries from [UniProt](https://www.uniprot.org/). These text files usually end with the extension: `.dat` or `.txt`.
 
 We utilize the tools: [BioPython](https://biopython.org/) and [igraph](https://igraph.org/python/) to generate so called directed and acyclic graphs (DAGs) of proteins.
