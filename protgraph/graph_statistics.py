@@ -1,11 +1,17 @@
 from operator import add
 
+from collections import defaultdict
+from protgraph.aa_masses_annotation import _get_mass_dict
 
 def get_statistics(graph, **kwargs):
     """
     TODO can we retrieve even more information!?
     returns #Node, #Edges, #Num_Of_Paths
     """
+
+    # TODO
+    mass_dict = _get_mass_dict(factor=kwargs["mass_dict_factor"], type=kwargs["mass_dict_type"])
+    _possible_weights(graph, mass_dict)
 
     # Get the number of nodes and edges (an be done instantly)
     num_edges = _get_edge_count(graph)
@@ -204,6 +210,43 @@ def _num_of_possible_paths_all_hops(graph_entry):
     # Here the index of the list gives us the number of how many cleavages we have missed.
     # Sum each element up to retrieve the number of all possible paths ("infinite" many miscleavages)
     return var_paths[sorted_nodes[-1]]
+
+
+
+def _possible_weights(graph_entry, mass_dict):
+    """
+    Get the set of all possible weights inside a graph
+    """
+
+    from tqdm import tqdm
+    # First get the reverse topological sorting of the graph
+    sorted_nodes = graph_entry.topological_sorting(mode="IN")
+
+    # Create list with weights
+    var_weights = defaultdict(set)
+
+    # Initialize Path from the very last node!
+    last = sorted_nodes[0]
+    var_weights[last] = set([0])
+    weight = _get_weight(graph_entry.vs[last]["aminoacid"], mass_dict)
+    for v_prev in graph_entry.neighbors(last, mode="IN"):
+        var_weights[v_prev].update([x + weight for x in var_weights[last]])
+    del var_weights[last]
+
+    # Get next node in topological sorted nodes
+    for v in tqdm(sorted_nodes[1:-1]):
+        weight = _get_weight(graph_entry.vs[v]["aminoacid"], mass_dict)
+        res_list = [x + weight for x in var_weights[v]]
+        for v_prev in tqdm(graph_entry.neighbors(v, mode="IN"), leave=False):
+            var_weights[v_prev].update(res_list)
+        del var_weights[v]
+
+    return var_weights[graph_entry.vs.select(aminoacid="__start__")[0].index]
+
+
+def _get_weight(seq, dict, mono=True):
+    idx = 0 if mono else 1
+    return sum([dict[x][idx] for x in seq.replace("__start__", "").replace("__end__", "")])
 
 
 def _add_lists(list_a, list_b):
