@@ -39,23 +39,15 @@ def add_main_args(parser):
 
 
 def add_graph_generation(group):
+
+    # Available features
+    avail_fts = ["ALL", "NONE", "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL"]
     group.add_argument(
-        "--skip_isoforms", "-si", default=False, action="store_true",
-        help="Set this flag to exclude isoforms 'VAR_SEQ' (and possible modification on them like variations, etc...) "
-        "from the FeatureTable"
-    )
-    group.add_argument(
-        "--skip_variants", "-sv", default=False, action="store_true",
-        help="Set this flag to exclude 'VARIANT' from the FeatureTable"
-    )
-    group.add_argument(
-        "--skip_init_met", "-sm", default=False, action="store_true",
-        help="Set this flag to exclude the skipping of the initiator methionine ('INIT_M' in "
-        "FeatureTable) for proteins"
-    )
-    group.add_argument(
-        "--skip_signal", "-ss", default=False, action="store_true",
-        help="Set this flag to exclude skipping the signal peptide ('SIGNAL' in FeatureTable) of specific proteins"
+        "--feature_table", "-ft", choices=avail_fts, type=str.upper, action="append",
+        help="Set the features which should be added to the graph. Those feature_tables correspond to"
+        " the actual FT name provided in SwissProt-EMBL. Default is set to use all available features"
+        " ProtGraph can parse. Currently parsable features are: " + ", ".join(avail_fts) +
+        ". Use it as follows to only select specific ones: '-ft INIT_MET -ft SIGNAL' or '-ft NONE' to use none."
     )
 
     # Flag to check if generated graphs are correctly generated
@@ -67,11 +59,11 @@ def add_graph_generation(group):
 
     # Arguments for graph processing/digestion
     group.add_argument(
-        "--digestion", "-d", type=str.lower, default="trypsin",
+        "--digestion", "-d", type=str.lower, action="append",
         choices=["trypsin", "skip", "full"],
         help="Set the digestion method. The full digestion cleaves at every edge, which can be useful for retrieving "
         "all possible peptides with arbitrary cutting points. The digestion method skip skips the digestion "
-        "completely. Default: Trypsin"
+        "completely. You can use multiple digestions at once! Default: Trypsin"
     )
     group.add_argument(
         "--no_merge", "-nm", default=False, action="store_true",
@@ -137,6 +129,12 @@ def add_statistics(group):
         "manner. NOTE: This mis even more memory heavy then binning on miscleavages. Of course it depends "
         "on the proteins (especially on Titin) NOTE: The dedicated start and end node is not counted here. "
         "If you traverse a graph, expect +2 more nodes in a path!"
+    )
+    group.add_argument(
+        "--calc_possible_weigths", "-cpw", default=False, action="store_true",
+        help="If this is set, the number of all possible weights in a graph are calculated and added"
+        " into the statistics. NOTE: The actual number depends on the factor set in mass dictionary. "
+        "This is currently an experimental feature and may not work for some very complex graphs (e.g. P53). "
     )
 
 

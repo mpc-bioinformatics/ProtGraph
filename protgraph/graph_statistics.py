@@ -9,10 +9,6 @@ def get_statistics(graph, **kwargs):
     returns #Node, #Edges, #Num_Of_Paths
     """
 
-    # TODO
-    mass_dict = _get_mass_dict(factor=kwargs["mass_dict_factor"], type=kwargs["mass_dict_type"])
-    _possible_weights(graph, mass_dict)
-
     # Get the number of nodes and edges (an be done instantly)
     num_edges = _get_edge_count(graph)
     num_nodes = _get_node_count(graph)
@@ -32,11 +28,18 @@ def get_statistics(graph, **kwargs):
         if kwargs["calc_num_possibilities_hops"] else None
     )
 
+    # TODO DL this is unfinished and may not work for some specific proteins!
+    if kwargs["calc_possibile_weights"]:
+        mass_dict = _get_mass_dict(factor=kwargs["mass_dict_factor"], type=kwargs["mass_dict_type"])
+        set_of_weights = _possible_weights(graph, mass_dict)
+    else: 
+        set_of_weights = None
+
     # TODO can we calculate more statistics?
 
     # Return all information
     return num_nodes, num_edges, num_possible_paths, \
-        num_possible_paths_all_mis, num_possible_paths_all_hops
+        num_possible_paths_all_mis, num_possible_paths_all_hops, set_of_weights
 
 
 def _get_edge_count(graph_entry):
@@ -222,6 +225,221 @@ def _possible_weights(graph_entry, mass_dict):
     # First get the reverse topological sorting of the graph
     sorted_nodes = graph_entry.topological_sorting(mode="IN")
 
+    # Debug create your own top sort!
+    # sorted_min = []
+    # s = set([x for x, y in zip(range(graph_entry.vcount()), graph_entry.vs.outdegree()) if y == 0])
+    # marked_edges = [False]*graph_entry.ecount()
+
+    # while len(s) != 0:
+    #     t = [(graph_entry.vs[x].outdegree(), x) for x in s]
+    #     n = min(t, key=lambda x: x[0])[1]
+    #     s.remove(n)
+
+    #     sorted_min.append(n)
+    #     for e_in in graph_entry.vs[n].in_edges():
+    #         marked_edges[e_in.index] = True
+    #         in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
+    #         if all([marked_edges[x] for x in in_out_edges]):
+    #             s.add(e_in.source)
+
+    # # Debug create your own top sort!
+    # sorted_max = []
+    # s = set([x for x, y in zip(range(graph_entry.vcount()), graph_entry.vs.outdegree()) if y == 0])
+    # marked_edges = [False]*graph_entry.ecount()
+
+    # while len(s) != 0:
+    #     t = [(graph_entry.vs[x].outdegree(), x) for x in s]
+    #     n = max(t, key=lambda x: x[0])[1]
+    #     s.remove(n)
+
+    #     sorted_max.append(n)
+    #     for e_in in graph_entry.vs[n].in_edges():
+    #         marked_edges[e_in.index] = True
+    #         in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
+    #         if all([marked_edges[x] for x in in_out_edges]):
+    #             s.add(e_in.source)
+
+
+    # # Debug create your own top sort!
+    # sorted_high = []
+    # s = set([x for x, y in zip(range(graph_entry.vcount()), graph_entry.vs.outdegree()) if y == 0])
+    # marked_edges = [False]*graph_entry.ecount()
+
+    # while len(s) != 0:
+    #     t = [(graph_entry.vs[x].outdegree(), x) for x in s]
+    #     n = max(t, key=lambda x: x[1])[1]
+    #     s.remove(n)
+
+    #     sorted_high.append(n)
+    #     for e_in in graph_entry.vs[n].in_edges():
+    #         marked_edges[e_in.index] = True
+    #         in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
+    #         if all([marked_edges[x] for x in in_out_edges]):
+    #             s.add(e_in.source)
+
+
+    # # Debug create your own top sort!
+    # sorted_low = []
+    # s = set([x for x, y in zip(range(graph_entry.vcount()), graph_entry.vs.outdegree()) if y == 0])
+    # marked_edges = [False]*graph_entry.ecount()
+
+    # while len(s) != 0:
+    #     t = [(graph_entry.vs[x].outdegree(), x) for x in s]
+    #     n = min(t, key=lambda x: x[1])[1]
+    #     s.remove(n)
+
+    #     sorted_low.append(n)
+    #     for e_in in graph_entry.vs[n].in_edges():
+    #         marked_edges[e_in.index] = True
+    #         in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
+    #         if all([marked_edges[x] for x in in_out_edges]):
+    #             s.add(e_in.source)
+
+    # # Debug create your own top sort!
+    # sorted_most_marked = []
+    # s = set([x for x, y in zip(range(graph_entry.vcount()), graph_entry.vs.outdegree()) if y == 0])
+    # marked_edges = [False]*graph_entry.ecount()
+
+    # while len(s) != 0:
+    #     t_ids = [x for x in s]
+    #     t = []
+    #     for t_temp in t_ids:
+    #         count_t = 0
+    #         for e_in in graph_entry.vs[t_temp].in_edges():
+    #             in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
+    #             count_t += sum([marked_edges[x] for x in in_out_edges])
+    #         t.append((count_t, t_temp))
+
+    #     n = min(t, key=lambda x: x[0])[1]
+    #     s.remove(n)
+
+    #     sorted_most_marked.append(n)
+    #     for e_in in graph_entry.vs[n].in_edges():
+    #         marked_edges[e_in.index] = True
+    #         in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
+    #         if all([marked_edges[x] for x in in_out_edges]):
+    #             s.add(e_in.source)
+
+    # # Debug create your own top sort!
+    # sorted_least_marked = []
+    # s = set([x for x, y in zip(range(graph_entry.vcount()), graph_entry.vs.outdegree()) if y == 0])
+    # marked_edges = [False]*graph_entry.ecount()
+
+    # while len(s) != 0:
+    #     t_ids = [x for x in s]
+    #     t = []
+    #     for t_temp in t_ids:
+    #         count_t = 0
+    #         for e_in in graph_entry.vs[t_temp].in_edges():
+    #             in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
+    #             count_t += sum([marked_edges[x] for x in in_out_edges])
+    #         t.append((count_t, t_temp))
+
+    #     n = max(t, key=lambda x: x[0])[1]
+    #     s.remove(n)
+
+    #     sorted_least_marked.append(n)
+    #     for e_in in graph_entry.vs[n].in_edges():
+    #         marked_edges[e_in.index] = True
+    #         in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
+    #         if all([marked_edges[x] for x in in_out_edges]):
+    #             s.add(e_in.source)
+
+
+
+
+    # ####DEBUG
+    # iteration_info_n = []
+    # true_list = [False]*len(sorted_nodes)
+
+    # true_list[sorted_nodes[0]] = True
+    # iteration_info_n.append(sum(true_list))
+    # for v in sorted_nodes:
+    #     true_list[v] = False
+    #     for v_prev in graph_entry.vs[v].in_edges():
+    #         true_list[v_prev.source] = True
+    #     iteration_info_n.append(sum(true_list))
+    # ####DEBUG
+    # iteration_info_min = []
+    # true_list = [False]*len(sorted_min)
+
+    # true_list[sorted_min[0]] = True
+    # iteration_info_min.append(sum(true_list))
+    # for v in sorted_min:
+    #     true_list[v] = False
+    #     for v_prev in graph_entry.vs[v].in_edges():
+    #         true_list[v_prev.source] = True
+    #     iteration_info_min.append(sum(true_list))
+    # ####DEBUG
+    # iteration_info_max = []
+    # true_list = [False]*len(sorted_max)
+
+    # true_list[sorted_max[0]] = True
+    # iteration_info_max.append(sum(true_list))
+    # for v in sorted_max:
+    #     true_list[v] = False
+    #     for v_prev in graph_entry.vs[v].in_edges():
+    #         true_list[v_prev.source] = True
+    #     iteration_info_max.append(sum(true_list))
+    # ####DEBUG
+    # iteration_info_high = []
+    # true_list = [False]*len(sorted_high)
+
+    # true_list[sorted_high[0]] = True
+    # iteration_info_high.append(sum(true_list))
+    # for v in sorted_high:
+    #     true_list[v] = False
+    #     for v_prev in graph_entry.vs[v].in_edges():
+    #         true_list[v_prev.source] = True
+    #     iteration_info_high.append(sum(true_list))
+    # ####DEBUG
+    # iteration_info_low = []
+    # true_list = [False]*len(sorted_low)
+
+    # true_list[sorted_low[0]] = True
+    # iteration_info_low.append(sum(true_list))
+    # for v in sorted_low:
+    #     true_list[v] = False
+    #     for v_prev in graph_entry.vs[v].in_edges():
+    #         true_list[v_prev.source] = True
+    #     iteration_info_low.append(sum(true_list))
+    # ####DEBUG
+    # iteration_info_most_m = []
+    # true_list = [False]*len(sorted_most_marked)
+
+    # true_list[sorted_most_marked[0]] = True
+    # iteration_info_most_m.append(sum(true_list))
+    # for v in sorted_most_marked:
+    #     true_list[v] = False
+    #     for v_prev in graph_entry.vs[v].in_edges():
+    #         true_list[v_prev.source] = True
+    #     iteration_info_most_m.append(sum(true_list))
+    # ####DEBUG
+    # iteration_info_least_m = []
+    # true_list = [False]*len(sorted_least_marked)
+
+    # true_list[sorted_least_marked[0]] = True
+    # iteration_info_least_m.append(sum(true_list))
+    # for v in sorted_least_marked:
+    #     true_list[v] = False
+    #     for v_prev in graph_entry.vs[v].in_edges():
+    #         true_list[v_prev.source] = True
+    #     iteration_info_least_m.append(sum(true_list))
+    # ###
+
+    # import matplotlib.pyplot as plt
+
+    # plt.plot(iteration_info_n, label="normal_igraph")
+    # plt.plot(iteration_info_min, label="min_edges")
+    # plt.plot(iteration_info_max, label="max_edges")
+    # plt.plot(iteration_info_low, label="low_id")
+    # plt.plot(iteration_info_high, label="high_id")
+    # plt.plot(iteration_info_most_m, label="most_edges_marked")
+    # plt.plot(iteration_info_least_m, label="least_edges_marked")
+    # plt.legend()
+    # plt.show()
+
+    # sorted_nodes = sorted_most_marked
     # Create list with weights
     var_weights = defaultdict(set)
 
