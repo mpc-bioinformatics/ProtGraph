@@ -122,7 +122,7 @@ Let's use the provided example `e_coli.dat` located in `examples/e_coli.dat` (Or
 
 The graph generation can be executed via: `protgraph examples/e_coli.dat`. This will generate the graphs and the additional statistics file. You can inspect the statistics file after it has finished. This should only take a few seconds/minutes.
 
-A progressbar was not shown during execution which is due to `Biopython` not providing information of how many entries are available in a `.txt` or `.dat` file.Therefore this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
+A progressbar was not shown during execution which is due to `Biopython` not providing information of how many entries are available in a `.txt` or `.dat` file. Therefore this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
 
 To retrieve the number of entries beforehand, you could e.g. use `cat examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files into ProtGraph. The number of entries for each file then need to be summed: `protgraph -n 18868 examples/e_coli.dat examples/e_coli.dat`
 
@@ -132,18 +132,47 @@ To fully annotate the graphs with weights and to retrieve currently all availabl
 
 ---
 
+Substitutions examples:
+
+Protgraph is able to substitute amino acids if needed. E.G. it could be interesting to have the amino acids `I` and `L` instead of `J`.
+Substitution can be done with the argument `--replace_aa` (in short `-raa`):
+> protgraph -n -raa "J->I,L" examples/e_coli.dat
+
+Protgraph is not limited to only substitue `J`. These substitutions are configurable by the user as long as these conform to the following: `X->A[,B]+`. Multiple substitutions can be provided:
+> protgraph -n -raa "J->I,L" -raa "I -> L" examples/e_coli.dat
+
+Note: Substitutions are executed one after another which leads in this example to effectively substitues `J->L` and `I->L`.
+
+In the following all common substitutions are listed
+> protgraph -n -raa "B->D,N" examples/e_coli.dat
+
+> protgraph -n -raa "J->I,L" examples/e_coli.dat
+
+> protgraph -n -raa "Z->Q,E" examples/e_coli.dat
+
+> protgraph -n -raa "X->A,C,D,E,F,G,H,I,K,L,M,N,O,P,Q,R,S,T,U,V,W,Y" examples/e_coli.dat
+
+---
+
 Fasta export examples:
 
 Protgraph can be used to get all possible peptides from isoforms and canonoical for `e_coli.dat` into a fasta file:
-> protgraph -n 9434 -sv -ss -sm -epepfasta examples/e_coli.dat
+> protgraph -n 9434 -ft NONE -epepfasta examples/e_coli.dat
 
 Instead of only containing peptides, ProtGraph can get all possible proteins with isoforms and canonoical for `e_coli.dat` into a fasta file:
-> protgraph -n 9434 -sv -ss -sm -d skip -epepfasta examples/e_coli.dat
+> protgraph -n 9434 -ft VAR_SEQ -d skip -epepfasta examples/e_coli.dat
 
 It could also be interesing to get a fasta file of proteins with all variants, isoforms, cleaved or not cleaved signal peptide/initiator methionine:
-> protgraph -n 9434 -d skip -epepfasta examples/e_coli.dat
+> protgraph -n 9434 -ft VARIANT -ft VAR_SEQ -ft SIGNAL -t INIT_MET -d skip -epepfasta examples/e_coli.dat
 
 (This generates a 5.2G Fasta file!)
+
+It could also be interesing to get a fasta file of proteins with all available features ProtGraph can parse:
+> protgraph -n 9434 -ft ALL -d skip -epepfasta examples/e_coli.dat
+
+or
+
+> protgraph -n 9434 -d skip -epepfasta examples/e_coli.dat
 
 Maybe it is neccessary to retrieve all possible peptide combinations of arbitrary cut peptides in proteins. This can be achieved via `-d full`. However, this would take a lot of time and a lot of disk space for the whole protein (even for `e_coli.dat`). Instead we extract all possible peptides which do not have more than `100` aminoacids:
 > protgraph -n 9434 -sv -ss -sm -si -d full -epepfasta --pep_fasta_hops 100 examples/e_coli.dat
@@ -151,7 +180,7 @@ Maybe it is neccessary to retrieve all possible peptide combinations of arbitrar
 (This generates a 20G Fasta file with 244 985 079 peptides!)
 
 Here the example with all possible peptide combinations for `e_coli.dat` to illustrate how quickly it can explode:
-> protgraph -n 9434 -sv -ss -sm -si -d full -epepfasta - examples/e_coli.dat
+> protgraph -n 9434 -ft NONE -d full -epepfasta - examples/e_coli.dat
 
 (This generates a 219G Fasta file with 694 844 270 peptides!)
 
