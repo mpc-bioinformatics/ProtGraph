@@ -1,5 +1,6 @@
 import os
 
+from argparse import ArgumentTypeError
 
 def check_if_file_exists(s: str):
     """ checks if a file exists. If not: raise Exception """
@@ -49,6 +50,34 @@ def add_graph_generation(group):
         " ProtGraph can parse. Currently parsable features are: " + ", ".join(avail_fts) +
         ". Use it as follows to only select specific ones: '-ft INIT_MET -ft SIGNAL' or '-ft NONE' to use none."
     )
+
+    # Add replace funcitonality to CLI
+    def _replace_syntax(input: str):
+        """
+        Check if the replacement syntax is in form.
+        Returns a tuple (s, t) where the amino acids gets replaced from s -> t[0], t[1], ...
+        (similar to the MUTAGEN Syntax in SP-EMBL!)
+        """
+        if "->" not in input:
+            raise ArgumentTypeError("'->' is not set in replacement rule! Did you quoted the replacement as here: \"X->Y\"?")
+        s, t = input.split("->", 1)
+
+        s = s.strip().upper()
+        if not s.isalpha() or len(s) != 1:
+            raise ArgumentTypeError("The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s))
+
+        t = [x.strip().upper() for x in t.split(",")]
+        for x in t:
+            if not x.isalpha() or len(s) != 1:
+                raise ArgumentTypeError("The amino acids to replace to can only be set to: [A-Z] (1 letter)! Found '{}'".format(x))
+
+        return s,t
+    group.add_argument(
+        "--replace_aa", "-raa", type=_replace_syntax, action="append",
+        help="TODO DL" # TODO DL
+    )
+
+
 
     # Flag to check if generated graphs are correctly generated
     group.add_argument(
