@@ -238,6 +238,7 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
                 "Has SIGNAL",
                 "Number of variants",
                 "Number of Mutagens",
+                "Number of Conflicts",
                 "Number of cleaved edges",
                 "Number of nodes",
                 "Number of edges",

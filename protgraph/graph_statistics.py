@@ -29,7 +29,7 @@ def get_statistics(graph, **kwargs):
     )
 
     # TODO DL this is unfinished and may not work for some specific proteins!
-    if kwargs["calc_possibile_weights"]:
+    if kwargs["calc_possible_weigths"]:
         mass_dict = _get_mass_dict(factor=kwargs["mass_dict_factor"], type=kwargs["mass_dict_type"])
         set_of_weights = _possible_weights(graph, mass_dict)
     else: 

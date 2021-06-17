@@ -41,7 +41,7 @@ def add_main_args(parser):
 def add_graph_generation(group):
 
     # Available features
-    avail_fts = ["ALL", "NONE", "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN"]
+    avail_fts = ["ALL", "NONE", "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT"]
     group.add_argument(
         "--feature_table", "-ft", choices=avail_fts, type=str.upper, action="append",
         help="Set the features which should be added to the graph. Those feature_tables correspond to"
