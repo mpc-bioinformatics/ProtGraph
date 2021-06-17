@@ -8,6 +8,7 @@ from protgraph.ft_execution.signal import execute_signal
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
 from protgraph.ft_execution.variant import execute_variant
+from protgraph.ft_execution.mutagen import execute_mutagen
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
 from protgraph.verify_graphs import verify_graph
@@ -81,8 +82,14 @@ def _include_ft_information(entry, graph, ft_dict):
         num_of_variant = len(sorted_features["VARIANT"])
         for f in sorted_features["VARIANT"]:
             execute_variant(graph, f)
+    
+    num_of_mutagens = 0 if "MUTAGEN" in ft_dict else None
+    if "MUTAGEN" in sorted_features and "MUTAGEN" in ft_dict:
+        num_of_mutagens = len(sorted_features["MUTAGEN"])
+        for f in sorted_features["MUTAGEN"]:
+            execute_mutagen(graph, f)
 
-    return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant
+    return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant, num_of_mutagens
 
 
 def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id, **kwargs):
@@ -96,7 +103,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
     # Set feature_table dict boolean table
     ft_dict = dict()
     if kwargs["feature_table"] is None or len(kwargs["feature_table"]) == 0 or "ALL" in kwargs["feature_table"]:
-        ft_dict = dict(VARIANT=True, VAR_SEQ=True, SIGNAL=True, INIT_MET=True)
+        ft_dict = dict(VARIANT=True, VAR_SEQ=True, SIGNAL=True, INIT_MET=True, MUTAGEN=True)
     else:
         for i in kwargs["feature_table"]:
             ft_dict[i] = True
@@ -124,7 +131,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
 
         # FT parsing and appending of Nodes and Edges into the graph
         # The amount of isoforms, etc.. can be retrieved on the fly
-        num_isoforms, num_initm, num_signal, num_variant = _include_ft_information(entry, graph, ft_dict)
+        num_isoforms, num_initm, num_signal, num_variant, num_mutagens = _include_ft_information(entry, graph, ft_dict)
 
         # Digest graph with enzyme (unlimited miscleavages)
         num_of_cleavages = digest(graph, kwargs["digestion"])
@@ -157,6 +164,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
                 num_initm,  # Number of Init_M (either 0 or 1)
                 num_signal,  # Number of Signal Peptides used (either 0 or 1)
                 num_variant,  # Number of Variants applied to this protein
+                num_mutagens,  # Number of applied mutagens on the graph
                 num_of_cleavages,  # Number of cleavages (marked edges) this protein has
                 num_nodes,  # Number of nodes for the Protein/Peptide Graph
                 num_edges,  # Number of edges for the Protein/Peptide Graph
