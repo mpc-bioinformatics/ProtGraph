@@ -21,20 +21,28 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args([] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_skip_isoforms(self):
-        args = protgraph.parse_args(["-si"] + self.procs_num + self.example_files)
+    def test_none(self):
+        args = protgraph.parse_args(["-ft", "NoNE"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+    
+    def test_all(self):
+        args = protgraph.parse_args(["-ft", "ALl"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+    
+    def test_isoforms(self):
+        args = protgraph.parse_args(["-ft", "VAR_SeQ"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_skip_variants(self):
-        args = protgraph.parse_args(["-sv"] + self.procs_num + self.example_files)
+    def test_variants(self):
+        args = protgraph.parse_args(["-ft", "VARIAnT"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_skip_met(self):
-        args = protgraph.parse_args(["-sm"] + self.procs_num + self.example_files)
+    def test_met(self):
+        args = protgraph.parse_args(["-ft", "IniT_MET"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_skip_signal(self):
-        args = protgraph.parse_args(["-ss"] + self.procs_num + self.example_files)
+    def test_signal(self):
+        args = protgraph.parse_args(["-ft", "SIGnaL"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_digestion_skip(self):
@@ -55,6 +63,10 @@ class FunctionalTest(unittest.TestCase):
 
     def test_annotate_weights(self):
         args = protgraph.parse_args(["-aawe", "-amwe"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_replacement(self):
+        args = protgraph.parse_args(["-raa", "A->b,C,d"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_statistics_possibilites(self):
