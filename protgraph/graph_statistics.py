@@ -1,7 +1,8 @@
+from collections import defaultdict
 from operator import add
 
-from collections import defaultdict
 from protgraph.aa_masses_annotation import _get_mass_dict
+
 
 def get_statistics(graph, **kwargs):
     """
@@ -32,7 +33,7 @@ def get_statistics(graph, **kwargs):
     if kwargs["calc_possible_weigths"]:
         mass_dict = _get_mass_dict(factor=kwargs["mass_dict_factor"], type=kwargs["mass_dict_type"])
         set_of_weights = _possible_weights(graph, mass_dict)
-    else: 
+    else:
         set_of_weights = None
 
     # TODO can we calculate more statistics?
@@ -215,13 +216,13 @@ def _num_of_possible_paths_all_hops(graph_entry):
     return var_paths[sorted_nodes[-1]]
 
 
-
 def _possible_weights(graph_entry, mass_dict):
     """
     Get the set of all possible weights inside a graph
     """
 
     from tqdm import tqdm
+
     # First get the reverse topological sorting of the graph
     sorted_nodes = graph_entry.topological_sorting(mode="IN")
 
@@ -259,7 +260,6 @@ def _possible_weights(graph_entry, mass_dict):
     #         if all([marked_edges[x] for x in in_out_edges]):
     #             s.add(e_in.source)
 
-
     # # Debug create your own top sort!
     # sorted_high = []
     # s = set([x for x, y in zip(range(graph_entry.vcount()), graph_entry.vs.outdegree()) if y == 0])
@@ -276,7 +276,6 @@ def _possible_weights(graph_entry, mass_dict):
     #         in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
     #         if all([marked_edges[x] for x in in_out_edges]):
     #             s.add(e_in.source)
-
 
     # # Debug create your own top sort!
     # sorted_low = []
@@ -344,9 +343,6 @@ def _possible_weights(graph_entry, mass_dict):
     #         in_out_edges = [x.index for x in graph_entry.vs[e_in.source].out_edges()]
     #         if all([marked_edges[x] for x in in_out_edges]):
     #             s.add(e_in.source)
-
-
-
 
     # ####DEBUG
     # iteration_info_n = []

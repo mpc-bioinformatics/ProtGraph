@@ -1,6 +1,6 @@
 import os
-
 from argparse import ArgumentTypeError
+
 
 def check_if_file_exists(s: str):
     """ checks if a file exists. If not: raise Exception """
@@ -59,25 +59,32 @@ def add_graph_generation(group):
         (similar to the MUTAGEN Syntax in SP-EMBL!)
         """
         if "->" not in input:
-            raise ArgumentTypeError("'->' is not set in replacement rule! Did you quoted the replacement as here: \"X->Y\"?")
+            raise ArgumentTypeError(
+                "'->' is not set in replacement rule! Did you quoted the replacement as here: \"X->Y\"?"
+            )
         s, t = input.split("->", 1)
 
         s = s.strip().upper()
         if not s.isalpha() or len(s) != 1:
-            raise ArgumentTypeError("The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s))
+            raise ArgumentTypeError(
+                "The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s)
+            )
 
         t = [x.strip().upper() for x in t.split(",")]
         for x in t:
             if not x.isalpha() or len(s) != 1:
-                raise ArgumentTypeError("The amino acids to replace to can only be set to: [A-Z] (1 letter)! Found '{}'".format(x))
+                raise ArgumentTypeError(
+                    "The amino acids to replace to can only be set to: [A-Z] (1 letter)! Found '{}'".format(x)
+                )
 
-        return s,t
+        return s, t
     group.add_argument(
         "--replace_aa", "-raa", type=_replace_syntax, action="append",
-        help="TODO DL" # TODO DL
+        help="Substitute amino acids in graphs by other amino acids. This could be useful to replace"
+        " e.g. 'J' with 'I' and 'L'. This parameter can be then provided as: 'J->I,L'. Multiple replacements"
+        " are allowed and are executed one after another. NOTE: only from ONE amino acid multiple amino acids can"
+        " be substituted. So only the format: 'A->B[,C]*' is allowed!"
     )
-
-
 
     # Flag to check if generated graphs are correctly generated
     group.add_argument(

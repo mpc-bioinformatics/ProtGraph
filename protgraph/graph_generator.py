@@ -1,19 +1,19 @@
 import igraph
 
 from protgraph.aa_masses_annotation import annotate_weights
+from protgraph.aa_replacer import replace_aa
 from protgraph.digestion import digest
 from protgraph.export.exporters import Exporters
+from protgraph.ft_execution.conflict import execute_conflict
 from protgraph.ft_execution.init_met import execute_init_met
+from protgraph.ft_execution.mutagen import execute_mutagen
 from protgraph.ft_execution.signal import execute_signal
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
 from protgraph.ft_execution.variant import execute_variant
-from protgraph.ft_execution.mutagen import execute_mutagen
-from protgraph.ft_execution.conflict import execute_conflict
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
 from protgraph.verify_graphs import verify_graph
-from protgraph.aa_replacer import replace_aa
 
 
 def _generate_canonical_graph(sequence: str, acc: str):
@@ -84,7 +84,7 @@ def _include_ft_information(entry, graph, ft_dict):
         num_of_variant = len(sorted_features["VARIANT"])
         for f in sorted_features["VARIANT"]:
             execute_variant(graph, f)
-    
+
     num_of_mutagens = 0 if "MUTAGEN" in ft_dict else None
     if "MUTAGEN" in sorted_features and "MUTAGEN" in ft_dict:
         num_of_mutagens = len(sorted_features["MUTAGEN"])
@@ -116,9 +116,6 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
         for i in kwargs["feature_table"]:
             ft_dict[i] = True
 
-    
-
-
     # Initialize the exporters for graphs
     graph_exporters = Exporters(**kwargs)
 
@@ -139,8 +136,8 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
 
         # FT parsing and appending of Nodes and Edges into the graph
         # The amount of isoforms, etc.. can be retrieved on the fly
-        num_isoforms, num_initm, num_signal, num_variant, num_mutagens, num_conficts = _include_ft_information(entry, graph, ft_dict)
-
+        num_isoforms, num_initm, num_signal, num_variant, num_mutagens, num_conficts =\
+            _include_ft_information(entry, graph, ft_dict)
 
         # Replace Amino Acids based on user defined rules: E.G.: "X -> A,B,C"
         replace_aa(graph, kwargs["replace_aa"])
@@ -156,7 +153,8 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
         annotate_weights(graph, **kwargs)
 
         # Calculate statistics on the graph:
-        num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops, set_pos_weights = get_statistics(graph, **kwargs)
+        num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops, set_pos_weights =\
+            get_statistics(graph, **kwargs)
 
         # Verify graphs if wanted:
         if kwargs["verify_graph"]:

@@ -17,6 +17,7 @@ def _check_degree(graph):
             "There might be some not connected Subgraphs!".format(graph.vs[0]["accession"])
         )
 
+
 def _check_indegree(graph):
     if len([x for x in graph.indegree() if x == 0]) != 1:
         print(
@@ -26,6 +27,7 @@ def _check_indegree(graph):
                 len([x for x in graph.indegree() if x == 0])
             )
         )
+
 
 def _check_outdegree(graph):
     if len([x for x in graph.outdegree() if x == 0]) != 1:

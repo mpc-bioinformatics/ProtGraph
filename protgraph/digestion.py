@@ -1,5 +1,6 @@
 from typing import List
 
+
 def digest(graph, enzymes: List[str]):
     """
     Select digestion method depending on enzyme
