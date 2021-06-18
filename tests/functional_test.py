@@ -24,11 +24,11 @@ class FunctionalTest(unittest.TestCase):
     def test_none(self):
         args = protgraph.parse_args(["-ft", "NoNE"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
-    
+
     def test_all(self):
         args = protgraph.parse_args(["-ft", "ALl"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
-    
+
     def test_isoforms(self):
         args = protgraph.parse_args(["-ft", "VAR_SeQ"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
