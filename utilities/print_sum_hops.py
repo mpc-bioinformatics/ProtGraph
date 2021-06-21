@@ -62,7 +62,7 @@ if __name__ == "__main__":
     num_entries = args.num_entries
 
     # Static parameter, always 11th entry in statistics file
-    hops_entry = 11
+    hops_entry = 13
 
     # Open al files and sort them accordingly
     with open(statistics_file, "r") as in_file:
