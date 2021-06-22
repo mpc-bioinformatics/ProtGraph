@@ -1,9 +1,7 @@
 import argparse
 import csv
-import math
 import os
 import sys
-from operator import add
 
 import tqdm
 
