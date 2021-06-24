@@ -163,7 +163,7 @@ Instead of only containing peptides, ProtGraph can get all possible proteins wit
 > protgraph -n 9434 -ft VAR_SEQ -d skip -epepfasta examples/e_coli.dat
 
 It could also be interesing to get a fasta file of proteins with all variants, isoforms, cleaved or not cleaved signal peptide/initiator methionine:
-> protgraph -n 9434 -ft VARIANT -ft VAR_SEQ -ft SIGNAL -t INIT_MET -d skip -epepfasta examples/e_coli.dat
+> protgraph -n 9434 -ft VARIANT -ft VAR_SEQ -ft SIGNAL -ft INIT_MET -d skip -epepfasta examples/e_coli.dat
 
 (This generates a 5.2G Fasta file!)
 

@@ -596,12 +596,12 @@ def _possible_weights(graph_entry, mass_dict):
     # custom ga:
     # sorted_nodes = sorted_bfs_right
     mutation_factor = 0.11
-    pop = [sorted_nodes] + on_mutation([sorted_nodes]*99, mutation_factor)
+    pop = [sorted_nodes]*100 # + on_mutation([sorted_nodes]*99, mutation_factor)
     pop_fitness = p.starmap(fitness, list(zip(pop, [graph_entry]*100)))
     better_from_iteration = []
     sum_best = sum(pop_fitness)
 
-    with open("ga_statistics_out.csv", "w") as out:
+    with open("ga_statistics_out_ograph.csv", "w") as out:
         csv_out = csv.writer(out)
 
         csv_out.writerow(["Generation", "Best_Fit", "Sum_Best_Fit_Pop", "mutation_rate", "best_ind"])
