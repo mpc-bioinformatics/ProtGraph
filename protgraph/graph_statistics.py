@@ -533,15 +533,6 @@ def _possible_weights(graph_entry, mass_dict):
     # sorted_nodes = sorted_bfs_left
 
 
-
-    #### pygad get best top sort
-
-
-    import deap
-    from deap import creator
-    from deap import base
-    from deap import tools
-
     # def fitness(top_order, graph_entry):
     #     order_dict = {}
     #     order_dict[top_order[0]] = 0
