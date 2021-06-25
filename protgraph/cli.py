@@ -1,4 +1,5 @@
 import os
+from argparse import ArgumentTypeError
 
 
 def check_if_file_exists(s: str):
@@ -39,23 +40,50 @@ def add_main_args(parser):
 
 
 def add_graph_generation(group):
+
+    # Available features
+    avail_fts = ["ALL", "NONE", "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT"]
     group.add_argument(
-        "--skip_isoforms", "-si", default=False, action="store_true",
-        help="Set this flag to exclude isoforms 'VAR_SEQ' (and possible modification on them like variations, etc...) "
-        "from the FeatureTable"
+        "--feature_table", "-ft", choices=avail_fts, type=str.upper, action="append",
+        help="Set the features which should be added to the graph. Those feature_tables correspond to"
+        " the actual FT name provided in SwissProt-EMBL. Default is set to use all available features"
+        " ProtGraph can parse. Currently parsable features are: " + ", ".join(avail_fts) +
+        ". Use it as follows to only select specific ones: '-ft INIT_MET -ft SIGNAL' or '-ft NONE' to use none."
     )
+
+    # Add replace funcitonality to CLI
+    def _replace_syntax(input: str):
+        """
+        Check if the replacement syntax is in form.
+        Returns a tuple (s, t) where the amino acids gets replaced from s -> t[0], t[1], ...
+        (similar to the MUTAGEN Syntax in SP-EMBL!)
+        """
+        if "->" not in input:
+            raise ArgumentTypeError(
+                "'->' is not set in replacement rule! Did you quoted the replacement as here: \"X->Y\"?"
+            )
+        s, t = input.split("->", 1)
+
+        s = s.strip().upper()
+        if not s.isalpha() or len(s) != 1:
+            raise ArgumentTypeError(
+                "The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s)
+            )
+
+        t = [x.strip().upper() for x in t.split(",")]
+        for x in t:
+            if not x.isalpha() or len(s) != 1:
+                raise ArgumentTypeError(
+                    "The amino acids to replace to can only be set to: [A-Z] (1 letter)! Found '{}'".format(x)
+                )
+
+        return s, t
     group.add_argument(
-        "--skip_variants", "-sv", default=False, action="store_true",
-        help="Set this flag to exclude 'VARIANT' from the FeatureTable"
-    )
-    group.add_argument(
-        "--skip_init_met", "-sm", default=False, action="store_true",
-        help="Set this flag to exclude the skipping of the initiator methionine ('INIT_M' in "
-        "FeatureTable) for proteins"
-    )
-    group.add_argument(
-        "--skip_signal", "-ss", default=False, action="store_true",
-        help="Set this flag to exclude skipping the signal peptide ('SIGNAL' in FeatureTable) of specific proteins"
+        "--replace_aa", "-raa", type=_replace_syntax, action="append",
+        help="Substitute amino acids in graphs by other amino acids. This could be useful to replace"
+        " e.g. 'J' with 'I' and 'L'. This parameter can be then provided as: 'J->I,L'. Multiple replacements"
+        " are allowed and are executed one after another. NOTE: only from ONE amino acid multiple amino acids can"
+        " be substituted. So only the format: 'A->B[,C]*' is allowed!"
     )
 
     # Flag to check if generated graphs are correctly generated
@@ -67,11 +95,11 @@ def add_graph_generation(group):
 
     # Arguments for graph processing/digestion
     group.add_argument(
-        "--digestion", "-d", type=str.lower, default="trypsin",
+        "--digestion", "-d", type=str.lower, action="append",
         choices=["trypsin", "skip", "full"],
         help="Set the digestion method. The full digestion cleaves at every edge, which can be useful for retrieving "
         "all possible peptides with arbitrary cutting points. The digestion method skip skips the digestion "
-        "completely. Default: Trypsin"
+        "completely. You can use multiple digestions at once! Default: Trypsin"
     )
     group.add_argument(
         "--no_merge", "-nm", default=False, action="store_true",

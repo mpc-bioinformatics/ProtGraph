@@ -1,9 +1,12 @@
 import igraph
 
 from protgraph.aa_masses_annotation import annotate_weights
+from protgraph.aa_replacer import replace_aa
 from protgraph.digestion import digest
 from protgraph.export.exporters import Exporters
+from protgraph.ft_execution.conflict import execute_conflict
 from protgraph.ft_execution.init_met import execute_init_met
+from protgraph.ft_execution.mutagen import execute_mutagen
 from protgraph.ft_execution.signal import execute_signal
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
@@ -51,38 +54,50 @@ def _sort_entry_features(entry):
     return sorted_features
 
 
-def _include_ft_information(entry, graph, kwargs):
+def _include_ft_information(entry, graph, ft_dict):
     """ Returns num of possible isoforms and others (on the fly) """
     # Sort features of entry according to their type into a dict
     sorted_features = _sort_entry_features(entry)
 
     # VAR_SEQ (isoforms) need to be executed at once and before all other variations
     # since those can be referenced by others
-    num_of_isoforms = 0 if not kwargs["skip_isoforms"] else None
-    if "VAR_SEQ" in sorted_features and not kwargs["skip_isoforms"]:
+    num_of_isoforms = 0 if "VAR_SEQ" in ft_dict else None
+    if "VAR_SEQ" in sorted_features and "VAR_SEQ" in ft_dict:
         # Get isoform information of entry as a dict
         isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
         execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
 
-    num_of_init_m = 0 if not kwargs["skip_init_met"] else None
-    if "INIT_MET" in sorted_features and not kwargs["skip_init_met"]:
+    num_of_init_m = 0 if "INIT_MET" in ft_dict else None
+    if "INIT_MET" in sorted_features and "INIT_MET" in ft_dict:
         num_of_init_m = len(sorted_features["INIT_MET"])
         for f in sorted_features["INIT_MET"]:
             execute_init_met(graph, f)
 
-    num_of_signal = 0 if not kwargs["skip_signal"] else None
-    if "SIGNAL" in sorted_features and not kwargs["skip_signal"]:
+    num_of_signal = 0 if "SIGNAL" in ft_dict else None
+    if "SIGNAL" in sorted_features and "SIGNAL" in ft_dict:
         num_of_signal = len(sorted_features["SIGNAL"])
         for f in sorted_features["SIGNAL"]:
             execute_signal(graph, f)
 
-    num_of_variant = 0 if not kwargs["skip_variants"] else None
-    if "VARIANT" in sorted_features and not kwargs["skip_variants"]:
+    num_of_variant = 0 if "VARIANT" in ft_dict else None
+    if "VARIANT" in sorted_features and "VARIANT" in ft_dict:
         num_of_variant = len(sorted_features["VARIANT"])
         for f in sorted_features["VARIANT"]:
             execute_variant(graph, f)
 
-    return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant
+    num_of_mutagens = 0 if "MUTAGEN" in ft_dict else None
+    if "MUTAGEN" in sorted_features and "MUTAGEN" in ft_dict:
+        num_of_mutagens = len(sorted_features["MUTAGEN"])
+        for f in sorted_features["MUTAGEN"]:
+            execute_mutagen(graph, f)
+
+    num_of_conflicts = 0 if "CONFLICT" in ft_dict else None
+    if "CONFLICT" in sorted_features and "CONFLICT" in ft_dict:
+        num_of_conflicts = len(sorted_features["CONFLICT"])
+        for f in sorted_features["CONFLICT"]:
+            execute_conflict(graph, f)
+
+    return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant, num_of_mutagens, num_of_conflicts
 
 
 def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id, **kwargs):
@@ -92,6 +107,14 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
     """
     # Set proc id
     kwargs["proc_id"] = proc_id
+
+    # Set feature_table dict boolean table
+    ft_dict = dict()
+    if kwargs["feature_table"] is None or len(kwargs["feature_table"]) == 0 or "ALL" in kwargs["feature_table"]:
+        ft_dict = dict(VARIANT=True, VAR_SEQ=True, SIGNAL=True, INIT_MET=True, MUTAGEN=True, CONFLICT=True)
+    else:
+        for i in kwargs["feature_table"]:
+            ft_dict[i] = True
 
     # Initialize the exporters for graphs
     graph_exporters = Exporters(**kwargs)
@@ -113,7 +136,11 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
 
         # FT parsing and appending of Nodes and Edges into the graph
         # The amount of isoforms, etc.. can be retrieved on the fly
-        num_isoforms, num_initm, num_signal, num_variant = _include_ft_information(entry, graph, kwargs)
+        num_isoforms, num_initm, num_signal, num_variant, num_mutagens, num_conficts =\
+            _include_ft_information(entry, graph, ft_dict)
+
+        # Replace Amino Acids based on user defined rules: E.G.: "X -> A,B,C"
+        replace_aa(graph, kwargs["replace_aa"])
 
         # Digest graph with enzyme (unlimited miscleavages)
         num_of_cleavages = digest(graph, kwargs["digestion"])
@@ -126,7 +153,8 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
         annotate_weights(graph, **kwargs)
 
         # Calculate statistics on the graph:
-        num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops = get_statistics(graph, **kwargs)
+        num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops =\
+            get_statistics(graph, **kwargs)
 
         # Verify graphs if wanted:
         if kwargs["verify_graph"]:
@@ -146,6 +174,8 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
                 num_initm,  # Number of Init_M (either 0 or 1)
                 num_signal,  # Number of Signal Peptides used (either 0 or 1)
                 num_variant,  # Number of Variants applied to this protein
+                num_mutagens,  # Number of applied mutagens on the graph
+                num_conficts,  # Number of applied conflicts on the graph
                 num_of_cleavages,  # Number of cleavages (marked edges) this protein has
                 num_nodes,  # Number of nodes for the Protein/Peptide Graph
                 num_edges,  # Number of edges for the Protein/Peptide Graph

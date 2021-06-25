@@ -27,6 +27,7 @@ def get_statistics(graph, **kwargs):
     )
 
     # TODO can we calculate more statistics?
+    # In Progress Weight Sets via GA
 
     # Return all information
     return num_nodes, num_edges, num_possible_paths, \
@@ -204,6 +205,11 @@ def _num_of_possible_paths_all_hops(graph_entry):
     # Here the index of the list gives us the number of how many cleavages we have missed.
     # Sum each element up to retrieve the number of all possible paths ("infinite" many miscleavages)
     return var_paths[sorted_nodes[-1]]
+
+
+def _get_weight(seq, dict, mono=True):
+    idx = 0 if mono else 1
+    return sum([dict[x][idx] for x in seq.replace("__start__", "").replace("__end__", "")])
 
 
 def _add_lists(list_a, list_b):

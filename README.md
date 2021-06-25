@@ -1,5 +1,10 @@
 # ProtGraph - A Graph-Generator for Proteins
 
+[![install with pip](https://img.shields.io/badge/Install%20with-pip-brightgreen)](https://pypi.org/project/protgraph/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/protgraph?label=PyPI%20-%20Downloads)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/protgraph/README.html)
+![Conda](https://img.shields.io/conda/dn/bioconda/protgraph?label=BioConda%20-%20Downloads)
+
 This project aims to efficiently generate graphs of proteins using text entries from [UniProt](https://www.uniprot.org/). These text files usually end with the extension: `.dat` or `.txt`.
 
 We utilize the tools: [BioPython](https://biopython.org/) and [igraph](https://igraph.org/python/) to generate so called directed and acyclic graphs (DAGs) of proteins.
@@ -48,7 +53,7 @@ ProtGraph will generate a statistics file when generating a graph from an UniPro
 
 Here are some examples, which can be retrieved from the statistics:
 
-If executing via the flag `-cnp`, the total number of possible non-repeating paths between `s` and `e` are calculated. In this example, `46` paths are possible. With the number of possible paths, we know that the graph contains `46` peptides (some of them repeating).
+If executing via the flag `-cnp`, the total number of possible non-repeating paths between `s` and `e` are calculated. In this example, `46` paths are possible. With the number of possible paths, we know that the graph contains `46` peptides (some of them possibly repeating).
 It may be interesting to know how many (repeating) peptides with a certain number of miscleavages are present in a protein. To calculate this statistic, simply provide the flag `-cnpm`. In this example: `23` peptides with 0 miscleavages, `19` with 1 miscleavage and `4` with 2 miscleavages are present.
 
 By combining multiple flags, it is possible to retrieve the number of  peptides having a specific length (counting aminoacids). With the flags `-cnph` and `-nm`, ProtGraph would write into the statistics file the needed information to retrieve the following:
@@ -89,7 +94,7 @@ The "binary" `protgraph` should be available in your command line after it finis
 To set up ProtGraph make sure you have `pipenv` and `pyenv` installed. (via `pacman` `apt` and alike)
 
 First install needed dependencies with:
-> pipenv install  && pipenv install -d
+> pipenv install && pipenv install -d
 
 Afterwards execute the following to install the module ProtGraph inside the environment:
 > pipenv run pip install -e .
@@ -117,9 +122,9 @@ Let's use the provided example `e_coli.dat` located in `examples/e_coli.dat` (Or
 
 The graph generation can be executed via: `protgraph examples/e_coli.dat`. This will generate the graphs and the additional statistics file. You can inspect the statistics file after it has finished. This should only take a few seconds/minutes.
 
-A progressbar was not shown during execution which is due to `Biopython` not providing information of how many entries are available in a `.txt` or `.dat` file.Therefore this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
+A progressbar was not shown during execution which is due to `Biopython` not providing information of how many entries are available in a `.txt` or `.dat` file. Therefore this information needs to be provided via another parameter: `protgraph --num_of_entries 9434 examples/e_coli.dat` (you can also use `-n`).
 
-To retrieve the number of entries beforehand, you could e.g. use `cat examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files into ProtGraph. The number of entries for each file then need to be summed: `protgraph -n 18868 examples/e_coli.dat examples/e_coli.dat`
+To retrieve the number of entries beforehand, you could e.g. use `cat examples/e_coli.dat | grep "^//" | wc -l`. It is also possible to add multiple files into ProtGraph. The number of entries for each file then needs to be summed: `protgraph -n 18868 examples/e_coli.dat examples/e_coli.dat`
 
 If too many (or too few) processes are executed, then it can be adjusted via the parameter `--num_of_processes` or `-np`. E.G. `protgraph --num_of_processes 3 --num_of_entries 9434 examples/e_coli.dat` will use 4 (`3` + `1` reading) processes.
 
@@ -127,30 +132,59 @@ To fully annotate the graphs with weights and to retrieve currently all availabl
 
 ---
 
+Substitutions examples:
+
+Protgraph is able to substitute amino acids if needed. E.G. it could be interesting to have the amino acids `I` and `L` instead of `J`.
+Substitution can be done with the argument `--replace_aa` (in short `-raa`):
+> protgraph -n -raa "J->I,L" examples/e_coli.dat
+
+Protgraph is not limited to only substitute `J`. These substitutions are configurable by the user as long as these conform to the following format: `X->A[,B]*`. Multiple substitutions can be provided:
+> protgraph -n -raa "J->I,L" -raa "I -> L" examples/e_coli.dat
+
+Note: Substitutions are executed one after another which leads in this example to effectively substitues `J->L` and `I->L`.
+
+In the following all common substitutions are listed
+> protgraph -n -raa "B->D,N" examples/e_coli.dat
+>
+> protgraph -n -raa "J->I,L" examples/e_coli.dat
+>
+> protgraph -n -raa "Z->Q,E" examples/e_coli.dat
+>
+> protgraph -n -raa "X->A,C,D,E,F,G,H,I,K,L,M,N,O,P,Q,R,S,T,U,V,W,Y" examples/e_coli.dat
+
+---
+
 Fasta export examples:
 
 Protgraph can be used to get all possible peptides from isoforms and canonoical for `e_coli.dat` into a fasta file:
-> protgraph -n 9434 -sv -ss -sm -epepfasta examples/e_coli.dat
+> protgraph -n 9434 -ft NONE -epepfasta examples/e_coli.dat
 
 Instead of only containing peptides, ProtGraph can get all possible proteins with isoforms and canonoical for `e_coli.dat` into a fasta file:
-> protgraph -n 9434 -sv -ss -sm -d skip -epepfasta examples/e_coli.dat
+> protgraph -n 9434 -ft VAR_SEQ -d skip -epepfasta examples/e_coli.dat
 
 It could also be interesing to get a fasta file of proteins with all variants, isoforms, cleaved or not cleaved signal peptide/initiator methionine:
-> protgraph -n 9434 -d skip -epepfasta examples/e_coli.dat
+> protgraph -n 9434 -ft VARIANT -ft VAR_SEQ -ft SIGNAL -ft INIT_MET -d skip -epepfasta examples/e_coli.dat
 
 (This generates a 5.2G Fasta file!)
 
-Maybe it is neccessary to retrieve all possible peptide combinations of arbitrary cut peptides in proteins. This can be achieved via `-d full`. However, this would take a lot of time and a lot of disk space for the whole protein (even for `e_coli.dat`). Instead we extract all possible peptides which do not have more than `100` aminoacids:
-> protgraph -n 9434 -sv -ss -sm -si -d full -epepfasta --pep_fasta_hops 100 examples/e_coli.dat
+It could also be interesing to get a fasta file of proteins with all available features ProtGraph can parse:
+> protgraph -n 9434 -ft ALL -d skip -epepfasta examples/e_coli.dat
+
+or
+
+> protgraph -n 9434 -d skip -epepfasta examples/e_coli.dat
+
+Maybe it is neccessary to retrieve all possible peptide combinations of arbitrary cut peptides in proteins. This can be achieved via `-d full`. However, this would take a lot of time and a lot of disk space for the whole dataset (even for `e_coli.dat`). Instead we extract all possible peptides which do not have more than `100` aminoacids:
+> protgraph -n 9434 -ft NONE -d full -epepfasta --pep_fasta_hops 100 examples/e_coli.dat
 
 (This generates a 20G Fasta file with 244 985 079 peptides!)
 
 Here the example with all possible peptide combinations for `e_coli.dat` to illustrate how quickly it can explode:
-> protgraph -n 9434 -sv -ss -sm -si -d full -epepfasta - examples/e_coli.dat
+> protgraph -n 9434 -ft NONE -d full -epepfasta - examples/e_coli.dat
 
 (This generates a 219G Fasta file with 694 844 270 peptides!)
 
-It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) before exporting peptides/proteins to have an overview of how many peptides/proteins are currently represented by all graphs.
+It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) before exporting peptides/proteins to have an overview of how many peptides/proteins are currently represented by all graphs and if it is feasible to generate a Fasta file.
 
 ## ProtGraph Exporters
 

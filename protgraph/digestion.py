@@ -1,4 +1,7 @@
-def digest(graph, enzyme: str):
+from typing import List
+
+
+def digest(graph, enzymes: List[str]):
     """
     Select digestion method depending on enzyme
 
@@ -8,12 +11,19 @@ def digest(graph, enzyme: str):
     Nodes: <None>
     Edges: "cleaved" ( -> either True or False/None)
     """
-    return dict(
-        skip=_digest_via_skip,
-        trypsin=_digest_via_trypsin,
-        full=_digest_via_full
-        # Add more Enzymes if needed here!
-    )[enzyme](graph)
+    if enzymes is None:  # Default is Trypsin, therefor we add it
+        enzymes = ["trypsin"]
+
+    sum_of_cleavages = 0
+    for i in enzymes:
+        sum_of_cleavages += dict(
+            skip=_digest_via_skip,
+            trypsin=_digest_via_trypsin,
+            full=_digest_via_full
+            # Add more Enzymes if needed here!
+        )[i](graph)
+
+    return sum_of_cleavages
 
 
 def _digest_via_skip(graph):
