@@ -166,12 +166,6 @@ def add_statistics(group):
         "on the proteins (especially on Titin) NOTE: The dedicated start and end node is not counted here. "
         "If you traverse a graph, expect +2 more nodes in a path!"
     )
-    group.add_argument(
-        "--calc_possible_weigths", "-cpw", default=False, action="store_true",
-        help="If this is set, the number of all possible weights in a graph are calculated and added"
-        " into the statistics. NOTE: The actual number depends on the factor set in mass dictionary. "
-        "This is currently an experimental feature and may not work for some very complex graphs (e.g. P53). "
-    )
 
 
 def add_graph_exports(group):
