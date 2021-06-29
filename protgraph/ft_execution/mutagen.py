@@ -82,6 +82,8 @@ def execute_mutagen(graph, mutagen_feature):
                     vertex = graph.add_vertex()
                     graph.vs[vertex.index]["aminoacid"] = entry
                     graph.vs[vertex.index]["accession"] = graph.vs[1]["accession"]
+                    if "isoform_accession" in aa_in_list[0].attributes():
+                        graph.vs[vertex.index]["isoform_accession"] = aa_in_list[0]["isoform_accession"] 
                     y_idcs.append(vertex.index)
 
                 # Add edges between them (if needed)

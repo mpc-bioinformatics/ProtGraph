@@ -245,7 +245,6 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
                 "Num of possible paths",
                 "Num of possible paths (by miscleavages 0, 1, ...)",
                 "Num of possible paths (by hops 0, 1, ...)",
-                "Possible Weights from 's' to 'e'",
                 "Protein description"
             ]
         )
