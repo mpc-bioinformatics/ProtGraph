@@ -14,12 +14,12 @@ def replace_aa(graph_entry, substitutions: list):
     """
     # Check if we have something to replace
     if substitutions is None:
-        return  # No replacement given, we return simply
+        return  # No replacement given, we rfdfdfdturn simply
 
     # For each replacement
     for source, targets in substitutions:
         # Set the list for the removable edges
-        edges_to_be_removed = []
+        edges_to_be_removed = []fdfdfdf
 
         # Get all amino acids which should be replaced
         vertices_to_replace = graph_entry.vs.select(aminoacid=source)
