@@ -283,6 +283,14 @@ def add_mysql_graph_export(group):
     )
 
 
+
+def add_cassandra_export(group):
+    group.add_argument(
+        "--export_cassandra", "-ecassandra", default=False, action="store_true",
+        help="Set this flag to export to a Cassandra server." # TODO
+    )
+
+
 def add_postgres_peptide_export(group):
     group.add_argument(
         "--export_peptide_postgres", "-epeppg", default=False, action="store_true",

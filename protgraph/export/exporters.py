@@ -14,6 +14,7 @@ from protgraph.export.peptides.pep_postgres import PepPostgres
 from protgraph.export.pickle import Pickle
 from protgraph.export.postgres import Postgres
 from protgraph.export.redisgraph import RedisGraph
+from protgraph.export.cassandra import Cassandra
 
 
 class Exporters(ContextDecorator):
@@ -54,6 +55,8 @@ class Exporters(ContextDecorator):
             self.export_classes.append(PepFasta())
         if kwargs["export_peptide_citus"]:
             self.export_classes.append(PepCitus())
+        if kwargs["export_cassandra"] or True: # TODO remove
+            self.export_classes.append(Cassandra())
 
         # Also start up all exporters
         for ec in self.export_classes:
