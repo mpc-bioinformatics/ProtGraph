@@ -290,6 +290,28 @@ def add_cassandra_export(group):
         help="Set this flag to export to a Cassandra server." # TODO
     )
 
+    group.add_argument(
+        "--cassandra_host", default="127.0.0.1", type=str,
+        help="Set the address/host of a cassandra server (One server from the cluster is sufficient). "
+        "Default is set to 127.0.0.1"
+    )
+    group.add_argument(
+        "--cassandra_port", default=9042, type=int,
+        help="Set the port which should be used to connect to the cassandra host. "
+        "Default is set to 9042" 
+    )
+    group.add_argument(
+        "--cassandra_keyspace", default="graph", type=str,
+        help="Set the keyspace where ProtGraph can operate on. If the keyspace does not exist. ProtGraph will attempt "
+        " to create it.  Default keyspace is 'graph'"
+    )
+    group.add_argument(
+        "--cassandra_chunk_size", default=100, type=int,
+        help="Set the size of batches, which should be then sent to cassandra. "
+        " The default is set specifically low, since, cassandra has configured a low batch size (50kb)"
+    )
+
+
 
 def add_postgres_peptide_export(group):
     group.add_argument(
