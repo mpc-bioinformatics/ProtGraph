@@ -69,7 +69,9 @@ def prot_graph(**kwargs):
 
     # Check processes and Threads in Reverse
     graph_gen_stop_sent = False
+    graph_gen_stop_sent_retry = 10
     main_write_threads_stop_sent = False
+    main_write_threads_stop_sent_retry = 10
     while True:
         time.sleep(1)
 
@@ -77,6 +79,13 @@ def prot_graph(**kwargs):
         if not main_write_thread.is_alive() and not common_out_thread.is_alive():
             # Then exit the program
             break
+
+        # Retry if in worst case the threads did not get the stop signal...
+        if graph_gen_stop_sent and main_write_threads_stop_sent:
+            main_write_threads_stop_sent_retry =- 1
+            if main_write_threads_stop_sent_retry == 0:
+                main_write_threads_stop_sent_retry = False
+                main_write_threads_stop_sent_retry = 10
 
         # Are all consumers still alive?
         if all([not x.is_alive() for x in graph_gen]) and not main_write_threads_stop_sent:
@@ -86,10 +95,17 @@ def prot_graph(**kwargs):
             main_write_threads_stop_sent = True
             continue
 
+        # Retry if in worst case some process consumed all the None's...
+        if graph_gen_stop_sent and not main_write_threads_stop_sent:
+            graph_gen_stop_sent_retry =- 1
+            if graph_gen_stop_sent_retry == 0:
+                graph_gen_stop_sent = False
+                graph_gen_stop_sent_retry = 10
+
         # Is producer still alive?
         if not entry_reader.is_alive() and not graph_gen_stop_sent:
-            # Add None, to stop all processes
-            for _ in range(number_of_procs):
+            # Add None, to stop all processes (double the amount to be completely sure!)
+            for _ in range(number_of_procs*2):
                 entry_queue.put(None)
             graph_gen_stop_sent = True
             continue

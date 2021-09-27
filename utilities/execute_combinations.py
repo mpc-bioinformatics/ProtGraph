@@ -19,7 +19,7 @@ if __name__ == "__main__":
         ("h", ["-raa", "Z->Q,E"])
     ]
 
-    input_files = ["examples/e_coli.dat"]
+    input_files = ["../examples/e_coli.dat"]
     statistics = ["-cnp", "-n", "9434", "-no_desc"]
 
 
