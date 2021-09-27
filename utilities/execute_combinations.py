@@ -12,11 +12,12 @@ if __name__ == "__main__":
         ("a", ["-ft", "INIT_MET"]),
         ("b", ["-ft", "SIGNAL"]),
         ("c", ["-ft", "VAR_SEQ"]),
-        ("d", ["-ft", "MUTAGEN"]),
-        ("e", ["-ft", "CONFLICT"]),
-        ("f", ["-raa", "B->D,N"]),
-        ("g", ["-raa", "J->I,L"]),
-        ("h", ["-raa", "Z->Q,E"])
+        ("d", ["-ft", "VARIANT"]),
+        ("e", ["-ft", "MUTAGEN"]),
+        ("f", ["-ft", "CONFLICT"]),
+        ("g", ["-raa", "B->D,N"]),
+        ("h", ["-raa", "J->I,L"]),
+        ("i", ["-raa", "Z->Q,E"])
     ]
 
     input_files = ["../examples/e_coli.dat"]
@@ -28,7 +29,7 @@ if __name__ == "__main__":
         for c in itertools.combinations(used_features, r):
             counter += 1
 
-            print("\nExecuting Iteration {} out of {}".format(counter, 2**(len(used_features)+1)))
+            print("\nExecuting Iteration {} out of {}".format(counter, 2**(len(used_features))))
             if len(c) != 0:
                 configuration = [y for x in c for y in x[1]]
             else:
