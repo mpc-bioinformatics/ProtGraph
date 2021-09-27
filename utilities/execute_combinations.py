@@ -29,7 +29,10 @@ if __name__ == "__main__":
             counter += 1
 
             print("\nExecuting Iteration {} out of {}".format(counter, 2**(len(used_features)+1)))
-            configuration = [y for x in c for y in x[1]]
+            if len(c) != 0:
+                configuration = [y for x in c for y in x[1]]
+            else:
+                configuration = ["-ft", "NONE"]
             if len(c) != 0:
                 output_file = ["-o", "".join([x[0] for x in c]) + ".csv"]
             else:
