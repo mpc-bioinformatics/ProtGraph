@@ -37,6 +37,11 @@ def add_main_args(parser):
         "It will write to 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is "
         "set to the current working directory"
     )
+    parser.add_argument(
+        "--no_description", "-no_desc", default=False, action="store_true",
+        help="Set this flag to not include the protein descriptions into the output statistics file. "
+        "This reduces the size of the output statistics if set."
+    )
 
 
 def add_graph_generation(group):
@@ -306,7 +311,7 @@ def add_cassandra_export(group):
         " to create it.  Default keyspace is 'graph'"
     )
     group.add_argument(
-        "--cassandra_chunk_size", default=100, type=int,
+        "--cassandra_chunk_size", default=50, type=int,
         help="Set the size of batches, which should be then sent to cassandra. "
         " The default is set specifically low, since, cassandra has configured a low batch size (50kb)"
     )

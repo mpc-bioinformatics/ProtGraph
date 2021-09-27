@@ -7,6 +7,7 @@ from Bio.SwissProt import FeatureLocation, FeatureTable
 
 from protgraph.export.abstract_exporter import AExporter
 from cassandra import InvalidRequest
+import cassandra.concurrent
 
 class Cassandra(AExporter):
     """
@@ -102,14 +103,14 @@ class Cassandra(AExporter):
         self.prep_stmt_nodes = self.session.prepare(
             "INSERT INTO nodes (id," + ",".join(self.nodes_keys) + ") VALUES (?," + ",".join(["?"]*len(self.nodes_keys)) + ")"
         )
-        self.prep_insert_nodes_lambda = lambda x: self.session.execute(self.prep_stmt_nodes, x)
+        self.prep_insert_nodes_lambda = lambda x: self.session.execute_async(self.prep_stmt_nodes, x)
 
 
         # Set Input of edges
         self.prep_stmt_edges = self.session.prepare(
             "INSERT INTO edges (id,source,target," + ",".join(self.edges_keys) + ") VALUES (?,?,?," + ",".join(["?"]*len(self.edges_keys)) + ")"
         )
-        self.prep_insert_edges_lambda = lambda x: self.session.execute(self.prep_stmt_edges, x)
+        self.prep_insert_edges_lambda = lambda x: self.session.execute_async(self.prep_stmt_edges, x)
 
         self.nodes_counter = self.unique_id_gen(**kwargs)
         self.edges_counter = self.unique_id_gen(**kwargs)
@@ -120,13 +121,30 @@ class Cassandra(AExporter):
         # Export the protein
         # Add nodes
         try:
+            # Concurrent example
+            # 
+            # prep_ins = [(self.prep_stmt_nodes, [next(self.nodes_counter), *self._get_node_edge_attrs(x.attributes(), self.nodes_keys)]) for x in prot_graph.vs[:]]
+            # cassandra.concurrent.execute_concurrent(self.session, prep_ins)
+            # prep_ins_edges = [
+            #     (self.prep_stmt_edges, [
+            #         next(self.edges_counter), 
+            #         prep_ins[x.source][1][0],
+            #         prep_ins[x.target][1][0],
+            #         *self._get_node_edge_attrs(x.attributes(), self.edges_keys)
+            #     ]) 
+            #     for x in prot_graph.es[:]
+            # ]
+            # cassandra.concurrent.execute_concurrent(self.session, prep_ins_edges)
+
             nodes = [[next(self.nodes_counter), *self._get_node_edge_attrs(x.attributes(), self.nodes_keys)] for x in prot_graph.vs[:]]
+            # batch_nodes = BatchStatement()
+
             for n_chunk in self._chunked_iterable(nodes, self.chunk_size):  # Longest possible batch
-                batch_nodes = BatchStatement()
                 for n in n_chunk:
-                    batch_nodes.add(self.prep_stmt_nodes, n)
-                    # self.prep_insert_nodes_lambda(n)
-                self.session.execute(batch_nodes)
+                    # batch_nodes.add(self.prep_stmt_nodes, n)
+                    self.prep_insert_nodes_lambda(n)
+                # self.session.execute(batch_nodes)
+                # batch_nodes.clear()
 
             # Add edges
             edges = [
@@ -138,12 +156,14 @@ class Cassandra(AExporter):
                 ] 
                 for x in prot_graph.es[:]
             ]
+            # batch_edges = BatchStatement()
+
             for e_chunk in self._chunked_iterable(edges, self.chunk_size):  # Longest possible batch
-                batch_edges = BatchStatement()
                 for e in e_chunk:
-                    batch_nodes.add(self.prep_stmt_edges, e)
-                    # self.prep_insert_edges_lambda(e)
-                self.session.execute(batch_edges)
+                    # batch_nodes.add(self.prep_stmt_edges, e)
+                    self.prep_insert_edges_lambda(e)
+                # self.session.execute(batch_edges)
+                # batch_edges.clear()
 
 
         except Exception as e:
@@ -155,7 +175,7 @@ class Cassandra(AExporter):
     def tear_down(self):
         # Close the connection to mysql
         try:
-            self.session.shurdown()
+            self.session.shutdown()
             self.cluster.shutdown()
         except Exception as e:
             print("Connection to Cassandra could not be shutdown. (Reason: {})".format(str(e)))

@@ -164,8 +164,12 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
         graph_exporters.export_graph(graph, common_out_queue)
 
         # Output statistics we gathered during processing
-        entry_protein_desc = entry.description.split(";", 1)[0]
-        entry_protein_desc = entry_protein_desc[entry_protein_desc.index("=") + 1:]
+        if kwargs["no_description"]:
+            entry_protein_desc = None
+        else:
+            entry_protein_desc = entry.description.split(";", 1)[0]
+            entry_protein_desc = entry_protein_desc[entry_protein_desc.index("=") + 1:]
+
         graph_queue.put(
             (
                 entry.accessions[0],  # Protein Accesion

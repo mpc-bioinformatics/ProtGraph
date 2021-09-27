@@ -55,7 +55,7 @@ class Exporters(ContextDecorator):
             self.export_classes.append(PepFasta())
         if kwargs["export_peptide_citus"]:
             self.export_classes.append(PepCitus())
-        if kwargs["export_cassandra"] or True: # TODO remove
+        if kwargs["export_cassandra"]:
             self.export_classes.append(Cassandra())
 
         # Also start up all exporters
