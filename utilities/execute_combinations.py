@@ -15,9 +15,9 @@ if __name__ == "__main__":
         ("d", ["-ft", "VARIANT"]),
         ("e", ["-ft", "MUTAGEN"]),
         ("f", ["-ft", "CONFLICT"]),
-        ("g", ["-raa", "B->D,N"]),
-        ("h", ["-raa", "J->I,L"]),
-        ("i", ["-raa", "Z->Q,E"])
+        ("g", ["-ft", "NONE", "-raa", "B->D,N"]),
+        ("h", ["-ft", "NONE", "-raa", "J->I,L"]),
+        ("i", ["-ft", "NONE", "-raa", "Z->Q,E"])
     ]
 
     input_files = ["../examples/e_coli.dat"]
