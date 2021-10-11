@@ -89,7 +89,7 @@ def prot_graph(**kwargs):
 
         # Is producer still alive?
         if not __check_if_alive([entry_reader]) and not graph_gen_stop_sent:
-            # Add None, to stop all processes (double the amount to be completely sure!)
+            # Add None, to stop all processes
             for _ in range(number_of_procs):
                 entry_queue.put(None)
             graph_gen_stop_sent = True

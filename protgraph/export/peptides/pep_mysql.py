@@ -1,5 +1,4 @@
 import itertools
-import multiprocessing
 
 import mysql.connector
 
@@ -64,9 +63,6 @@ class PepMySQL(APeptideExporter):
         self.get_batch_size = kwargs["pep_mysql_batch_size"]
 
         # Get Unique generator, since mysql can ONLY! return 1 id at once after bulk inserting entries..
-        self.proc_id = multiprocessing.current_process()._identity[0] - 2  # Offset, dur to Main and Reading Thread
-        self.id_size = 1000000  # Set sufficiently enough. Fails, if it is called with more than 1 Million processes
-        self.num_procs = kwargs["num_of_processes"]
         self.id_gen = self.unique_id_gen(**kwargs)
 
         # Initialize connection
