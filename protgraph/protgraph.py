@@ -2,7 +2,7 @@ import argparse
 import csv
 import os
 import time
-from multiprocessing import Process, Queue, cpu_count
+from multiprocessing import Process, Queue, cpu_count, active_children
 from queue import Full
 from threading import Thread
 
@@ -73,6 +73,10 @@ def prot_graph(**kwargs):
     main_write_threads_stop_sent = False
     while True:
         time.sleep(1)
+
+        # Do Side-Effect of "joining" to remove zombie processes 
+        # see: https://docs.python.org/3/library/multiprocessing.html#multiprocessing.active_children
+        _ = active_children()
 
         # Are writing threads alive?
         if not main_write_thread.is_alive() and not common_out_thread.is_alive():
