@@ -14,7 +14,7 @@ from protgraph.ft_execution.variant import execute_variant
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
 from protgraph.verify_graphs import verify_graph
-
+from protgraph.graph_collapse_edges import collapse_parallel_edges
 
 def _generate_canonical_graph(sequence: str, acc: str):
     """
@@ -148,6 +148,10 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
         # Merge (summarize) graph if wanted
         if not kwargs["no_merge"]:
             merge_aminoacids(graph)
+
+        # Collapse parallel edges in a graph
+        if not kwargs["no_collapsing_edges"]:
+            collapse_parallel_edges(graph)
 
         # Annotate weights for edges and nodes (maybe even the smallest weight possible to get to the end node)
         annotate_weights(graph, **kwargs)

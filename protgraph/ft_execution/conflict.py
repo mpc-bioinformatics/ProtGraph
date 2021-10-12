@@ -13,6 +13,8 @@ def execute_conflict(graph, conflict_feature):
     Nodes: <None>
     Edges: "qualifiers" ( -> adds CONFLICT)
     """
+    [__start_node__] = graph.vs.select(aminoacid="__start__")
+    [__stop_node__] = graph.vs.select(aminoacid="__end__")
     # Get start and end position first
     # NOTE: Shifted by 1 due to the __start__ node beeing at 0
     aa_before = conflict_feature.location.start + 1
@@ -48,12 +50,14 @@ def execute_conflict(graph, conflict_feature):
                         for aa_edge_out in list(graph.es.select(_source=aa_out)):  # Get all outgoing edges
                             # Add corresponding edges and the qualifiers information
                             # for that edge (At least the CONFLICT feature)
-                            edge_list.append(
-                                (
-                                    (aa_edge_in.source, aa_edge_out.target),
-                                    [*_get_qualifiers(aa_edge_in), conflict_feature],
+                            # Only if they not point to start_end directly! (#special case e.g. in P49782)
+                            if aa_edge_in.source != __start_node__.index or aa_edge_out.target != __stop_node__.index:
+                                edge_list.append(
+                                    (
+                                        (aa_edge_in.source, aa_edge_out.target),
+                                        [*_get_qualifiers(aa_edge_in), conflict_feature],
+                                    )
                                 )
-                            )
 
     else:
         # A Sequence (or AA) is added

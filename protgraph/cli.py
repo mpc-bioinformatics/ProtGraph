@@ -111,6 +111,12 @@ def add_graph_generation(group):
         help="Set this flag to skip the merging process for chains of nodes and edges into a single node. Setting "
         "this option could drastically increase the size of the graph, especially its depth."
     )
+    group.add_argument(
+        "--no_collapsing_edges", default=False, action="store_true",
+        help="Set this flag to indicate, that parallel edges should not be collapsed. This might be useful "
+        "in some cases and might give insights if some errors occur. It can be especially used "
+        "with the graph verification flag."
+    )
 
     # Arguments for node and edge weights
     group.add_argument(
