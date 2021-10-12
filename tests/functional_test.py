@@ -116,3 +116,7 @@ class FunctionalTest(unittest.TestCase):
     def test_issue13(self):
         args = protgraph.parse_args(["-n", "1", os.path.join(self.examples_path, "F1SN05.txt")])
         protgraph.prot_graph(**args)
+
+    def test_issue41(self):
+        args = protgraph.parse_args(["-n", "1", "-epepfasta", os.path.join(self.examples_path, "Q9R1E6.txt")])
+        protgraph.prot_graph(**args)
