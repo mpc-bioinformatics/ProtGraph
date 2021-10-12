@@ -3,6 +3,7 @@ from Bio.SwissProt import FeatureLocation, FeatureTable
 from redisgraph import Edge, Graph, Node
 
 from protgraph.export.abstract_exporter import AExporter
+from protgraph.graph_collapse_edges import Or
 
 
 class RedisGraph(AExporter):
@@ -79,6 +80,8 @@ class RedisGraph(AExporter):
         """ UNUSED: Alternative conversion of properties in more complex datatype. """
         if attrs is None:
             return "NULL"
+        if isinstance(attrs, Or):
+            return {"or": [self._get_attributes(x) for x in attrs]}
         elif isinstance(attrs, list):
             return [self._get_attributes(x) for x in attrs]
         elif isinstance(attrs, dict):

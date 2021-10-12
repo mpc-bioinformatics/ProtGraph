@@ -8,6 +8,8 @@ from Bio.SwissProt import FeatureLocation, FeatureTable
 from protgraph.export.abstract_exporter import AExporter
 from cassandra import InvalidRequest
 import cassandra.concurrent
+from protgraph.graph_collapse_edges import Or
+
 
 class Cassandra(AExporter):
     """
@@ -205,7 +207,9 @@ class Cassandra(AExporter):
 
     def _get_attributes(self, attrs):
         """ Convert qualifiers objects into JSON-Serializable objects """
-        if isinstance(attrs, list):
+        if isinstance(attrs, Or):
+            return {"or": [self._get_attributes(x) for x in attrs]}
+        if isinstance(attrs, list): 
             return [self._get_attributes(x) for x in attrs]
         elif isinstance(attrs, dict):
             return {self._get_attributes(x): self._get_attributes(y) for x, y in attrs.items()}
