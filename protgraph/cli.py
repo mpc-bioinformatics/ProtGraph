@@ -37,6 +37,11 @@ def add_main_args(parser):
         "It will write to 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is "
         "set to the current working directory"
     )
+    parser.add_argument(
+        "--no_description", "-no_desc", default=False, action="store_true",
+        help="Set this flag to not include the protein descriptions into the output statistics file. "
+        "This reduces the size of the output statistics if set."
+    )
 
 
 def add_graph_generation(group):
@@ -106,6 +111,12 @@ def add_graph_generation(group):
         help="Set this flag to skip the merging process for chains of nodes and edges into a single node. Setting "
         "this option could drastically increase the size of the graph, especially its depth."
     )
+    group.add_argument(
+        "--no_collapsing_edges", default=False, action="store_true",
+        help="Set this flag to indicate, that parallel edges should not be collapsed. This might be useful "
+        "in some cases and might give insights if some errors occur. It can be especially used "
+        "with the graph verification flag."
+    )
 
     # Arguments for node and edge weights
     group.add_argument(
@@ -166,6 +177,49 @@ def add_statistics(group):
         "on the proteins (especially on Titin) NOTE: The dedicated start and end node is not counted here. "
         "If you traverse a graph, expect +2 more nodes in a path!"
     )
+
+    group.add_argument(
+        "--calc_num_possibilities_variant", "-cnpvar", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of variants (beginning at 0). "
+        "Similar to misclavages"
+    )
+
+    group.add_argument(
+        "--calc_num_possibilities_mutagen", "-cnpmut", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of mutagens (beginning at 0). "
+        "Similar to misclavages"
+    )
+
+    group.add_argument(
+        "--calc_num_possibilities_conflict", "-cnpcon", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of conflicts (beginning at 0). "
+        "Similar to misclavages"
+    )
+
+    # Add replace funcitonality to CLI
+    def _list_to_func_map(input: str):
+        """
+        Choosing between possible or_count strategies for cnp
+        """
+        if "min" == input.lower():
+            return min
+        elif "max" == input.lower():
+            return max
+        else:
+            return None
+    group.add_argument(
+        "--calc_num_possibilites_or_count", "-cnp_or_count", choices=[min, max],
+        type=_list_to_func_map, action="store", default=min,
+        help="Substitute amino acids in graphs by other amino acids. This could be useful to replace"
+        " e.g. 'J' with 'I' and 'L'. This parameter can be then provided as: 'J->I,L'. Multiple replacements"
+        " are allowed and are executed one after another. NOTE: only from ONE amino acid multiple amino acids can"
+        " be substituted. So only the format: 'A->B[,C]*' is allowed!"
+    )
+
+    # TODO one parameter is missing for cnp con/mut/var
 
 
 def add_graph_exports(group):
@@ -280,6 +334,33 @@ def add_mysql_graph_export(group):
     group.add_argument(
         "--mysql_database", type=str, default="proteins",
         help="Set the database which will be used for the MySQL server. Default: proteins"
+    )
+
+
+def add_cassandra_export(group):
+    group.add_argument(
+        "--export_cassandra", "-ecassandra", default=False, action="store_true",
+        help="Set this flag to export to a Cassandra server."
+    )
+    group.add_argument(
+        "--cassandra_host", default="127.0.0.1", type=str,
+        help="Set the address/host of a cassandra server (One server from the cluster is sufficient). "
+        "Default is set to 127.0.0.1"
+    )
+    group.add_argument(
+        "--cassandra_port", default=9042, type=int,
+        help="Set the port which should be used to connect to the cassandra host. "
+        "Default is set to 9042"
+    )
+    group.add_argument(
+        "--cassandra_keyspace", default="graph", type=str,
+        help="Set the keyspace where ProtGraph can operate on. If the keyspace does not exist. ProtGraph will attempt "
+        " to create it.  Default keyspace is 'graph'"
+    )
+    group.add_argument(
+        "--cassandra_chunk_size", default=50, type=int,
+        help="Set the size of batches, which should be then sent to cassandra. "
+        " The default is set specifically low, since, cassandra has configured a low batch size (50kb)"
     )
 
 

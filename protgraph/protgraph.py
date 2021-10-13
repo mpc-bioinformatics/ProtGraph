@@ -2,7 +2,7 @@ import argparse
 import csv
 import os
 import time
-from multiprocessing import Process, Queue, cpu_count
+from multiprocessing import Process, Queue, active_children, cpu_count
 from threading import Thread
 
 from tqdm import tqdm
@@ -73,13 +73,17 @@ def prot_graph(**kwargs):
     while True:
         time.sleep(1)
 
+        # Do Side-Effect of "joining" to remove zombie processes
+        # see: https://docs.python.org/3/library/multiprocessing.html#multiprocessing.active_children
+        _ = active_children()
+
         # Are writing threads alive?
         if not main_write_thread.is_alive() and not common_out_thread.is_alive():
             # Then exit the program
             break
 
         # Are all consumers still alive?
-        if all([not x.is_alive() for x in graph_gen]) and not main_write_threads_stop_sent:
+        if not __check_if_alive(graph_gen) and not main_write_threads_stop_sent:
             # Add None to the last queue to stop thread
             statistics_queue.put(None)
             common_out_file_queue.put(None)
@@ -87,12 +91,21 @@ def prot_graph(**kwargs):
             continue
 
         # Is producer still alive?
-        if not entry_reader.is_alive() and not graph_gen_stop_sent:
+        if not __check_if_alive([entry_reader]) and not graph_gen_stop_sent:
             # Add None, to stop all processes
             for _ in range(number_of_procs):
                 entry_queue.put(None)
             graph_gen_stop_sent = True
             continue
+
+
+def __check_if_alive(processes):
+    """
+    Quickly check if at least one of the list of processes is alive.
+    Returns True if at least one process is still running.
+    """
+    c = set([x.exitcode for x in processes])
+    return None in c
 
 
 def format_help(parser, groups=None):
@@ -153,6 +166,7 @@ def create_parser():
         ("redis_graph_export", cli.add_redis_graph_export),
         ("postgres_graph_export", cli.add_postgres_graph_export),
         ("mysql_graph_export", cli.add_mysql_graph_export),
+        ("cassandra_graph_export", cli.add_cassandra_export),
         ("postgres_peptide_export", cli.add_postgres_peptide_export),
         ("mysql_peptide_export", cli.add_mysql_peptide_export),
         ("citus_peptide_export", cli.add_citus_peptide_export),
@@ -243,9 +257,11 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
                 "Number of nodes",
                 "Number of edges",
                 "Num of possible paths",
-                "Num of possible paths (by miscleavages 0, 1, ...)",
-                "Num of possible paths (by hops 0, 1, ...)",
-                "Possible Weights from 's' to 'e'",
+                "Num of possible paths (by miscleavages)",
+                "Num of possible paths (by hops)",
+                "Num of possible paths (by feature variant)",
+                "Num of possible paths (by feature mutagen)",
+                "Num of possible paths (by feature conflict)",
                 "Protein description"
             ]
         )

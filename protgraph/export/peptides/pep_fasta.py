@@ -1,5 +1,6 @@
 from protgraph.export.peptides.abstract_peptide_exporter import \
     APeptideExporter
+from protgraph.graph_collapse_edges import Or
 
 
 class PepFasta(APeptideExporter):
@@ -68,8 +69,7 @@ class PepFasta(APeptideExporter):
                     "".join(
                         [
                             acc, "(", str(start_pos), ":", str(end_pos), ",",
-                            "mssclvg:", str(misses), ",",
-                            quali_entries,  ")"
+                            "mssclvg:", str(misses), quali_entries,  ")"
                         ]
                     )
                 ]
@@ -90,32 +90,61 @@ class PepFasta(APeptideExporter):
             if len(qualifier) == 0:
                 continue
 
-            for f in qualifier:
-                if f.type == "VAR_SEQ":
-                    continue  # Skip since we encode this differently
+            str_qualifiers.extend(self._map_qualifier_to_string(qualifier))
+        return str_qualifiers
 
-                elif f.type == "VARIANT":
-                    str_qualifiers.append(
-                        "VARIANT[" + str(f.location.start + 1) + ":"
-                        + str(f.location.end) + "," + self._get_variant_qualifier(f) + "]"
-                    )
+    def _map_qualifier_to_string(self, qualifier):
+        str_qualifiers = []
+        for f in qualifier:
+            if isinstance(f, Or):
+                f_qs = []
+                for f_q in f:
+                    f_qs.append(self._map_qualifier_to_string(f_q))
 
-                elif f.type == "SIGNAL":
-                    str_qualifiers.append(
-                        "SIGNAL[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
-                    )
+                str_qualifiers.append(
+                    "OR[" + "|".join([",".join(x) for x in f_qs]) + "]"
+                )
 
-                elif f.type == "INIT_MET":
-                    str_qualifiers.append(
-                        "INIT_MET[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
-                    )
+            elif f.type == "VAR_SEQ":
+                continue  # Skip since we encode this differently
+
+            elif f.type == "VARIANT":
+                str_qualifiers.append(
+                    "VARIANT[" + str(f.location.start + 1) + ":"
+                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f) + "]"
+                )
+
+            elif f.type == "MUTAGEN":
+                str_qualifiers.append(
+                    "MUTAGEN[" + str(f.location.start + 1) + ":"
+                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f, stop_codon=":", offset=0) + "]"
+                )
+
+            elif f.type == "CONFLICT":
+                str_qualifiers.append(
+                    "CONFLICT[" + str(f.location.start + 1) + ":"
+                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f) + "]"
+                )
+
+            elif f.type == "SIGNAL":
+                str_qualifiers.append(
+                    "SIGNAL[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                )
+
+            elif f.type == "INIT_MET":
+                str_qualifiers.append(
+                    "INIT_MET[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                )
+
+            else:
+                print("Warning: FASTA-Export-Case is not covered: {}".format(f))
 
         return str_qualifiers
 
-    def _get_variant_qualifier(self, feature):
+    def _get_variant_mutagen_qualifier(self, feature, stop_codon="(", offset=1):
         """ Get x -> y or missing """
         message = feature.qualifiers["note"]
-        message = message[:message.index("(")-1] if "(" in message else message
+        message = message[:message.index(stop_codon)-offset] if stop_codon in message else message
 
         if feature.id is not None:
             message + ", " + feature.id
@@ -133,7 +162,7 @@ class PepFasta(APeptideExporter):
         """ get position, '?' if not specified"""
         attrs = node.attributes()
         val = -1
-        if "isoform_accession" in attrs and attrs["isoform_accession"] is not None:
+        if "isoform_position" in attrs and attrs["isoform_position"] is not None:
             val = attrs["isoform_position"]
         elif attrs["position"] is not None:
             val = attrs["position"]

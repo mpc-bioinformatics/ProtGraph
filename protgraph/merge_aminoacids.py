@@ -1,3 +1,84 @@
+def find_chains(graph_entry):
+    """
+    Retrive chain of nodes.
+    Here we essentially extract all chains and return their vertices indices
+    E.G Graph:
+         M -v                   ,-> K
+            A -> M -> I -> N -> O
+         K -^                   `-> P
+        (9 Nodes, 8 Edges)
+
+    would give us the node indices of [A M I N O] in a list (and all other available
+    chains in the graph)
+    """
+    [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
+
+    # Sort all nodes into 3 possible bins
+    single_nodes = set()
+    single_out = set()
+    single_in = set()
+    for idx, (a, b) in enumerate(zip(graph_entry.vs.indegree(), graph_entry.vs.outdegree())):
+        if a == 1 and b == 1:
+            single_nodes.add(idx)  # case single
+        if a == 1 and b > 1:
+            single_in.add(idx)  # case one in but multiple out
+        if a > 1 and b == 1:
+            single_out.add(idx)  # case one out but multiple in
+
+    # save all chains in this list
+    complete_chain = []
+
+    # CASE 1: Chain is starting with a single out node
+    for so in single_out:
+        c = [so]
+        next_node = graph_entry.vs[so].neighbors(mode="OUT")[0].index
+
+        # iterate as long as possible.
+        while next_node in single_nodes:
+            single_nodes.remove(next_node)
+            c.append(next_node)
+            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+
+        # Special case for single in
+        if next_node in single_in:
+            single_in.remove(next_node)
+            c.append(next_node)
+            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+
+        # Skip chains containing only 1 element
+        if len(c) != 1:
+            complete_chain.append(c)
+
+    # CASE 2: it may happen that the start node is at a beginning of chain.
+    # Here we do a intersection of remaining nodes in single_nodes with the
+    # nodes having a direct connection to start
+    start_set = {x.index for x in __start_node__.neighbors(mode="OUT")}
+    single_start_points = single_nodes.intersection(start_set)
+    for sn in single_start_points:
+        c = [sn]
+        next_node = graph_entry.vs[sn].neighbors(mode="OUT")[0].index
+        single_nodes.remove(sn)
+
+        # iterate as long as possible
+        while next_node in single_nodes:
+            single_nodes.remove(next_node)
+            c.append(next_node)
+            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+
+        # Special case for single in
+        if next_node in single_in:
+            single_in.remove(next_node)
+            c.append(next_node)
+            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+
+        # Skip chains containing only 1 element
+        if len(c) != 1:
+            complete_chain.append(c)
+
+    # return complete chain
+    return complete_chain
+
+
 def merge_aminoacids(graph_entry):
     """
     This merging reduces the amount of nodes and edges drastically.
@@ -23,88 +104,19 @@ def merge_aminoacids(graph_entry):
     then those are split into 3 Nodes and 2 Edges, so that the __start__ and __end__ node
     are present in all graphs. E.G:   __start__ -> PROTEIN -> __end__
 
-    TODO DL this is very slow (takes ~23 minutes for complete human (without FTs, with trypsin))
-    (~8 minutes with digestion skip)
+    TODO DL This has been reimplemented (since 0.2.1) to be a bit faster (~20 times faster).
+    but can probably be further optimized.
     """
-    # TODO Optimize and summarize chains of nodes, this is  slow (somewhere)!
+    # Retrive all chains of nodes (sorted by chain order in list of lists)
+    # TODO this is still the slowest part. It may be improved
+    complete_chain = find_chains(graph_entry)
 
-    # Get single chain elements by iterating over the DAG
-    # Here we retrieve those with in and out degree 1 and its prev node
-    chain_elements = []
-    for node in graph_entry.vs[:]:
-        if node.outdegree() == 1 and node.indegree() == 1:  # TODO correct?
-            prev_node = node.neighbors(mode="IN")[0]
-            if prev_node.outdegree() == 1:
-                chain_elements.append((prev_node.index, node.index))
-
-    # Chain those elements together (get chains)
-    complete_chain = []
-    for ele in chain_elements:
-        idx = None
-        # For each tuple check if a node end
-        # matches to a node beginning
-        for cc_idx, cc in enumerate(complete_chain):
-            if cc[-1] == ele[0]:
-                idx = cc_idx
-
-        if idx is None:
-            # No matching, therefore we add both nodes
-            complete_chain.append([ele[0], ele[1]])
-        else:
-            # Matching, we append the corresponding end node
-            complete_chain[idx].append(ele[1])
-
-    # Special case exclude start and stop Nodes:
-    [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
-    [__end_node__] = graph_entry.vs.select(aminoacid="__end__")
-    complete_chain = [
-        [
-            y  # Exclude start and end nodes here
-            for y in x
-            if y != __start_node__.index and y != __end_node__.index
-        ]
-        for x in complete_chain  # For each complete chain
-    ]
-
-    # Now we generate the intermediate graph mapping
-    # This contains [(FIRST_NODE, IDCS, VERTICES, OUT_EDGES)]. All attributes in this tuple are lists
-    merge_list = []
-    for c in complete_chain:
-        # For each chain
-        vs = []
-        es = []
-        first_node = None
-        for x in c:
-            # For each element in chain
-            # We add the vertex, its out going edeges
-            vs.append(graph_entry.vs[x].attributes())
-            es.append(graph_entry.vs[x].out_edges()[0])
-            # And the first node as well as the indices (available through c)
-            outs = graph_entry.vs[x].neighbors(mode="IN")
-            if outs[0].index not in c:
-                first_node = x
-        merge_list.append((first_node, c + [], vs, es))
-
-    # Sort them accordingly from beginning and concat the attributes
+    # Generate merged nodes information (iow supernodes attributes)
     merged_nodes = []
-    for first_node, idcs, vertices, edges in merge_list:
-        # For each complete chain -> merged information list entry
-
-        # We create sorted lists of edges and nodes (since we may still have some inconsistencies?!? TODO check!?)
-        # We reiterate the chains here again (for consistency!)
-        sorted_edges = []
-        sorted_nodes = []
-        while first_node in idcs:
-            fn_idx = idcs.index(first_node)
-            sorted_edges.append(edges[fn_idx])
-            sorted_nodes.append(vertices[fn_idx])
-            first_node = sorted_edges[-1].target
-        # Special case: Retrieve information of last node, sometimes it may be the stop node
-        last_node = sorted_edges[-1].source
-        if sorted_edges[-1].target_vertex.indegree() == 1:
-            if sorted_edges[-1].target_vertex["aminoacid"] != "__end__":
-                last_node = sorted_edges[-1].target
-                sorted_nodes.append(sorted_edges[-1].target_vertex.attributes())
+    for idcs in complete_chain:
+        # Retrieve nodes and edges information
+        sorted_nodes = [graph_entry.vs[x].attributes() for x in idcs]
+        sorted_edges = [graph_entry.vs[x].out_edges()[0] for x in idcs[:-1]]
 
         # Then we merge node attributes
         # First, the standard attributes, which are always available
@@ -136,17 +148,13 @@ def merge_aminoacids(graph_entry):
         )
         new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers)
 
-        # Retrieve the indices (from original graph), whihc need to be removed
-        idcs_to_remove = idcs
-        if last_node not in idcs_to_remove:
-            idcs_to_remove.append(last_node)
         # Save merged information back to list
         merged_nodes.append(
             [
-                idcs_to_remove,  # Nodes idcs which needs to be removed
-                [x.index for x in sorted_edges],  # Edges which needs to be removed
-                sorted_edges[0].source,  # First Node idx where the edges into it needs to be modified
-                last_node,  # Last Node idx where the edge outgoing needs to be modified
+                idcs,  # Nodes idcs which needs to be removed
+                [x.index for x in sorted_edges],  # Edges which need to be removed
+                idcs[0],  # First Node idx where the edges into it needs to be modified
+                idcs[-1],  # Last Node idx where the edges outgoing needs to be modified
                 new_node_attrs,  # The attributes of the supernode
                 new_edge_attrs,  # The attributes of the edges ingoing from the supernode (appending at the end!)
             ]
@@ -170,26 +178,49 @@ def merge_aminoacids(graph_entry):
 
     # 2. Get all edges connected to supernode and add them appropiately!
     supernode_idcs = list(range(cur_node_count, cur_node_count + len(merged_nodes)))
+    new_edges_with_attrs = []  # List of all edges to be added
+    # creating mapping for bulk edge inserts
+    first_ns_dict = {
+        first_n: supernode_idx
+        for supernode_idx, (_, _, first_n, _, _, edge_attr) in zip(supernode_idcs, merged_nodes)
+    }
+    last_ns_dict = {
+        last_n: supernode_idx
+        for supernode_idx, (_, _, _, last_n, _, edge_attr) in zip(supernode_idcs, merged_nodes)
+    }
+    registered_edges = set()  # Set saving already added edges
     for supernode_idx, (_, _, first_n, last_n, _, edge_attr) in zip(supernode_idcs, merged_nodes):
+        # For each supernode
         # Get all in edges
-        in_e_new_attrs = []
         for in_e in graph_entry.vs[first_n].in_edges():
             attrs = in_e.attributes()
             new_attrs = _get_edge_attrs(attrs, edge_attr["qualifiers"])
-            in_e_new_attrs.append(((in_e.source, supernode_idx), new_attrs))
+            # And add edge iff not already (with mapping to supernode)
+            if in_e.source in last_ns_dict:
+                if (last_ns_dict[in_e.source], supernode_idx) not in registered_edges:
+                    new_edges_with_attrs.append(((last_ns_dict[in_e.source], supernode_idx), new_attrs))
+                    registered_edges.add((last_ns_dict[in_e.source], supernode_idx))
+            else:
+                new_edges_with_attrs.append(((in_e.source, supernode_idx), new_attrs))
 
         # Get all out edges
-        out_e_new_attrs = []
         for out_e in graph_entry.vs[last_n].out_edges():
             attrs = out_e.attributes()
-            out_e_new_attrs.append(((supernode_idx, out_e.target), attrs))
+            # And add edge iff not already (with mapping to supernode)
+            if out_e.target in first_ns_dict:
+                if (supernode_idx, first_ns_dict[out_e.target]) not in registered_edges:
+                    new_edges_with_attrs.append(((supernode_idx, first_ns_dict[out_e.target]), attrs))
+                    registered_edges.add((supernode_idx, first_ns_dict[out_e.target]))
+            else:
+                new_edges_with_attrs.append(((supernode_idx, out_e.target), attrs))
 
-        # Add edges to the graph and add all possibly available attributes
-        e_count = graph_entry.ecount()
-        graph_entry.add_edges([x[0] for x in in_e_new_attrs + out_e_new_attrs])
-        _add_edge_attributes(graph_entry, in_e_new_attrs + out_e_new_attrs, e_count, "qualifiers")
-        _add_edge_attributes(graph_entry, in_e_new_attrs + out_e_new_attrs, e_count, "cleaved")
+    # Bulk add edges to the graph and add all possibly available attributes
+    e_count = graph_entry.ecount()
+    graph_entry.add_edges([x[0] for x in new_edges_with_attrs])
+    _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "qualifiers")
+    _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "cleaved")
 
+    #####################################
     # 3. remove removable edges (then removable nodes) at once
     all_nodes_to_remove = [y for x in merged_nodes for y in x[0]]
     all_edges_to_remove = [y for x in merged_nodes for y in x[1]]

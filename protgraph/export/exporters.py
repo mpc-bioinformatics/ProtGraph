@@ -1,5 +1,6 @@
 from contextlib import ContextDecorator
 
+from protgraph.export.cassandra import Cassandra
 from protgraph.export.csv import CSV
 from protgraph.export.dot import Dot
 from protgraph.export.gml import GML
@@ -54,6 +55,8 @@ class Exporters(ContextDecorator):
             self.export_classes.append(PepFasta())
         if kwargs["export_peptide_citus"]:
             self.export_classes.append(PepCitus())
+        if kwargs["export_cassandra"]:
+            self.export_classes.append(Cassandra())
 
         # Also start up all exporters
         for ec in self.export_classes:

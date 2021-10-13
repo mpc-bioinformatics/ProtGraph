@@ -11,6 +11,7 @@ from protgraph.ft_execution.signal import execute_signal
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
 from protgraph.ft_execution.variant import execute_variant
+from protgraph.graph_collapse_edges import collapse_parallel_edges
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
 from protgraph.verify_graphs import verify_graph
@@ -149,12 +150,18 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
         if not kwargs["no_merge"]:
             merge_aminoacids(graph)
 
+        # Collapse parallel edges in a graph
+        if not kwargs["no_collapsing_edges"]:
+            collapse_parallel_edges(graph)
+
         # Annotate weights for edges and nodes (maybe even the smallest weight possible to get to the end node)
         annotate_weights(graph, **kwargs)
 
         # Calculate statistics on the graph:
-        num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops =\
-            get_statistics(graph, **kwargs)
+        (
+            num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops,
+            num_paths_var, num_path_mut, num_path_con
+        ) = get_statistics(graph, **kwargs)
 
         # Verify graphs if wanted:
         if kwargs["verify_graph"]:
@@ -164,8 +171,12 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
         graph_exporters.export_graph(graph, common_out_queue)
 
         # Output statistics we gathered during processing
-        entry_protein_desc = entry.description.split(";", 1)[0]
-        entry_protein_desc = entry_protein_desc[entry_protein_desc.index("=") + 1:]
+        if kwargs["no_description"]:
+            entry_protein_desc = None
+        else:
+            entry_protein_desc = entry.description.split(";", 1)[0]
+            entry_protein_desc = entry_protein_desc[entry_protein_desc.index("=") + 1:]
+
         graph_queue.put(
             (
                 entry.accessions[0],  # Protein Accesion
@@ -182,6 +193,9 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
                 num_paths,  # Possible (non repeating paths) to the end of a graph. (may conatin repeating peptides)
                 num_paths_miscleavages,  # As num_paths, but binned to the number of miscleavages (by list idx, at 0)
                 num_paths_hops,  # As num_paths, only that we bin by hops (E.G. useful for determine DFS or BFS depths)
+                num_paths_var,  # Num paths of feture variant
+                num_path_mut,  # Num paths of feture mutagen
+                num_path_con,  # Num paths of feture conflict
                 entry_protein_desc,  # Description name of the Protein (can be lenghty)
             )
         )

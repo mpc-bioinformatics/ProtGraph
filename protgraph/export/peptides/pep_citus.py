@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg
 
 from protgraph.export.peptides.abstract_peptide_exporter import \
     APeptideExporter
@@ -62,7 +62,7 @@ class PepCitus(APeptideExporter):
 
         # Initialize connection
         try:
-            self.conn = psycopg2.connect(
+            self.conn = psycopg.connect(
                 host=self.host,
                 port=self.port,
                 user=self.user,
@@ -70,7 +70,7 @@ class PepCitus(APeptideExporter):
                 dbname=self.database
             )
             # Set a cursor
-            self.cursor = self.conn.cursor()
+            self.cursor = self.conn.cursor(binary=True)
         except Exception as e:
             raise Exception("Could not establish a connection to Postgres Citus (Peptides).", e)
 
@@ -185,7 +185,7 @@ class PepCitus(APeptideExporter):
     def export(self, prot_graph, queue):
         # First insert accession into accession table and retrieve its id:
         # since we only do this per protein!
-        with self.conn:
+        with self.conn.transaction():
             accession = prot_graph.vs[0]["accession"]
             self.cursor.execute(
                 self.statement_accession,
