@@ -1,6 +1,6 @@
 import json
 
-import psycopg2
+import psycopg
 from Bio.SwissProt import FeatureLocation, FeatureTable
 
 from protgraph.export.abstract_exporter import AExporter
@@ -27,7 +27,7 @@ class Postgres(AExporter):
 
         # Initialize connection
         try:
-            self.conn = psycopg2.connect(
+            self.conn = psycopg.connect(
                 host=self.host,
                 port=self.port,
                 user=self.user,
@@ -35,7 +35,7 @@ class Postgres(AExporter):
                 dbname=self.database
             )
             # Set a cursor
-            self.cursor = self.conn.cursor()
+            self.cursor = self.conn.cursor(binary=True)
         except Exception as e:
             raise Exception("Could not establish a connection to Postgres.", e)
 
@@ -136,8 +136,7 @@ class Postgres(AExporter):
                     + insert_tuples + " RETURNING id"
 
         # Add the values into the statement and execute
-        nodes_insert_stmt = self.cursor.mogrify(statement, [y for x in db_nodes for y in x])
-        self.cursor.execute(nodes_insert_stmt)
+        self.cursor.execute(statement, [y for x in db_nodes for y in x])
 
         # Get returning ids of the nodes
         node_ids_bulk = self.cursor.fetchall()

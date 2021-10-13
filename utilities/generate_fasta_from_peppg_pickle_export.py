@@ -5,7 +5,7 @@ from functools import lru_cache
 from multiprocessing import Process, cpu_count
 
 import igraph
-import psycopg2
+import psycopg
 import tqdm
 
 from protgraph.export.peptides.pep_fasta import PepFasta
@@ -206,7 +206,7 @@ def main():
     args = parse_args()
 
     # Initialize connection
-    with psycopg2.connect(
+    with psycopg.connect(
             host=args.postgres_host,
             port=args.postgres_port,
             user=args.postgres_user,
@@ -244,8 +244,6 @@ def main():
             exe = execute
 
         # Execute query:
-        with conn.cursor() as cursor:
-            cursor.execute("DECLARE foo CURSOR FOR " + query)
 
         # Iterate over each result from queue in parallel
         print("Waiting for database results...")
@@ -272,10 +270,10 @@ def main():
         main_write_thread.start()
 
         # be generator as main thread
-        with conn.cursor() as cursor:
+        with conn.cursor(name="server_side_cursor_protgraph") as cursor:
             while True:
-                cursor.execute("FETCH FORWARD %s FROM foo", [args.batch_size, ])
-                result = cursor.fetchall()
+                cursor.execute(query)
+                result = cursor.fetchmany(args.batch_size)
                 if len(result) == 0:
                     break
                 in_queue.put(
