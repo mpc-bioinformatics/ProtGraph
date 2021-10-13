@@ -2,6 +2,7 @@ from operator import add
 
 from protgraph.graph_collapse_edges import Or
 
+
 def get_statistics(graph, **kwargs):
     """
     TODO can we retrieve even more information!?
@@ -28,23 +29,23 @@ def get_statistics(graph, **kwargs):
     )
 
     # Get the number of possible paths by specific features
-    num_possible_paths_variant  = (
+    num_possible_paths_variant = (
         _num_of_possible_paths_feature_type(
-            graph, feature_type="VARIANT", 
+            graph, feature_type="VARIANT",
             or_count=kwargs["calc_num_possibilites_or_count"]
         )
         if kwargs["calc_num_possibilities_variant"] else None
     )
-    num_possible_paths_mutagen  = (
+    num_possible_paths_mutagen = (
         _num_of_possible_paths_feature_type(
-            graph, feature_type="MUTAGEN", 
+            graph, feature_type="MUTAGEN",
             or_count=kwargs["calc_num_possibilites_or_count"]
         )
         if kwargs["calc_num_possibilities_mutagen"] else None
     )
     num_possible_paths_conflict = (
         _num_of_possible_paths_feature_type(
-            graph, feature_type="CONFLICT", 
+            graph, feature_type="CONFLICT",
             or_count=kwargs["calc_num_possibilites_or_count"]
         )
         if kwargs["calc_num_possibilities_conflict"] else None
@@ -232,7 +233,6 @@ def _num_of_possible_paths_all_hops(graph_entry):
     return var_paths[sorted_nodes[-1]]
 
 
-
 def _num_of_possible_paths_feature_type(graph_entry, feature_type="Variant", or_count=min):
     """
     Get the Number of all possible simple Paths with cleavages for a Protein or Peptide.
@@ -280,7 +280,7 @@ def _num_of_possible_paths_feature_type(graph_entry, feature_type="Variant", or_
             else:
                 offset = _resolve_or(fts, feature_type, or_count)
                 # if cleaved then shift by one!
-                summed = _add_lists(summed, [0]*offset + var_paths[e_in.source])# TODO
+                summed = _add_lists(summed, [0]*offset + var_paths[e_in.source])
 
         # Set its number of paths as the calculated sum
         var_paths[v] = summed
@@ -292,7 +292,6 @@ def _num_of_possible_paths_feature_type(graph_entry, feature_type="Variant", or_
     # Here the index of the list gives us the number of how many cleavages we have missed.
     # Sum each element up to retrieve the number of all possible paths ("infinite" many miscleavages)
     return var_paths[sorted_nodes[-1]]
-
 
 
 def _resolve_or(fts, feature_type, or_count):

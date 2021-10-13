@@ -1,13 +1,13 @@
-import json
 import itertools
+import json
 
-from cassandra.cluster import Cluster
-from cassandra.query import BatchStatement
+# from cassandra.query import BatchStatement
 from Bio.SwissProt import FeatureLocation, FeatureTable
+from cassandra import InvalidRequest
+from cassandra.cluster import Cluster
 
 from protgraph.export.abstract_exporter import AExporter
-from cassandra import InvalidRequest
-import cassandra.concurrent
+# import cassandra.concurrent
 from protgraph.graph_collapse_edges import Or
 
 
@@ -33,11 +33,14 @@ class Cassandra(AExporter):
                 self.cluster = Cluster([host], port=port)
                 self.session = self.cluster.connect(keyspace)
                 not_init = False
-            except:
+            except Exception:
                 try:
                     self.cluster = Cluster([host], port=port)
                     self.session = self.cluster.connect()
-                    self.session.execute("CREATE KEYSPACE IF NOT EXISTS " + keyspace + " WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
+                    self.session.execute(
+                        "CREATE KEYSPACE IF NOT EXISTS " + keyspace +
+                        " WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };"
+                    )
                     self.session.set_keyspace(keyspace)
                     not_init = False
                 except Exception as e:
@@ -46,7 +49,6 @@ class Cassandra(AExporter):
         # Create Nodes and Edges tables in Cassandra
         # also generates the prepared statements
         self._create_tables(**kwargs)
-
 
     def _create_tables(self, **kwargs):
         """ Create the nodes and edges tables """
@@ -107,46 +109,54 @@ class Cassandra(AExporter):
 
         # Set Input of nodes
         self.prep_stmt_nodes = self.session.prepare(
-            "INSERT INTO nodes (id," + ",".join(self.nodes_keys) + ") VALUES (?," + ",".join(["?"]*len(self.nodes_keys)) + ")"
+            "INSERT INTO nodes (id," + ",".join(self.nodes_keys) + ") "
+            "VALUES (?," + ",".join(["?"]*len(self.nodes_keys)) + ")"
         )
         self.prep_insert_nodes_lambda = lambda x: self.session.execute_async(self.prep_stmt_nodes, x)
 
-
         # Set Input of edges
         self.prep_stmt_edges = self.session.prepare(
-            "INSERT INTO edges (id,source,target," + ",".join(self.edges_keys) + ") VALUES (?,?,?," + ",".join(["?"]*len(self.edges_keys)) + ")"
+            "INSERT INTO edges (id,source,target," + ",".join(self.edges_keys) + ") "
+            "VALUES (?,?,?," + ",".join(["?"]*len(self.edges_keys)) + ")"
         )
         self.prep_insert_edges_lambda = lambda x: self.session.execute_async(self.prep_stmt_edges, x)
 
         self.nodes_counter = self.unique_id_gen(**kwargs)
         self.edges_counter = self.unique_id_gen(**kwargs)
-        
-
 
     def export(self, prot_graph, _):
         # Export the protein
-        # Here two versions exist: 
+        # Here two versions exist:
         # 1. Prepared Statement (currently uncommented)
         # 2. Concurrent Example (may be slow)
 
         try:
             # Concurrent example of adding nodeas and edges:
-            # prep_ins = [(self.prep_stmt_nodes, [next(self.nodes_counter), *self._get_node_edge_attrs(x.attributes(), self.nodes_keys)]) for x in prot_graph.vs[:]]
+            # prep_ins = [
+            #     (
+            #         self.prep_stmt_nodes,
+            #         [next(self.nodes_counter), *self._get_node_edge_attrs(x.attributes(), self.nodes_keys)]
+            #     )
+            #     for x in prot_graph.vs[:]
+            # ]
             # cassandra.concurrent.execute_concurrent(self.session, prep_ins)
             # prep_ins_edges = [
             #     (self.prep_stmt_edges, [
-            #         next(self.edges_counter), 
+            #         next(self.edges_counter),
             #         prep_ins[x.source][1][0],
             #         prep_ins[x.target][1][0],
             #         *self._get_node_edge_attrs(x.attributes(), self.edges_keys)
-            #     ]) 
+            #     ])
             #     for x in prot_graph.es[:]
             # ]
             # cassandra.concurrent.execute_concurrent(self.session, prep_ins_edges)
 
             # Prepared Statement Example:
             # Add nodes
-            nodes = [[next(self.nodes_counter), *self._get_node_edge_attrs(x.attributes(), self.nodes_keys)] for x in prot_graph.vs[:]]
+            nodes = [
+                [next(self.nodes_counter), *self._get_node_edge_attrs(x.attributes(), self.nodes_keys)]
+                for x in prot_graph.vs[:]
+            ]
             # batch_nodes = BatchStatement()
             for n_chunk in self._chunked_iterable(nodes, self.chunk_size):  # Longest possible batch
                 for n in n_chunk:
@@ -158,11 +168,11 @@ class Cassandra(AExporter):
             # Add edges
             edges = [
                 [
-                    next(self.edges_counter), 
+                    next(self.edges_counter),
                     nodes[x.source][0],
                     nodes[x.target][0],
                     *self._get_node_edge_attrs(x.attributes(), self.edges_keys)
-                ] 
+                ]
                 for x in prot_graph.es[:]
             ]
             # batch_edges = BatchStatement()
@@ -172,7 +182,6 @@ class Cassandra(AExporter):
                     self.prep_insert_edges_lambda(e)
                 # self.session.execute(batch_edges)
                 # batch_edges.clear()
-
 
         except Exception as e:
             # TODO custom exception, this should not happen!
@@ -184,7 +193,6 @@ class Cassandra(AExporter):
         except InvalidRequest as ir:
             print("Error Chunk size may be too large. Reason: {}".format(str(ir)))
 
-
     def tear_down(self):
         # Close the connection to mysql
         try:
@@ -192,7 +200,6 @@ class Cassandra(AExporter):
             self.cluster.shutdown()
         except Exception as e:
             print("Connection to Cassandra could not be shutdown. (Reason: {})".format(str(e)))
-
 
     def _chunked_iterable(self, iterable, size):
         """ Chunk down an iterable to a specific size """
@@ -202,7 +209,6 @@ class Cassandra(AExporter):
             if not chunk:
                 break
             yield chunk
-
 
     def _get_node_edge_attrs(self, node_edge_attrs, key_list):
         """ Get values of nodes/edges, returning None if not present """
@@ -221,7 +227,7 @@ class Cassandra(AExporter):
         """ Convert qualifiers objects into JSON-Serializable objects """
         if isinstance(attrs, Or):
             return {"or": [self._get_attributes(x) for x in attrs]}
-        if isinstance(attrs, list): 
+        if isinstance(attrs, list):
             return [self._get_attributes(x) for x in attrs]
         elif isinstance(attrs, dict):
             return {self._get_attributes(x): self._get_attributes(y) for x, y in attrs.items()}

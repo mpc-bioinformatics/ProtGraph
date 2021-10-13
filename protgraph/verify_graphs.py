@@ -24,6 +24,7 @@ def _check_direct_edge_to_end(graph):
             "should not be valid!".format(graph.vs[0]["accession"])
         )
 
+
 def _check_degree(graph):
     if len([x for x in graph.degree() if x == 0]) != 0:
         print(

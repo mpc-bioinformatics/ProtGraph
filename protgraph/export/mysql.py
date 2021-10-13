@@ -7,7 +7,6 @@ from protgraph.export.abstract_exporter import AExporter
 from protgraph.graph_collapse_edges import Or
 
 
-
 class MySQL(AExporter):
     """
     A MySQL - Exporter to export the tables:
@@ -187,7 +186,7 @@ class MySQL(AExporter):
         """ Convert qualifiers objects into JSON-Serializable objects """
         if isinstance(attrs, Or):
             return {"or": [self._get_attributes(x) for x in attrs]}
-        if isinstance(attrs, list): 
+        if isinstance(attrs, list):
             return [self._get_attributes(x) for x in attrs]
         elif isinstance(attrs, dict):
             return {self._get_attributes(x): self._get_attributes(y) for x, y in attrs.items()}

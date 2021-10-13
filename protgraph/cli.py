@@ -337,13 +337,11 @@ def add_mysql_graph_export(group):
     )
 
 
-
 def add_cassandra_export(group):
     group.add_argument(
         "--export_cassandra", "-ecassandra", default=False, action="store_true",
-        help="Set this flag to export to a Cassandra server." # TODO
+        help="Set this flag to export to a Cassandra server."
     )
-
     group.add_argument(
         "--cassandra_host", default="127.0.0.1", type=str,
         help="Set the address/host of a cassandra server (One server from the cluster is sufficient). "
@@ -352,7 +350,7 @@ def add_cassandra_export(group):
     group.add_argument(
         "--cassandra_port", default=9042, type=int,
         help="Set the port which should be used to connect to the cassandra host. "
-        "Default is set to 9042" 
+        "Default is set to 9042"
     )
     group.add_argument(
         "--cassandra_keyspace", default="graph", type=str,
@@ -364,7 +362,6 @@ def add_cassandra_export(group):
         help="Set the size of batches, which should be then sent to cassandra. "
         " The default is set specifically low, since, cassandra has configured a low batch size (50kb)"
     )
-
 
 
 def add_postgres_peptide_export(group):

@@ -2,8 +2,7 @@ import argparse
 import csv
 import os
 import time
-from multiprocessing import Process, Queue, cpu_count, active_children
-from queue import Full
+from multiprocessing import Process, Queue, active_children, cpu_count
 from threading import Thread
 
 from tqdm import tqdm
@@ -74,7 +73,7 @@ def prot_graph(**kwargs):
     while True:
         time.sleep(1)
 
-        # Do Side-Effect of "joining" to remove zombie processes 
+        # Do Side-Effect of "joining" to remove zombie processes
         # see: https://docs.python.org/3/library/multiprocessing.html#multiprocessing.active_children
         _ = active_children()
 
@@ -101,12 +100,12 @@ def prot_graph(**kwargs):
 
 
 def __check_if_alive(processes):
-    """ 
+    """
     Quickly check if at least one of the list of processes is alive.
     Returns True if at least one process is still running.
     """
     c = set([x.exitcode for x in processes])
-    return None in c 
+    return None in c
 
 
 def format_help(parser, groups=None):

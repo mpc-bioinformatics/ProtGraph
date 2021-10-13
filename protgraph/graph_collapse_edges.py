@@ -8,7 +8,7 @@ class Or(list):
     If we want to collapse edges, then we need to have construct,
     which shows that both options are valid to get to the other node.
 
-    This Or class represents this. If something like 
+    This Or class represents this. If something like
     Or[[Feat1], [Feat2, Feat3]] is encountered on a edge, it indicates that either by
     using the Feat1 OR (Feat1 and then Feat3) can go to the same node.
     """
@@ -22,7 +22,7 @@ def collapse_parallel_edges(graph):
     https://github.com/mpc-bioinformatics/ProtGraph/issues/41
 
     In some rare cases (currently ~10 Proteins in UniProt) parallel edges are drawn due to their
-    annotated features. These parallel edges are NOT wrongly added but simply show that it is 
+    annotated features. These parallel edges are NOT wrongly added but simply show that it is
     possible to use different features while "connecting" to the same target node.
 
     TODO we may need to sort Variants, Mutagens and Conflicts by the starting point in ascending order,
@@ -36,7 +36,7 @@ def collapse_parallel_edges(graph):
         k_set = set(k_targets)
         # And check if any of the outgoing edges go to the same node
         if len(k_targets) != len(k_set):
-            
+
             # If that is the case, we resort them into bins
             # so we do something more sophisticated only iff there are
             # parallel edges
@@ -69,4 +69,4 @@ def collapse_parallel_edges(graph):
             # We finally remove all edges at once for the current node we looked into
             graph.delete_edges(remove_dup_edges)
 
-            # so we do something more sophisticated only iff there are 
+            # so we do something more sophisticated only iff there are

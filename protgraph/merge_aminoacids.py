@@ -19,11 +19,11 @@ def find_chains(graph_entry):
     single_in = set()
     for idx, (a, b) in enumerate(zip(graph_entry.vs.indegree(), graph_entry.vs.outdegree())):
         if a == 1 and b == 1:
-            single_nodes.add(idx) # case single
+            single_nodes.add(idx)  # case single
         if a == 1 and b > 1:
-            single_in.add(idx) # case one in but multiple out
+            single_in.add(idx)  # case one in but multiple out
         if a > 1 and b == 1:
-            single_out.add(idx) # case one out but multiple in
+            single_out.add(idx)  # case one out but multiple in
 
     # save all chains in this list
     complete_chain = []
@@ -32,7 +32,7 @@ def find_chains(graph_entry):
     for so in single_out:
         c = [so]
         next_node = graph_entry.vs[so].neighbors(mode="OUT")[0].index
-        
+
         # iterate as long as possible.
         while next_node in single_nodes:
             single_nodes.remove(next_node)
@@ -49,9 +49,8 @@ def find_chains(graph_entry):
         if len(c) != 1:
             complete_chain.append(c)
 
-
-    # CASE 2: it may happen that the start node is at a beginning of chain. 
-    # Here we do a intersection of remaining nodes in single_nodes with the 
+    # CASE 2: it may happen that the start node is at a beginning of chain.
+    # Here we do a intersection of remaining nodes in single_nodes with the
     # nodes having a direct connection to start
     start_set = {x.index for x in __start_node__.neighbors(mode="OUT")}
     single_start_points = single_nodes.intersection(start_set)
@@ -78,6 +77,7 @@ def find_chains(graph_entry):
 
     # return complete chain
     return complete_chain
+
 
 def merge_aminoacids(graph_entry):
     """
@@ -181,12 +181,12 @@ def merge_aminoacids(graph_entry):
     new_edges_with_attrs = []  # List of all edges to be added
     # creating mapping for bulk edge inserts
     first_ns_dict = {
-        first_n: supernode_idx 
-        for supernode_idx, (_, _, first_n, _, _, edge_attr) in zip(supernode_idcs, merged_nodes) 
+        first_n: supernode_idx
+        for supernode_idx, (_, _, first_n, _, _, edge_attr) in zip(supernode_idcs, merged_nodes)
     }
     last_ns_dict = {
-        last_n: supernode_idx 
-        for supernode_idx, (_, _, _, last_n, _, edge_attr) in zip(supernode_idcs, merged_nodes) 
+        last_n: supernode_idx
+        for supernode_idx, (_, _, _, last_n, _, edge_attr) in zip(supernode_idcs, merged_nodes)
     }
     registered_edges = set()  # Set saving already added edges
     for supernode_idx, (_, _, first_n, last_n, _, edge_attr) in zip(supernode_idcs, merged_nodes):
@@ -219,7 +219,6 @@ def merge_aminoacids(graph_entry):
     graph_entry.add_edges([x[0] for x in new_edges_with_attrs])
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "qualifiers")
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "cleaved")
-
 
     #####################################
     # 3. remove removable edges (then removable nodes) at once

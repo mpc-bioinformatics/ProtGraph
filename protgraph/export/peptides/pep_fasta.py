@@ -93,7 +93,6 @@ class PepFasta(APeptideExporter):
             str_qualifiers.extend(self._map_qualifier_to_string(qualifier))
         return str_qualifiers
 
-
     def _map_qualifier_to_string(self, qualifier):
         str_qualifiers = []
         for f in qualifier:

@@ -11,10 +11,11 @@ from protgraph.ft_execution.signal import execute_signal
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
 from protgraph.ft_execution.variant import execute_variant
+from protgraph.graph_collapse_edges import collapse_parallel_edges
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
 from protgraph.verify_graphs import verify_graph
-from protgraph.graph_collapse_edges import collapse_parallel_edges
+
 
 def _generate_canonical_graph(sequence: str, acc: str):
     """

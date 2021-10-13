@@ -1,5 +1,6 @@
 from contextlib import ContextDecorator
 
+from protgraph.export.cassandra import Cassandra
 from protgraph.export.csv import CSV
 from protgraph.export.dot import Dot
 from protgraph.export.gml import GML
@@ -14,7 +15,6 @@ from protgraph.export.peptides.pep_postgres import PepPostgres
 from protgraph.export.pickle import Pickle
 from protgraph.export.postgres import Postgres
 from protgraph.export.redisgraph import RedisGraph
-from protgraph.export.cassandra import Cassandra
 
 
 class Exporters(ContextDecorator):
