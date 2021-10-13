@@ -258,8 +258,11 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
                 "Number of nodes",
                 "Number of edges",
                 "Num of possible paths",
-                "Num of possible paths (by miscleavages 0, 1, ...)",
-                "Num of possible paths (by hops 0, 1, ...)",
+                "Num of possible paths (by miscleavages)",
+                "Num of possible paths (by hops)",
+                "Num of possible paths (by feature variant)",
+                "Num of possible paths (by feature mutagen)",
+                "Num of possible paths (by feature conflict)",
                 "Protein description"
             ]
         )

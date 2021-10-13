@@ -157,8 +157,10 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
         annotate_weights(graph, **kwargs)
 
         # Calculate statistics on the graph:
-        num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops =\
-            get_statistics(graph, **kwargs)
+        (
+            num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops,
+            num_paths_var, num_path_mut, num_path_con
+        ) = get_statistics(graph, **kwargs)
 
         # Verify graphs if wanted:
         if kwargs["verify_graph"]:
@@ -190,6 +192,9 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
                 num_paths,  # Possible (non repeating paths) to the end of a graph. (may conatin repeating peptides)
                 num_paths_miscleavages,  # As num_paths, but binned to the number of miscleavages (by list idx, at 0)
                 num_paths_hops,  # As num_paths, only that we bin by hops (E.G. useful for determine DFS or BFS depths)
+                num_paths_var,  # Num paths of feture variant
+                num_path_mut,  # Num paths of feture mutagen
+                num_path_con,  # Num paths of feture conflict
                 entry_protein_desc,  # Description name of the Protein (can be lenghty)
             )
         )

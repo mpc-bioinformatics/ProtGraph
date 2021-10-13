@@ -178,6 +178,49 @@ def add_statistics(group):
         "If you traverse a graph, expect +2 more nodes in a path!"
     )
 
+    group.add_argument(
+        "--calc_num_possibilities_variant", "-cnpvar", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of variants (beginning at 0). "
+        "Similar to misclavages"
+    )
+
+    group.add_argument(
+        "--calc_num_possibilities_mutagen", "-cnpmut", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of mutagens (beginning at 0). "
+        "Similar to misclavages"
+    )
+
+    group.add_argument(
+        "--calc_num_possibilities_conflict", "-cnpcon", default=False, action="store_true",
+        help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
+        " be calculated. This returns a list, sorted by the number of conflicts (beginning at 0). "
+        "Similar to misclavages"
+    )
+
+    # Add replace funcitonality to CLI
+    def _list_to_func_map(input: str):
+        """
+        Choosing between possible or_count strategies for cnp
+        """
+        if "min" == input.lower():
+            return min
+        elif "max" == input.lower():
+            return max
+        else:
+            return None
+    group.add_argument(
+        "--calc_num_possibilites_or_count", "-cnp_or_count", choices=[min, max],
+        type=_list_to_func_map, action="store", default=min,
+        help="Substitute amino acids in graphs by other amino acids. This could be useful to replace"
+        " e.g. 'J' with 'I' and 'L'. This parameter can be then provided as: 'J->I,L'. Multiple replacements"
+        " are allowed and are executed one after another. NOTE: only from ONE amino acid multiple amino acids can"
+        " be substituted. So only the format: 'A->B[,C]*' is allowed!"
+    )
+
+    # TODO one parameter is missing for cnp con/mut/var
+
 
 def add_graph_exports(group):
     group.add_argument(
