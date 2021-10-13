@@ -13,16 +13,20 @@ from protgraph.graph_collapse_edges import Or
 
 class Cassandra(AExporter):
     """
-        TODO
+    This is a cassandra exporter, which is able to export nodes and edges
+    into a cassandra cluster.
     """
 
     def start_up(self, **kwargs):
-
+        # Set up host, port and the keyspace.
         host = kwargs["cassandra_host"]
         port = kwargs["cassandra_port"]
         keyspace = kwargs["cassandra_keyspace"]
+        # the chunk size in cassandra is limited by kb, but we are referencing
+        # number of elements with this parameter. So keep it sufficiently small.
         self.chunk_size = kwargs["cassandra_chunk_size"]
 
+        # Initialize COnnection
         not_init = True
         while not_init:
             try:
@@ -121,10 +125,12 @@ class Cassandra(AExporter):
 
     def export(self, prot_graph, _):
         # Export the protein
-        # Add nodes
+        # Here two versions exist: 
+        # 1. Prepared Statement (currently uncommented)
+        # 2. Concurrent Example (may be slow)
+
         try:
-            # Concurrent example
-            # 
+            # Concurrent example of adding nodeas and edges:
             # prep_ins = [(self.prep_stmt_nodes, [next(self.nodes_counter), *self._get_node_edge_attrs(x.attributes(), self.nodes_keys)]) for x in prot_graph.vs[:]]
             # cassandra.concurrent.execute_concurrent(self.session, prep_ins)
             # prep_ins_edges = [
@@ -138,9 +144,10 @@ class Cassandra(AExporter):
             # ]
             # cassandra.concurrent.execute_concurrent(self.session, prep_ins_edges)
 
+            # Prepared Statement Example:
+            # Add nodes
             nodes = [[next(self.nodes_counter), *self._get_node_edge_attrs(x.attributes(), self.nodes_keys)] for x in prot_graph.vs[:]]
             # batch_nodes = BatchStatement()
-
             for n_chunk in self._chunked_iterable(nodes, self.chunk_size):  # Longest possible batch
                 for n in n_chunk:
                     # batch_nodes.add(self.prep_stmt_nodes, n)
@@ -159,7 +166,6 @@ class Cassandra(AExporter):
                 for x in prot_graph.es[:]
             ]
             # batch_edges = BatchStatement()
-
             for e_chunk in self._chunked_iterable(edges, self.chunk_size):  # Longest possible batch
                 for e in e_chunk:
                     # batch_nodes.add(self.prep_stmt_edges, e)
@@ -169,7 +175,12 @@ class Cassandra(AExporter):
 
 
         except Exception as e:
-            print("help!")
+            # TODO custom exception, this should not happen!
+            # track information like key, which node/edge especially
+            # retrieve the accession explicitly here too for debugging!
+            print("ERROR adding Node/Edges of Protein {} into Cassandra. Please report this issue: {}".format(
+                prot_graph.vs[0]["accession"], e
+            ))
         except InvalidRequest as ir:
             print("Error Chunk size may be too large. Reason: {}".format(str(ir)))
 
@@ -184,6 +195,7 @@ class Cassandra(AExporter):
 
 
     def _chunked_iterable(self, iterable, size):
+        """ Chunk down an iterable to a specific size """
         it = iter(iterable)
         while True:
             chunk = tuple(itertools.islice(it, size))
