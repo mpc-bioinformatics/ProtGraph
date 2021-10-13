@@ -1,6 +1,6 @@
-import protgraph
 import itertools
 
+import protgraph
 
 # This is a dummy file for iterating over each combination of specified features
 # and getting the corresponding results in an automatic manner.
@@ -22,7 +22,6 @@ if __name__ == "__main__":
 
     input_files = ["../examples/e_coli.dat"]
     statistics = ["-cnp", "-n", "9434", "-no_desc"]
-
 
     counter = 0
     for r in range(0, len(used_features) + 1):
