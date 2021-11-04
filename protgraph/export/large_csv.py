@@ -17,10 +17,12 @@ class Large_CSV(AExporter):
 
     def export(self, prot_graph, queue):
         # Write Header Once!
-        n_header = ["Id", "accession", "aminoacid", "position", "isoform_accession", "isoform_position"]
+        n_header = [
+            "Id", "accession", "aminoacid", "position", "isoform_accession", "isoform_position",
+            "mono_weight", "mono_weight_to_end", "avrg_weight", "avrg_weight_to_end"
+        ]
         e_header = [
-            "Source", "Target", "cleaved", "mono_weight", "mono_weight_to_end",
-            "avrg_weight", "avrg_weight_to_end", "qualifiers"
+            "Source", "Target", "cleaved", "qualifiers"
         ]
 
         queue.put((self.nodes_out, ",".join(n_header) + "\n", True))

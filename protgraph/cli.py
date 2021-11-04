@@ -430,7 +430,7 @@ def add_postgres_peptide_export(group):
     group.add_argument(
         "--pep_postgres_batch_size", type=int, default=25000,
         help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 25000"
+        "Default: 25000 (currently limited by psycopg3)"
     )
 
 

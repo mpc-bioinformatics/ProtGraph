@@ -205,8 +205,8 @@ class PepMySQL(APeptideExporter):
 
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
         # Get the weight
-        if "mono_weight" in prot_graph.es[l_path_edges[0][0]].attributes():
-            l_weight = [sum(prot_graph.es[x]["mono_weight"]) for x in l_path_edges]
+        if "mono_weight" in prot_graph.vs[l_path_nodes[0][0]].attributes():
+            l_weight = [sum(prot_graph.vs[x]["mono_weight"]) for x in l_path_nodes]
         else:
             l_weight = [-1]*len(l_path_nodes)
 

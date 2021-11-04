@@ -44,6 +44,13 @@ class PepCitus(APeptideExporter):
         # Here we generate a connection to postgres
         # and generate the corresponding tables
 
+        # TODO psycopg3 changed the bulk inserts in such a way
+        # that no nore then 65535 parameters can be sent at once.
+        # We therefore need to limit the number of params here!
+        self.pg_max_allowed_entries_to_send  = int(65535/29)  # --> deduced by the length of l_peptide_tuple
+        self.pg_max_allowed_entries_to_send_compressed = int(65535/30)  # --> deduced by the length of l_peptide_tuple
+        self.pg_max_allowed_entries_to_send_meta  = int(65535/4)  # --> deduced by the length of l_peptide_tuple
+
         # Connection and other parameters
         self.host = kwargs["pep_citus_host"]  # Host
         self.port = kwargs["pep_citus_port"]  # Port
@@ -201,8 +208,8 @@ class PepCitus(APeptideExporter):
 
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
         # Get the weight
-        if "mono_weight" in prot_graph.es[l_path_edges[0][0]].attributes():
-            l_weight = [sum(prot_graph.es[x]["mono_weight"]) for x in l_path_edges]
+        if "mono_weight" in prot_graph.vs[l_path_nodes[0][0]].attributes():
+            l_weight = [sum(prot_graph.vs[x]["mono_weight"]) for x in l_path_nodes]
         else:
             l_weight = [-1]*len(l_path_nodes)
 
@@ -238,23 +245,28 @@ class PepCitus(APeptideExporter):
             )
             for peptides_id, path_nodes, miscleavages in zip(l_peptides_id, l_path_nodes, l_miscleavages)
         ]
-        # Bulk insert statement and execute
-        stmt = "INSERT INTO peptides_meta (" \
-            + ",".join(self.peptides_meta_keys) \
-            + ") VALUES " \
-            + ",".join([self.statement_peptides_meta_inner_values]*len(l_peptides_id))
-        self.cursor.execute(stmt, [y for x in l_peptides_meta_tup for y in x])
+        for in_l_peptides_meta_tup in self.chunked_iterable(l_peptides_meta_tup, self.pg_max_allowed_entries_to_send_meta):
+            # Bulk insert statement and execute
+            stmt = "INSERT INTO peptides_meta (" \
+                + ",".join(self.peptides_meta_keys) \
+                + ") VALUES " \
+                + ",".join([self.statement_peptides_meta_inner_values]*len(in_l_peptides_meta_tup))
+            self.cursor.execute(stmt, [y for x in in_l_peptides_meta_tup for y in x])
 
     def _export_peptide_simple_insert(self, l_peptides_tup, l_path_nodes, l_miscleavages):
         """ Simply export them by using simple bulk insert statements """
-        stmt = "INSERT INTO peptides (" \
-            + ",".join(self.peptides_keys) \
-            + ") VALUES " \
-            + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
-            + " returning id"
-        self.cursor.execute(stmt, [y for x in l_peptides_tup for y in x])
-        peptides_id_fetched = self.cursor.fetchall()
-        return [x[0] for x in peptides_id_fetched]
+
+        all_ids_fetched = []
+        for in_l_peptides_tup in self.chunked_iterable(l_peptides_tup, self.pg_max_allowed_entries_to_send):
+            stmt = "INSERT INTO peptides (" \
+                + ",".join(self.peptides_keys) \
+                + ") VALUES " \
+                + ",".join([self.statement_peptides_inner_values]*len(in_l_peptides_tup)) \
+                + " returning id"
+            self.cursor.execute(stmt, [y for x in in_l_peptides_tup for y in x])
+            peptides_id_fetched = self.cursor.fetchall()
+            all_ids_fetched.extend([x[0] for x in peptides_id_fetched])
+        return all_ids_fetched
 
     def _export_peptide_no_duplicate(self, l_peptides_tup, l_path_nodes, l_miscleavages):
         """ Export peptides ONLY if it is not already inserted into the peptides table """
@@ -270,16 +282,17 @@ class PepCitus(APeptideExporter):
             for x in l_peptides_tup
         ]
 
-        # Bulk insert into the peptides table
-        ins_stmt = " INSERT INTO peptides (" \
-            + ",".join(self.peptides_keys) \
-            + ") VALUES " \
-            + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
-            + " ON CONFLICT DO NOTHING"
-        self._execute_export_no_duplicates(
-            ins_stmt,
-            [y for a, b in zip(l_peptides_tup, pep_ids) for y in [b] + list(a)]
-        )
+        for zipped in self.chunked_iterable(zip(l_peptides_tup, pep_ids), self.pg_max_allowed_entries_to_send_compressed):
+            # Bulk insert into the peptides table
+            ins_stmt = " INSERT INTO peptides (" \
+                + ",".join(self.peptides_keys) \
+                + ") VALUES " \
+                + ",".join([self.statement_peptides_inner_values]*len(zipped)) \
+                + " ON CONFLICT DO NOTHING"
+            self._execute_export_no_duplicates(
+                ins_stmt,
+                [y for a, b in zipped for y in [b] + list(a)]
+            )
 
         # No need to fetch ids, since we generate them ourselves!
         return pep_ids
