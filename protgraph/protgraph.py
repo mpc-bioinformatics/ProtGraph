@@ -2,7 +2,8 @@ import argparse
 import csv
 import os
 import time
-from multiprocessing import Process, Queue, active_children, cpu_count
+import multiprocessing as mp
+from multiprocessing import cpu_count
 from threading import Thread
 
 from tqdm import tqdm
@@ -19,6 +20,11 @@ def main():
 
 def prot_graph(**kwargs):
     """ MAIN DESCRIPTION TODO """
+
+    # Instead of forking, we spawn these processes
+    # They terminate more reliably in this way
+    ctx = mp.get_context("spawn")
+
     prot_graph_args = get_defaults_args()  # Get default values
     prot_graph_args.update(kwargs)
 
@@ -27,9 +33,9 @@ def prot_graph(**kwargs):
         raise TypeError("missing argument 'files'")
 
     # Set up queues
-    entry_queue = Queue(10000)
-    statistics_queue = Queue(10000)
-    common_out_file_queue = Queue(10000)
+    entry_queue = ctx.Queue(10000)
+    statistics_queue = ctx.Queue(10000)
+    common_out_file_queue = ctx.Queue(10000)
 
     # Get the number of processes.
     number_of_procs = \
@@ -37,7 +43,7 @@ def prot_graph(**kwargs):
     prot_graph_args["num_of_processes"] = number_of_procs
 
     # Create processes
-    entry_reader = Process(
+    entry_reader = ctx.Process(
         target=read_embl,
         args=(
             prot_graph_args["files"], prot_graph_args["num_of_entries"],
@@ -45,7 +51,7 @@ def prot_graph(**kwargs):
         )
     )
     graph_gen = [
-        Process(
+        ctx.Process(
             target=generate_graph_consumer, args=(entry_queue, statistics_queue, common_out_file_queue, i),
             kwargs=prot_graph_args
         )
@@ -75,7 +81,7 @@ def prot_graph(**kwargs):
 
         # Do Side-Effect of "joining" to remove zombie processes
         # see: https://docs.python.org/3/library/multiprocessing.html#multiprocessing.active_children
-        _ = active_children()
+        _ = ctx.active_children()
 
         # Are writing threads alive?
         if not main_write_thread.is_alive() and not common_out_thread.is_alive():
