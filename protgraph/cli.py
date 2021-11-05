@@ -258,6 +258,14 @@ def add_graph_exports(group):
         "--export_pickle", "-epickle", default=False, action="store_true",
         help="Set this flag to export a Pickle file for each protein"
     )
+    group.add_argument(
+        "--export_pcsr", "-epcsr", default=False, action="store_true",
+        help="Set this flag to export protein-graph with specific attributes in CSR-format"
+    )
+    group.add_argument(
+        "--export_pcsr_pdb_entries", "-epcsr_pdbs", type=int, default=10,
+        help="Set the number of pdb entries per node. Defaults to 10"
+    )
 
 
 def add_redis_graph_export(group):

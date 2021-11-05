@@ -1,9 +1,11 @@
 import itertools
 import json
 
+import cassandra
 # from cassandra.query import BatchStatement
-from Bio.SwissProt import FeatureLocation, FeatureTable
 from cassandra import InvalidRequest
+
+from Bio.SwissProt import FeatureLocation, FeatureTable
 from cassandra.cluster import Cluster
 
 from protgraph.export.abstract_exporter import AExporter

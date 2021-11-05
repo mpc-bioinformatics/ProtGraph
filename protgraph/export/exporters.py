@@ -8,6 +8,7 @@ from protgraph.export.graphml import GraphML
 from protgraph.export.gremlin import Gremlin
 from protgraph.export.large_csv import Large_CSV
 from protgraph.export.mysql import MySQL
+from protgraph.export.pcsr import PCsr
 from protgraph.export.peptides.pep_citus import PepCitus
 from protgraph.export.peptides.pep_fasta import PepFasta
 from protgraph.export.peptides.pep_mysql import PepMySQL
@@ -15,6 +16,7 @@ from protgraph.export.peptides.pep_postgres import PepPostgres
 from protgraph.export.pickle import Pickle
 from protgraph.export.postgres import Postgres
 from protgraph.export.redisgraph import RedisGraph
+
 
 
 class Exporters(ContextDecorator):
@@ -57,6 +59,9 @@ class Exporters(ContextDecorator):
             self.export_classes.append(PepCitus())
         if kwargs["export_cassandra"]:
             self.export_classes.append(Cassandra())
+        if kwargs["export_pcsr"]:
+            self.export_classes.append(PCsr())
+
 
         # Also start up all exporters
         for ec in self.export_classes:
