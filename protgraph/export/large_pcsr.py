@@ -76,7 +76,7 @@ class LargePCsr(AExporter):
             PD = pdb_entries  # List of Lists of PDB-Entries
         else:
             PC = -1
-            PD = -1
+            PD = []
 
         # Order to write:
         build_str = [
