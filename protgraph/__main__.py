@@ -1,0 +1,3 @@
+import protgraph
+
+protgraph.main()

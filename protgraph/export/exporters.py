@@ -7,6 +7,8 @@ from protgraph.export.gml import GML
 from protgraph.export.graphml import GraphML
 from protgraph.export.gremlin import Gremlin
 from protgraph.export.large_csv import Large_CSV
+from protgraph.export.large_pcsr import LargePCsr
+
 from protgraph.export.mysql import MySQL
 from protgraph.export.pcsr import PCsr
 from protgraph.export.peptides.pep_citus import PepCitus
@@ -61,6 +63,8 @@ class Exporters(ContextDecorator):
             self.export_classes.append(Cassandra())
         if kwargs["export_pcsr"]:
             self.export_classes.append(PCsr())
+        if kwargs["export_large_pcsr"]:
+            self.export_classes.append(LargePCsr())
 
 
         # Also start up all exporters

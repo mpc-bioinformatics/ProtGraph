@@ -6,35 +6,22 @@ from protgraph.export.abstract_exporter import AExporter
 from protgraph.graph_collapse_edges import Or
 from protgraph.export.peptides.pep_fasta import PepFasta
 
-class PCsr(AExporter):
+class LargePCsr(AExporter):
     """ A simple CSV Exporter. This export is compatible with Gephi """
 
     def start_up(self, **kwargs):
-        self.pdb_count = kwargs["export_pcsr_pdb_entries"]
+        self.pdb_count = kwargs["export_large_pcsr_pdb_entries"]
         self._get_qualifier = PepFasta()._map_qualifier_to_string
-
-        # Here we simply create the folder if it does not exist
         self.out_folder = kwargs["export_output_folder"]
-        os.makedirs(self.out_folder, exist_ok=True)
+        self.out_file = os.path.join(self.out_folder, "database.pcsv")
 
-        self.flat = not kwargs["export_in_directories"]
 
-    def export(self, prot_graph, _):
-        if self.flat:
-            accession = prot_graph.vs["accession"][0]
-            self.write_single_file(
-                os.path.join(self.out_folder, accession + ".pcsv"),
-                self._build_csr_entry(prot_graph)
-            )
-        else:
-            accession = prot_graph.vs["accession"][0]
-            out_dir = os.path.join(self.out_folder, *[x for x in accession[:-1]])
-            # Create outfolders if needed
-            os.makedirs(out_dir, exist_ok=True)
-            self.write_single_file(
-                os.path.join(os.path.join(out_dir, accession[-1:] + ".pcsv")),
-                self._build_csr_entry(prot_graph)
-            )
+    def export(self, prot_graph, queue):
+        queue.put((self.out_file, self._build_csr_entry(prot_graph), False))
+
+    def tear_down(self):
+        # We do not need to tear down a graph export to dot files
+        pass
 
     def _build_csr_entry(self, graph):
         # TODO DL we could reorder the CSR in favor on going through the graph sequentially in RAM!?
@@ -110,17 +97,6 @@ class PCsr(AExporter):
         ]
 
         return "\n".join(build_str) + "\n\n"
-
-
-
-    def write_single_file(self, out_file, out_str):
-        with open(out_file, "w") as out:
-            out.write(out_str)
-
-    def tear_down(self):
-        # We do not need to tear down a graph export to dot files
-        pass
-
 
     def __get_protein_graph_specific_top_order(self, _graph):
         """
