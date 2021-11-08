@@ -75,7 +75,7 @@ def parse_args():
     )
     # Number of peptides to be processed at once
     parser.add_argument(
-        "--batch_size", "-b", type=int, default=1024,
+        "--batch_size", "-b", type=int, default=256,
         help="Number of entries which should be processed at once by a process"
     )
     # Number of processes to be used
@@ -270,7 +270,7 @@ def main():
         main_write_thread.start()
 
         # be generator as main thread
-        with conn.cursor(name="server_side_cursor_protgraph") as cursor:
+        with conn.cursor(binary=True, name="server_side_cursor_protgraph") as cursor:
             while True:
                 cursor.execute(query)
                 result = cursor.fetchmany(args.batch_size)
