@@ -6,7 +6,7 @@ from protgraph.export.dot import Dot
 from protgraph.export.gml import GML
 from protgraph.export.graphml import GraphML
 from protgraph.export.gremlin import Gremlin
-from protgraph.export.large_csv import Large_CSV
+from protgraph.export.large_csv import LargeCSV
 from protgraph.export.large_pcsr import LargePCsr
 
 from protgraph.export.mysql import MySQL
@@ -36,7 +36,7 @@ class Exporters(ContextDecorator):
         if kwargs["export_csv"]:
             self.export_classes.append(CSV())
         if kwargs["export_large_csv"]:
-            self.export_classes.append(Large_CSV())
+            self.export_classes.append(LargeCSV())
         if kwargs["export_graphml"]:
             self.export_classes.append(GraphML())
         if kwargs["export_gml"]:

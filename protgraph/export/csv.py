@@ -4,7 +4,7 @@ from protgraph.export.generic_file_exporter import GenericFileExporter
 
 
 class CSV(GenericFileExporter):
-    """ A simple CSV exporter """
+    """ A simple CSV exporter. This export is compatible with Gephi."""
 
     def __init__(self):
         super(CSV, self).__init__(

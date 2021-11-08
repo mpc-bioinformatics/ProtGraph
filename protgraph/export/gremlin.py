@@ -81,4 +81,3 @@ class Gremlin(AExporter):
     def tear_down(self):
         # Close the connection to the gremlin server
         self.conn.close()
-        pass

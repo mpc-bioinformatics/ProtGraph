@@ -2,39 +2,29 @@ import csv
 import os
 import numpy as np
 
-from protgraph.export.abstract_exporter import AExporter
+from protgraph.export.generic_file_exporter import GenericFileExporter
 from protgraph.graph_collapse_edges import Or
 from protgraph.export.peptides.pep_fasta import PepFasta
 
-class PCsr(AExporter):
-    """ A simple CSV Exporter. This export is compatible with Gephi """
+class PCsr(GenericFileExporter):
+    """ A simple Protein Compressed Sparse Row  Exporter """
+
+    def __init__(self):
+        super(PCsr, self).__init__(
+            self.write_pcsr
+        )
+        self._get_qualifier = PepFasta()._map_qualifier_to_string
+
 
     def start_up(self, **kwargs):
         self.pdb_count = kwargs["export_pcsr_pdb_entries"]
-        self._get_qualifier = PepFasta()._map_qualifier_to_string
+        super(PCsr, self).start_up(**kwargs)
 
-        # Here we simply create the folder if it does not exist
-        self.out_folder = kwargs["export_output_folder"]
-        os.makedirs(self.out_folder, exist_ok=True)
 
-        self.flat = not kwargs["export_in_directories"]
-
-    def export(self, prot_graph, _):
-        if self.flat:
-            accession = prot_graph.vs["accession"][0]
-            self.write_single_file(
-                os.path.join(self.out_folder, accession + ".pcsv"),
-                self._build_csr_entry(prot_graph)
-            )
-        else:
-            accession = prot_graph.vs["accession"][0]
-            out_dir = os.path.join(self.out_folder, *[x for x in accession[:-1]])
-            # Create outfolders if needed
-            os.makedirs(out_dir, exist_ok=True)
-            self.write_single_file(
-                os.path.join(os.path.join(out_dir, accession[-1:] + ".pcsv")),
-                self._build_csr_entry(prot_graph)
-            )
+    def write_pcsr(self, pg, path):
+        out_str = self._build_csr_entry(pg)
+        with open(path + ".pcsr", "w") as out:
+            out.write(out_str)
 
     def _build_csr_entry(self, graph):
         # TODO DL we could reorder the CSR in favor on going through the graph sequentially in RAM!?
@@ -110,17 +100,6 @@ class PCsr(AExporter):
         ]
 
         return "\n".join(build_str) + "\n\n"
-
-
-
-    def write_single_file(self, out_file, out_str):
-        with open(out_file, "w") as out:
-            out.write(out_str)
-
-    def tear_down(self):
-        # We do not need to tear down a graph export to dot files
-        pass
-
 
     def __get_protein_graph_specific_top_order(self, _graph):
         """

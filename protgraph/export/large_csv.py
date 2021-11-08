@@ -5,7 +5,7 @@ import os
 from protgraph.export.abstract_exporter import AExporter
 
 
-class Large_CSV(AExporter):
+class LargeCSV(AExporter):
     """ A CSV Exporter to export to one/two large files. This export is compatible with Gephi """
 
     def start_up(self, **kwargs):
