@@ -1,33 +1,10 @@
-import os
-
-from protgraph.export.abstract_exporter import AExporter
+from protgraph.export.generic_file_exporter import GenericFileExporter
 
 
-class GraphML(AExporter):
-    """
-    A simple GraphML (XML-format) exporter. This one is
-    recommended since it can save all attributes used in the graph!
-    """
+class GraphML(GenericFileExporter):
+    """ A simple GraphML exporter """
 
-    def start_up(self, **kwargs):
-        # Here wer simply create the folder if it does not exist
-        self.out_folder = kwargs["export_output_folder"]
-        os.makedirs(self.out_folder, exist_ok=True)
-
-        self.flat = not kwargs["export_in_directories"]
-
-    def export(self, prot_graph, _):
-        if self.flat:
-            accession = prot_graph.vs["accession"][0]
-            prot_graph.write_graphml(os.path.join(self.out_folder, accession + ".graphml"))
-        else:
-            accession = prot_graph.vs["accession"][0]
-            out_dir = os.path.join(self.out_folder, *[x for x in accession[:-1]])
-            # Create outfolders if needed
-            os.makedirs(out_dir, exist_ok=True)
-
-            prot_graph.write_graphml(os.path.join(out_dir, accession[-1:] + ".graphml"))
-
-    def tear_down(self):
-        # We do not need to tear down a graph export to graphml files
-        pass
+    def __init__(self):
+        super(GraphML, self).__init__(
+            lambda pg, path: pg.write_graphml(path + ".graphml")
+        )
