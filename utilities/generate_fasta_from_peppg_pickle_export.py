@@ -271,8 +271,8 @@ def main():
 
         # be generator as main thread
         with conn.cursor(binary=True, name="server_side_cursor_protgraph") as cursor:
-            while True:
-                cursor.execute(query)
+            cursor.execute(query)
+                while True:
                 result = cursor.fetchmany(args.batch_size)
                 if len(result) == 0:
                     break
