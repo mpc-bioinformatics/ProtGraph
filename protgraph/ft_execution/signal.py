@@ -1,5 +1,7 @@
 from Bio.SeqFeature import UnknownPosition
 
+from protgraph.ft_execution import _get_qualifiers
+
 
 def execute_signal(graph, signal_feature):
     """
@@ -79,14 +81,3 @@ def _get_nodes_from_position(graph, node, pos):
         )
     else:
         return list(graph.vs.select(position=pos))
-
-
-def _get_qualifiers(edge):
-    """ Retrieve the qualifiers from an edge (empty list if nonexistent or None) """
-    if "qualifiers" in edge.attributes():
-        qualifiers = edge["qualifiers"]
-        if qualifiers is None:
-            return []
-        return qualifiers
-    else:
-        return []
