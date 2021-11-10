@@ -11,41 +11,24 @@ class APeptideExporter(AExporter):
     an export funtionality to a folder / database or more.
     """
 
-    @property
-    @abstractmethod
-    def skip_x(self) -> bool:
-        """ Skip Peptides, which contain X? """
-        pass
+    def __init__(self):
+        """ Initialize needed parameters with None """
+        self.skip_x = None  # Skip Peptides, which contain X?
+        self.peptide_min_length = None  # Minimum peptide length
+        self.max_miscleavages = None  # Maximum number of miscleavages in a peptide
+        self.use_igraph = None  # Use Igraph? (or networkX?)
+        self.peptide_max_length = None  # Maximum peptide length to limit possibilites. None to consider all.
+        self.batch_size = None  # Batch size of peptides which will be processed at once. (list length)
 
-    @property
-    @abstractmethod
-    def peptide_min_length(self) -> int:
-        """ Minimum peptide length """
-        pass
 
-    @property
-    @abstractmethod
-    def max_miscleavages(self) -> int:
-        """ Maximum number of miscleavages in a peptide """
-        pass
-
-    @property
-    @abstractmethod
-    def use_igraph(self) -> bool:
-        """ Use Igraph? (or networkX?) """
-        pass
-
-    @property
-    @abstractmethod
-    def peptide_max_length(self) -> int:
-        """ Maximum peptide length to limit possibilites. None to consider all. """
-        pass
-
-    @property
-    @abstractmethod
-    def batch_size(self) -> int:
-        """ Batch size of peptides which will be processed at once. (list length)"""
-        pass
+    def _set_up_taversal(self, skip_x, peptide_min_length, max_miscleavages, use_igraph, peptide_max_length, batch_size):
+        """ Set parameters by dedicated function (preferably in start_up) """
+        self.skip_x = skip_x
+        self.peptide_min_length = peptide_min_length
+        self.max_miscleavages = max_miscleavages
+        self.use_igraph = use_igraph
+        self.peptide_max_length = peptide_max_length
+        self.batch_size = batch_size
 
     @abstractmethod
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, queue):

@@ -16,30 +16,6 @@ class PepPostgres(APeptideExporter):
     NOTE: Maybe even exceeding trillion of results for one protein!
     """
 
-    @property
-    def skip_x(self) -> bool:
-        return self.get_postgres_skip_x
-
-    @property
-    def peptide_min_length(self) -> int:
-        return self.get_peptide_min_length
-
-    @property
-    def max_miscleavages(self) -> int:
-        return self.get_miscleavages
-
-    @property
-    def use_igraph(self) -> bool:
-        return self.get_use_igraph
-
-    @property
-    def peptide_max_length(self) -> int:
-        return self.get_peptide_length
-
-    @property
-    def batch_size(self) -> int:
-        return self.get_batch_size
-
     def start_up(self, **kwargs):
         # Here we generate a connection to postgres
         # and generate the corresponding tables
@@ -60,12 +36,14 @@ class PepPostgres(APeptideExporter):
         self.postgres_no_duplicates = kwargs["pep_postgres_no_duplicates"]
 
         # Traversal parameters:
-        self.get_peptide_length = kwargs["pep_postgres_hops"]  # Number of hops. E.G. 2: s -> h_1 -> h_2 -> e
-        self.get_miscleavages = kwargs["pep_postgres_miscleavages"]  # A filter criterion how many miscleavages?
-        self.get_peptide_min_length = kwargs["pep_postgres_min_pep_length"]  # Peptide minimum length
-        self.get_postgres_skip_x = kwargs["pep_postgres_skip_x"]
-        self.get_use_igraph = kwargs["pep_postgres_use_igraph"]
-        self.get_batch_size = kwargs["pep_postgres_batch_size"]
+        self._set_up_taversal(
+            kwargs["pep_postgres_skip_x"],
+            kwargs["pep_postgres_min_pep_length"],
+            kwargs["pep_postgres_miscleavages"],
+            kwargs["pep_postgres_use_igraph"],
+            kwargs["pep_postgres_hops"],
+            kwargs["pep_postgres_batch_size"]
+        )
 
         # Initialize connection
         try:

@@ -55,12 +55,14 @@ class PepMySQL(APeptideExporter):
         self.no_duplicates = kwargs["pep_mysql_no_duplicates"]
 
         # Traversal parameters:
-        self.get_peptide_length = kwargs["pep_mysql_hops"]  # Number of hops. E.G. 2: s -> h_1 -> h_2 -> e
-        self.get_miscleavages = kwargs["pep_mysql_miscleavages"]  # A filter criterion how many miscleavages?
-        self.get_peptide_min_length = kwargs["pep_mysql_min_pep_length"]  # Peptide minimum length
-        self.get_skip_x = kwargs["pep_mysql_skip_x"]
-        self.get_use_igraph = kwargs["pep_mysql_use_igraph"]
-        self.get_batch_size = kwargs["pep_mysql_batch_size"]
+        self._set_up_taversal(
+            kwargs["pep_mysql_skip_x"],
+            kwargs["pep_mysql_min_pep_length"],
+            kwargs["pep_mysql_miscleavages"],
+            kwargs["pep_mysql_use_igraph"],
+            kwargs["pep_mysql_hops"],
+            kwargs["pep_mysql_batch_size"]
+        )
 
         # Get Unique generator, since mysql can ONLY! return 1 id at once after bulk inserting entries..
         self.id_gen = self.unique_id_gen(**kwargs)
