@@ -4,13 +4,13 @@ from protgraph.aa_masses_annotation import annotate_weights
 from protgraph.aa_replacer import replace_aa
 from protgraph.digestion import digest
 from protgraph.export.exporters import Exporters
-from protgraph.ft_execution.conflict import execute_conflict
-from protgraph.ft_execution.init_met import execute_init_met
-from protgraph.ft_execution.mutagen import execute_mutagen
 from protgraph.ft_execution.signal import execute_signal
+from protgraph.ft_execution.init_met import execute_init_met
+from protgraph.ft_execution.generic import (execute_mutagen, 
+                                            execute_conflict, 
+                                            execute_variant)
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
-from protgraph.ft_execution.variant import execute_variant
 from protgraph.graph_collapse_edges import collapse_parallel_edges
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids

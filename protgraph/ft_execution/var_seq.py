@@ -1,3 +1,5 @@
+from protgraph.ft_execution import get_content
+
 def execute_var_seq(
     isoforms, graph, sequence: str, var_seqs_features, displayed_accession
 ):
@@ -109,14 +111,8 @@ def _create_isoform_lists(isoform_accession, feature_list, sequence: str):
             orig_positions = (orig_positions[: f.location.start] + orig_positions[f.location.end:])
 
         else:
-            # Get X -> Y Information
-            # TODO duplicated in VARIANT?
-            idx = text.find("(")
-            if idx != -1:
-                text = text[:idx]
-            xy = text.split("->")
-            assert len(xy) == 2
-            y = xy[1].strip().replace(" ", "")
+            # Get to be replaced amino_acids
+            y = get_content(text, "(", "->")
             # Replacing sequence!
             sequence = sequence[: f.location.start] + y + sequence[f.location.end:]
             orig_positions = orig_positions[: f.location.start] + [None] * len(y) + orig_positions[f.location.end:]
