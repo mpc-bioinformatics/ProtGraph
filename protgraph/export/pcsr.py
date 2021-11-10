@@ -5,6 +5,7 @@ import numpy as np
 from protgraph.export.generic_file_exporter import GenericFileExporter
 from protgraph.graph_collapse_edges import Or
 from protgraph.export.peptides.pep_fasta import PepFasta
+from protgraph.graph_statistics import _count_feature
 
 class PCsr(GenericFileExporter):
     """ A simple Protein Compressed Sparse Row  Exporter """
@@ -54,6 +55,7 @@ class PCsr(GenericFileExporter):
         CL = ["t" if x else "f" for x in graph.es["cleaved"]]  # Get List of Edges[Cleaved]
 
         if "qualifiers" in graph.es[0].attributes():
+            VC = [str(_count_feature(x, "VARIANT", min)) for x in graph.es["qualifiers"]]
             QU = []  # Get List of Edges[Qualifiers] (simplified as in FASTA)
             for qualifier in graph.es["qualifiers"]:
                 if qualifier is None or len(qualifier) == 0:
@@ -62,9 +64,8 @@ class PCsr(GenericFileExporter):
                     QU.append(self._get_qualifier(qualifier))
             QU = ["&".join(x) for x in QU]
         else:
+            VC = [""]*len(ED)
             QU = [""]*len(ED)
-
-        VC = [] # Get List of Edges[Var-Count] # TODO Code already exists!
 
         if "mono_weight" in graph.vs[0].attributes():
             # Build PDB
