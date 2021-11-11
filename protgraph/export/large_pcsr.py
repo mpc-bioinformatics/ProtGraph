@@ -17,7 +17,7 @@ class LargePCsr(AExporter):
         queue.put((
             self.out_file, 
             self.pcsr_exporter._build_csr_entry(prot_graph),
-            False
+            False, False
         ))
 
     def tear_down(self):

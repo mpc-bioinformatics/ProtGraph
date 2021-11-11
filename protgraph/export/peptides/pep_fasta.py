@@ -55,7 +55,7 @@ class PepFasta(APeptideExporter):
             entries += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
 
         # put the entries into the queue, so that the main thread can write the actual content.
-        queue.put((self.output_file, entries, False))
+        queue.put((self.output_file, entries, False, False))
 
     def _get_qualifiers(self, prot_graph, edges):
         """ Generate a list of strings for all avilable qualifiers. """

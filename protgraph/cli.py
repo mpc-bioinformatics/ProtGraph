@@ -568,6 +568,56 @@ def add_fasta_peptide_export(group):
     )
 
 
+def add_trie_peptide_export(group):
+    group.add_argument(
+        "--export_peptide_trie", "-epeptrie", default=False, action="store_true",
+        help="Set this flag to export peptides into a single fasta file. "
+        "NOTE: This exports peptides in a trie sturcure on the filesystem. Make sure your "
+        "to be exported filesystem supports generating millions of folders and files! (preferably XFS)"
+    )
+    group.add_argument(
+        "--pep_trie_folder_out", default=os.path.join(os.getcwd(), "exported_peptides"),
+        type=str,
+        help="Set the output folder for the peptide export. Default: '${pwd}/peptides.fasta'. "
+        "NOTE: This will append existing files."
+    )
+    group.add_argument(
+        "--pep_trie_hops", type=int, default=None,
+        help="Set the number of hops (max length of path) which should be used to get paths "
+        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
+        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
+    )
+    group.add_argument(
+        "--pep_trie_miscleavages", type=int, default=-1,
+        help="Set this number to filter the generated paths by their miscleavages."
+        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
+        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
+        "number of miscleavages, if needed."
+    )
+    group.add_argument(
+        "--pep_trie_skip_x",  default=False, action="store_true",
+        help="Set this flag to skip to skip all entries, which contain an X"
+    )
+    group.add_argument(
+        "--pep_trie_use_igraph",  default=False, action="store_true",
+        help="Set this flag to use igraph instead of netx. "
+        "NOTE: If setting this flag, the peptide generation will be considerably faster "
+        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
+        "over each single edge, so some (repeating results) may never be discovered when using "
+        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
+    )
+    group.add_argument(
+        "--pep_trie_min_pep_length", type=int, default=0,
+        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
+        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
+    )
+    group.add_argument(
+        "--pep_trie_batch_size", type=int, default=25000,
+        help="Set the batch size. This defines how many peptides are processed and written at once. "
+        "Default: 25000"
+    )
+
+
 def add_citus_peptide_export(group):
     group.add_argument(
         "--export_peptide_citus", "-epepcit", default=False, action="store_true",

@@ -13,6 +13,7 @@ from protgraph.export.mysql import MySQL
 from protgraph.export.pcsr import PCsr
 from protgraph.export.peptides.pep_citus import PepCitus
 from protgraph.export.peptides.pep_fasta import PepFasta
+from protgraph.export.peptides.pep_trie import PepTrie
 from protgraph.export.peptides.pep_mysql import PepMySQL
 from protgraph.export.peptides.pep_postgres import PepPostgres
 from protgraph.export.pickle import Pickle
@@ -65,6 +66,8 @@ class Exporters(ContextDecorator):
             self.export_classes.append(PCsr())
         if kwargs["export_large_pcsr"]:
             self.export_classes.append(LargePCsr())
+        if kwargs["export_peptide_trie"]:
+            self.export_classes.append(PepTrie())
 
 
         # Also start up all exporters

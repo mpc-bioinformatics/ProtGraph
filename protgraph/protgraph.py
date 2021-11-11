@@ -177,6 +177,7 @@ def create_parser():
         ("mysql_peptide_export", cli.add_mysql_peptide_export),
         ("citus_peptide_export", cli.add_citus_peptide_export),
         ("fasta_peptide_export", cli.add_fasta_peptide_export),
+        ("trie_peptide_export", cli.add_trie_peptide_export),
         ("gremlin_graph_export", cli.add_gremlin_graph_export),
     ]
 
@@ -306,6 +307,12 @@ def write_to_common_file(queue):
         # If it is, we stop
         if entry is None:
             break
+
+        if entry[3]:
+            with open(entry[0], "a") as out:
+                out.write(entry[1])
+                continue
+
 
         if entry[2] and entry[0] in header_dict:
             continue
