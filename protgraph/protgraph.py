@@ -176,6 +176,7 @@ def create_parser():
         ("postgres_peptide_export", cli.add_postgres_peptide_export),
         ("mysql_peptide_export", cli.add_mysql_peptide_export),
         ("citus_peptide_export", cli.add_citus_peptide_export),
+        ("sqlite_peptide_export", cli.add_sqlite_peptide_export),
         ("fasta_peptide_export", cli.add_fasta_peptide_export),
         ("trie_peptide_export", cli.add_trie_peptide_export),
         ("gremlin_graph_export", cli.add_gremlin_graph_export),

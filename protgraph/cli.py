@@ -450,6 +450,65 @@ def add_postgres_peptide_export(group):
     )
 
 
+def add_sqlite_peptide_export(group):
+    # TODO
+    group.add_argument(
+        "--export_peptide_sqlite", "-epepsqlite", default=False, action="store_true",
+        help="Set this flag to export peptides (specifically paths) to a postgresql server."
+        "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
+        " Make sure the database in which the data should be saved also exists. If problems occur, try "
+        "to delete the generated tables and retry again."
+    )
+    group.add_argument(
+        "--pep_sqlite_database", type=str, default="peptides.db",
+        help="Set the database which will be used for the postgresql server. Default: proteins"
+    )
+    group.add_argument(
+        "--pep_sqlite_output_dir", type=str, default=os.getcwd(),
+        help="Set the database which will be used for the postgresql server. Default: proteins"
+    )
+    group.add_argument(
+        "--pep_sqlite_hops", type=int, default=None,
+        help="Set the number of hops (max length of path) which should be used to get paths "
+        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
+        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
+    )
+    group.add_argument(
+        "--pep_sqlite_miscleavages", type=int, default=-1,
+        help="Set this number to filter the generated paths by their miscleavages."
+        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
+        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
+        "number of miscleavages, if needed."
+    )
+    group.add_argument(
+        "--pep_sqlite_skip_x",  default=False, action="store_true",
+        help="Set this flag to skip to skip all entries, which contain an X"
+    )
+    group.add_argument(
+        "--pep_sqlite_no_duplicates",  default=False, action="store_true",
+        help="Set this flag to not insert duplicates into the database. "
+        "NOTE: Setting this value decreases the performance drastically"
+    )
+    group.add_argument(
+        "--pep_sqlite_use_igraph",  default=False, action="store_true",
+        help="Set this flag to use igraph instead of netx. "
+        "NOTE: If setting this flag, the peptide generation will be considerably faster "
+        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
+        "over each single edge, so some (repeating results) may never be discovered when using "
+        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
+    )
+    group.add_argument(
+        "--pep_sqlite_min_pep_length", type=int, default=0,
+        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
+        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
+    )
+    group.add_argument(
+        "--pep_sqlite_batch_size", type=int, default=25000,
+        help="Set the batch size. This defines how many peptides are inserted at once. "
+        "Default: 25000 (currently limited by psycopg3)"
+    )
+
+
 def add_mysql_peptide_export(group):
     group.add_argument(
         "--export_peptide_mysql", "-epepmysql", default=False, action="store_true",

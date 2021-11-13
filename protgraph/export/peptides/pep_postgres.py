@@ -277,7 +277,7 @@ class PepPostgres(APeptideExporter):
         # Execute statement. Retry if failed.
         try:
             self.cursor.execute(statement, entries)
-        except Exception as e :
+        except Exception:
             self.conn.rollback()
             self._execute_export_no_duplicates(statement, entries)
 
