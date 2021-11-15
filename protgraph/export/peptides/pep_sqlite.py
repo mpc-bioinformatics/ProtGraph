@@ -1,4 +1,8 @@
+
+
 import sqlite3
+import apsw
+
 import os
 import zlib
 from protgraph.export.peptides.abstract_peptide_exporter import \
@@ -33,7 +37,9 @@ class PepSQLite(APeptideExporter):
         
         # Create database file
         os.makedirs(kwargs["pep_sqlite_output_dir"], exist_ok=True)
-        self.conn = sqlite3.connect(kwargs["pep_sqlite_database"], timeout=10, isolation_level=None)
+        # self.conn = sqlite3.connect(kwargs["pep_sqlite_database"], timeout=10, isolation_level=None)
+        self.conn = apsw.Connection(kwargs["pep_sqlite_database"])
+        self.conn.setbusytimeout(10000)
 
         self.pepfasta = PepFasta()
 
@@ -55,7 +61,7 @@ class PepSQLite(APeptideExporter):
         except Exception as e:
             print("Warning: Pragma journal_mode was not set, inserting may be slower (Reason: {})".format(str(e)))
         finally:
-            self.conn.commit()
+            # self.conn.commit()
             cur.close()
 
         try:
@@ -68,21 +74,63 @@ class PepSQLite(APeptideExporter):
         except Exception as e:
             print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
         finally:
-            self.conn.commit()
+            # self.conn.commit()
             cur.close()
+
+        try:
+            # Create the large peptides table containing most information
+            cur = self.conn.cursor()
+            cur.execute("""
+            PRAGMA temp_store = MEMORY;
+            """
+            )
+        except Exception as e:
+            print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
+        finally:
+            # self.conn.commit()
+            cur.close()
+
+        try:
+            # Create the large peptides table containing most information
+            cur = self.conn.cursor()
+            cur.execute("""
+            PRAGMA mmap_size=268435456;
+            """
+            )
+        except Exception as e:
+            print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
+        finally:
+            # self.conn.commit()
+            cur.close()
+
+
+        try:
+            # Create the large peptides table containing most information
+            cur = self.conn.cursor()
+            cur.execute("""
+            PRAGMA cache_size = 1000000;
+            """
+            )
+        except Exception as e:
+            print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
+        finally:
+            # self.conn.commit()
+            cur.close()
+
+
 
         try:
             # Create the peptides meta information (can also be extremely large), larger than the peptides tables
             cur = self.conn.cursor()
             cur.execute("""
             CREATE TABLE if not exists peptides_meta (
-                peptide TEXT UNIQUE PRIMARY KEY,
+                peptide TEXT PRIMARY KEY,
                 meta TEXT);"""
             )
         except Exception as e:
             print("Warning: Failed creating table 'peptides_meta' (Reason: {})".format(str(e)))
         finally:
-            self.conn.commit()
+            # self.conn.commit()
             cur.close()
 
     def export(self, prot_graph, queue):
@@ -90,7 +138,7 @@ class PepSQLite(APeptideExporter):
         super().export(prot_graph, queue)
 
         # and commit everything in the conenction for a protein
-        self.conn.commit()
+        # self.conn.commit()
 
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
         # Retrieve Meta Infos
@@ -111,19 +159,39 @@ class PepSQLite(APeptideExporter):
         # Insert into database
         cur = self.conn.cursor()
 
+
+        # execute
+        # cur.execute('BEGIN TRANSACTION')
+        # for pep, meta in zip(l_peptide, metas):
+        #     self._retry_query(
+        #         cur, 
+        #         """
+        #         INSERT INTO peptides_meta (peptide, meta)
+        #         VALUES (?, ?)
+        #         ON CONFLICT(peptide) DO UPDATE SET meta = meta || ',' || ? ;
+        #         """,
+        #         [pep, meta, meta]
+        #     )
+        # cur.execute('COMMIT')
+
+        # executemany
         cur.execute('BEGIN TRANSACTION')
-        for pep, meta in zip(l_peptide, metas):
-            self._retry_query(
-                cur, 
-                """
-                INSERT INTO peptides_meta (peptide, meta)
-                VALUES (?, ?)
-                ON CONFLICT(peptide) DO UPDATE SET meta = meta || ',' || ? ;
-                """,
-                [pep, meta, meta]
-            )
+        self._retry_query_many(
+            cur, 
+            """
+            INSERT INTO peptides_meta (peptide, meta)
+            VALUES (?, ?)
+            ON CONFLICT(peptide) DO UPDATE SET meta = meta || ',' || ? ;
+            """,
+            zip(l_peptide, metas, metas)
+        )
         cur.execute('COMMIT')
-        self.conn.commit()
+
+
+
+
+
+        # self.conn.commit()
         cur.close()
         
     def _retry_query(self, cursor, statement, entries):
@@ -133,8 +201,16 @@ class PepSQLite(APeptideExporter):
         except Exception:
             self._retry_query(cursor, statement, entries)
 
+    def _retry_query_many(self, cursor, statement, entries):
+        # Execute statement. Retry if failed.
+        try:
+            cursor.executemany(statement, entries)
+        except Exception as e:
+            print(e)
+            self._retry_query_many(cursor, statement, entries)
+
     def tear_down(self):
-        # Close the connection to postgres
+        # Close the connection to sqlite
         try:
             self.conn.close()  # Close connection
         except Exception as e:
