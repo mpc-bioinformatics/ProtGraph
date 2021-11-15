@@ -10,7 +10,7 @@ class LargePCsr(AExporter):
         self.pcsr_exporter = PCsr()
         self.pcsr_exporter.pdb_count = kwargs["export_large_pcsr_pdb_entries"]
         self.out_folder = kwargs["export_output_folder"]
-        self.out_file = os.path.join(self.out_folder, "database.pcsv")
+        self.out_file = os.path.join(self.out_folder, "database.pcsr")
 
 
     def export(self, prot_graph, queue):
