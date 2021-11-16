@@ -76,16 +76,17 @@ class PCsr(GenericFileExporter):
             # Delete entries in graph itself
             del graph.vs["pdb"]
 
-            PC = self.pdb_count  # PDB Entries Count
+            CN = [graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
             PD = pdb_entries  # List of Lists of PDB-Entries
         else:
-            PC = -1
+            CN = [graph.vcount(), graph.ecount(), 0]  # Every Count
             PD = []
 
         # Order to write:
         build_str = [
             ("AC   " + AC),
             ("IA   " + ";".join(IA)),
+            ("CN   " + ";".join([str(x) for x in CN])),
             ("NO   " + ";".join([str(x) for x in NO])),
             ("ED   " + ";".join([str(x) for x in ED])),
             ("TO   " + ";".join([str(x) for x in TO])),
@@ -96,7 +97,6 @@ class PCsr(GenericFileExporter):
             ("CL   " + ";".join(CL)),
             ("QU   " + ";".join(QU)),
             ("VC   " + ";".join(VC)),
-            ("PC   " + str(PC)),
             ("PD   " + ";".join(["^".join(["^".join(str(z) for z in y) for y in x]) for x in PD])),
         ]
 
