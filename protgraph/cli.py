@@ -507,6 +507,10 @@ def add_sqlite_peptide_export(group):
         help="Set the batch size. This defines how many peptides are inserted at once. "
         "Default: 25000 (currently limited by psycopg3)"
     )
+    group.add_argument(
+        "--pep_sqlite_non_compact",  default=False, action="store_true",
+        help="Set this flag to to have a non compact table repr"
+    )
 
 
 def add_mysql_peptide_export(group):

@@ -167,7 +167,7 @@ def _count_feature(fts, feature_type, or_count):
         return 0
     for ft in fts:
         if isinstance(ft, Or):
-            t = [_resolve_or(or_ft, feature_type, or_count) for or_ft in ft]
+            t = [_count_feature(or_ft, feature_type, or_count) for or_ft in ft]
             count += or_count(t)
         else:
             if ft.type == feature_type:

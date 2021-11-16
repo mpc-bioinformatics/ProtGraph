@@ -97,7 +97,7 @@ class PCsr(GenericFileExporter):
             ("QU   " + ";".join(QU)),
             ("VC   " + ";".join(VC)),
             ("PC   " + str(PC)),
-            ("PD   " + ";".join(["|".join(["^".join(str(z) for z in y) for y in x]) for x in PD])),
+            ("PD   " + ";".join(["^".join(["^".join(str(z) for z in y) for y in x]) for x in PD])),
         ]
 
         return "\n".join(build_str) + "\n\n"

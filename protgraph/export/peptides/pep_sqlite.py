@@ -34,6 +34,9 @@ class PepSQLite(APeptideExporter):
             kwargs["pep_sqlite_hops"],
             kwargs["pep_sqlite_batch_size"]
         )
+
+        self.compact_repr = not kwargs["pep_sqlite_non_compact"]
+
         
         # Create database file
         os.makedirs(kwargs["pep_sqlite_output_dir"], exist_ok=True)
@@ -118,15 +121,22 @@ class PepSQLite(APeptideExporter):
             cur.close()
 
 
-
+        
         try:
             # Create the peptides meta information (can also be extremely large), larger than the peptides tables
             cur = self.conn.cursor()
-            cur.execute("""
-            CREATE TABLE if not exists peptides_meta (
-                peptide TEXT PRIMARY KEY,
-                meta TEXT);"""
-            )
+            if self.compact_repr:
+                cur.execute("""
+                CREATE TABLE if not exists peptides_meta (
+                    peptide TEXT PRIMARY KEY,
+                    meta TEXT);"""
+                )
+            else: 
+                cur.execute("""
+                CREATE TABLE if not exists peptides_meta (
+                    peptide TEXT,
+                    meta TEXT);"""
+                )
         except Exception as e:
             print("Warning: Failed creating table 'peptides_meta' (Reason: {})".format(str(e)))
         finally:
@@ -176,30 +186,29 @@ class PepSQLite(APeptideExporter):
 
         # executemany
         cur.execute('BEGIN TRANSACTION')
-        self._retry_query_many(
-            cur, 
-            """
-            INSERT INTO peptides_meta (peptide, meta)
-            VALUES (?, ?)
-            ON CONFLICT(peptide) DO UPDATE SET meta = meta || ',' || ? ;
-            """,
-            zip(l_peptide, metas, metas)
-        )
+        if self.compact_repr:
+            self._retry_query_many(
+                cur, 
+                """
+                INSERT INTO peptides_meta (peptide, meta)
+                VALUES (?, ?)
+                ON CONFLICT(peptide) DO UPDATE SET meta = meta || ',' || ? ;
+                """,
+                zip(l_peptide, metas, metas)
+            )
+        else:
+            self._retry_query_many(
+                cur, 
+                """
+                INSERT INTO peptides_meta (peptide, meta)
+                VALUES (?, ?);
+                """,
+                zip(l_peptide, metas)
+            )
         cur.execute('COMMIT')
-
-
-
-
 
         # self.conn.commit()
         cur.close()
-        
-    def _retry_query(self, cursor, statement, entries):
-        # Execute statement. Retry if failed.
-        try:
-            cursor.execute(statement, entries)
-        except Exception:
-            self._retry_query(cursor, statement, entries)
 
     def _retry_query_many(self, cursor, statement, entries):
         # Execute statement. Retry if failed.
