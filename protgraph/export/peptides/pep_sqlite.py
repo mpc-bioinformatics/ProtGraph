@@ -41,7 +41,7 @@ class PepSQLite(APeptideExporter):
         # Create database file
         os.makedirs(kwargs["pep_sqlite_output_dir"], exist_ok=True)
         # self.conn = sqlite3.connect(kwargs["pep_sqlite_database"], timeout=10, isolation_level=None)
-        self.conn = apsw.Connection(kwargs["pep_sqlite_database"])
+        self.conn = apsw.Connection(os.path.join(kwargs["pep_sqlite_output_dir"], kwargs["pep_sqlite_database"]))
         self.conn.setbusytimeout(10000)
 
         self.pepfasta = PepFasta()
