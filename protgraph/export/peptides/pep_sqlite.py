@@ -214,8 +214,7 @@ class PepSQLite(APeptideExporter):
         # Execute statement. Retry if failed.
         try:
             cursor.executemany(statement, entries)
-        except Exception as e:
-            print(e)
+        except Exception:
             self._retry_query_many(cursor, statement, entries)
 
     def tear_down(self):
