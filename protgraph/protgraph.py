@@ -244,7 +244,7 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
         contents if existing.
     """
     # Generate Progrssbar
-    pbar = tqdm(total=total_num_entries, mininterval=0.5, unit="proteins")
+    pbar = tqdm(total=total_num_entries, unit="proteins")
 
     # (Over-)Write to out_file
     with open(out_file, "w") as out_f:
