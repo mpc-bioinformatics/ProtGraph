@@ -511,6 +511,15 @@ def add_sqlite_peptide_export(group):
         "--pep_sqlite_non_compact",  default=False, action="store_true",
         help="Set this flag to to have a non compact table repr"
     )
+    group.add_argument(
+        "--pep_sqlite_compression_level", type=int, default=6,
+        help="Set the compression level of the blob (zlib). Note: This value "
+        "is only used of 'use_blobs' is set. Default: 6"
+    )
+    group.add_argument(
+        "--pep_sqlite_use_blobs",  default=False, action="store_true",
+        help="Set this flag to save binary compressed blobs instead of strings in the database (reducing its size)."
+    )
 
 
 def add_mysql_peptide_export(group):

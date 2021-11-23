@@ -46,6 +46,11 @@ class PepSQLite(APeptideExporter):
 
         self.pepfasta = PepFasta()
 
+
+        # Set sqlite specific parameters
+        self.use_blob = kwargs["pep_sqlite_use_blobs"]
+        self.compression_level = kwargs["pep_sqlite_compression_level"]
+
         # Create tables if they not exist
         try:
             self._create_tables(**kwargs)
@@ -127,21 +132,36 @@ class PepSQLite(APeptideExporter):
             cur = self.conn.cursor()
             if self.compact_repr:
                 cur.execute("""
-                CREATE TABLE if not exists peptides_meta (
-                    peptide TEXT PRIMARY KEY,
-                    meta TEXT);"""
+                CREATE TABLE if not exists peptide_meta (
+                    peptide {B} PRIMARY KEY,
+                    meta {B});""".format(B="BLOB" if self.use_blob else "TEXT")
                 )
             else: 
                 cur.execute("""
-                CREATE TABLE if not exists peptides_meta (
-                    peptide TEXT,
-                    meta TEXT);"""
+                CREATE TABLE if not exists peptide_meta (
+                    peptide {B},
+                    meta {B});""".format(B="BLOB" if self.use_blob else "TEXT")
                 )
         except Exception as e:
             print("Warning: Failed creating table 'peptides_meta' (Reason: {})".format(str(e)))
         finally:
             # self.conn.commit()
             cur.close()
+
+        if self.use_blob:
+            self.set_upsert_query = \
+                """
+                INSERT INTO peptide_meta (peptide, meta)
+                VALUES (?, ?)
+                ON CONFLICT(peptide) DO UPDATE SET meta = meta || ? ;
+                """
+        else:
+            self.set_upsert_query = \
+                """
+                INSERT INTO peptide_meta (peptide, meta)
+                VALUES (?, ?)
+                ON CONFLICT(peptide) DO UPDATE SET meta = meta || ',' || ? ;
+                """
 
     def export(self, prot_graph, queue):
         # We continue with the export function
@@ -166,35 +186,24 @@ class PepSQLite(APeptideExporter):
             for acc, start_pos, end_pos, quali_entries, misses in zip(accs, start_poses, end_poses, qualifiers, l_miscleavages)
         ]
 
+        if self.use_blob:
+            compressed_metas = [zlib.compress(x.encode(), level=self.compression_level) for x in metas]
+            compressed_peptides = [zlib.compress(x.encode(), level=self.compression_level) for x in l_peptide]
+        else:
+            compressed_metas = metas
+            compressed_peptides = l_peptide
+
+
         # Insert into database
         cur = self.conn.cursor()
-
-
-        # execute
-        # cur.execute('BEGIN TRANSACTION')
-        # for pep, meta in zip(l_peptide, metas):
-        #     self._retry_query(
-        #         cur, 
-        #         """
-        #         INSERT INTO peptides_meta (peptide, meta)
-        #         VALUES (?, ?)
-        #         ON CONFLICT(peptide) DO UPDATE SET meta = meta || ',' || ? ;
-        #         """,
-        #         [pep, meta, meta]
-        #     )
-        # cur.execute('COMMIT')
 
         # executemany
         cur.execute('BEGIN TRANSACTION')
         if self.compact_repr:
             self._retry_query_many(
                 cur, 
-                """
-                INSERT INTO peptides_meta (peptide, meta)
-                VALUES (?, ?)
-                ON CONFLICT(peptide) DO UPDATE SET meta = meta || ',' || ? ;
-                """,
-                zip(l_peptide, metas, metas)
+                self.set_upsert_query,
+                zip(compressed_peptides, compressed_metas, compressed_metas)
             )
         else:
             self._retry_query_many(
@@ -203,9 +212,31 @@ class PepSQLite(APeptideExporter):
                 INSERT INTO peptides_meta (peptide, meta)
                 VALUES (?, ?);
                 """,
-                zip(l_peptide, metas)
+                zip(compressed_peptides, compressed_metas)
             )
         cur.execute('COMMIT')
+
+
+
+
+        # Getting blob entries:
+        # cur.execute("""
+        # Select ROWID from peptides_meta where peptide = x'78da0b020000530053';
+        # """
+        # )
+        # print("=========================================================")
+        # a = cur.fetchone()
+
+        # bl = self.conn.blobopen("main", "peptides_meta", "meta", a[0], 1)
+        # binar = bl.read()
+        # bl.close()
+
+        # stream = binar
+        # while stream:
+        #     dco = zlib.decompressobj()
+        #     print(dco.decompress(stream))
+        #     stream = dco.unused_data
+
 
         # self.conn.commit()
         cur.close()
