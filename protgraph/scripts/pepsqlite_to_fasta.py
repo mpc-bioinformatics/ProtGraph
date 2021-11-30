@@ -17,26 +17,26 @@ def check_if_file_exists(s: str):
 def parse_args():
     """ Parse Arguments """
     parser = argparse.ArgumentParser(
-        description="Tool to generate fasta files from a generated filesysteme trie by ProtGraph. "
-        "Protgraph should be called prior with the flag '-epeptrie'"
+        description="Small script to generate fasta files from a generated sqlite database by ProtGraph. "
+        "Protgraph should be called prior with the flag '-epepfasta'"
     )
 
     # Base Folder of generated Pickle Files
     parser.add_argument(
         "sqlite_file", type=check_if_file_exists, nargs=1,
-        help="Sqlite database file od exported peptides."
+        help="Sqlite database file of exported peptides."
     )
 
     # Output fasta file
     parser.add_argument(
         "--output_file", "-o", type=str, default="sqlite_peptides.fasta",
-        help="Output fasta file. DEFAULT 'sqlite_peptides.fasta' (NOTE: File WILL be overwritten)"
+        help="Output fasta file. DEFAULT 'sqlite_peptides.fasta' (NOTE: This file WILL be overwritten)"
     )
 
     return parser.parse_args()
 
 def export_with_text(conn, output, num_of_entries):
-    """ TODO """
+    """ Export Case for Text columns """
     cur = conn.cursor()
     cur.execute("SELECT peptide, meta from peptide_meta;")
 
@@ -44,7 +44,7 @@ def export_with_text(conn, output, num_of_entries):
     for pep, meta in tqdm.tqdm(cur, total=num_of_entries, unit="entries"):
 
         # Write Output-Entry            
-        output_fasta.write(
+        output.write(
             ">pg|ID_" + str(pep_id) + "|" + meta + "\n" + '\n'.join(pep[i:i+60] for i in range(0, len(pep), 60)) + "\n"
         )
         # Increase id
@@ -54,7 +54,7 @@ def export_with_text(conn, output, num_of_entries):
 
 
 def export_with_blob(conn, output, num_of_entries):
-    """ TODO """
+    """ Export case for BLOB columns (here we read blobs directly) """
 
     cur = conn.cursor()
     cur.execute("SELECT peptide from peptide_meta;")
@@ -81,39 +81,20 @@ def export_with_blob(conn, output, num_of_entries):
 
 
         # Write Output-Entry            
-        output_fasta.write(
+        output.write(
             ">pg|ID_" + str(pep_id) + "|" + meta + "\n" + '\n'.join(pep[i:i+60] for i in range(0, len(pep), 60)) + "\n"
         )
         # Increase id
         pep_id += 1
 
 
-
-    # Getting blob entries:
-    # cur.execute("""
-    # Select ROWID from peptides_meta where peptide = x'78da0b020000530053';
-    # """
-    # )
-    # print("=========================================================")
-    # a = cur.fetchone()
-
-    # bl = self.conn.blobopen("main", "peptides_meta", "meta", a[0], 1)
-    # binar = bl.read()
-    # bl.close()
-
-    # stream = binar
-    # while stream:
-    #     dco = zlib.decompressobj()
-    #     print(dco.decompress(stream))
-    #     stream = dco.unused_data
-
-
-if __name__ == "__main__":
+def main():
     # Parse args
     args = parse_args()
-
     abs_file = os.path.abspath(args.sqlite_file[0])
 
+
+    # Get Connection, column and size info
     conn = apsw.Connection(abs_file)
     cur = conn.cursor()
 
@@ -129,13 +110,8 @@ if __name__ == "__main__":
     num_of_entries = cur.fetchone()[0]
     cur.close()
 
-
-
     # Start Export for text
     with open(args.output_file, "w") as output_fasta:
         export_method(conn, output_fasta, num_of_entries)
 
     conn.close()
-
-
-

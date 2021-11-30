@@ -43,7 +43,10 @@ setup(
     ],
     license="BSD",
     python_requires=">=3.6",
-    entry_points=dict(console_scripts=['protgraph=protgraph.protgraph:main']),
+    entry_points=dict(console_scripts=[
+        'protgraph=protgraph.protgraph:main',
+        'pepsqlite_to_fasta=protgraph.scripts.pepsqlite_to_fasta:main'
+    ]),
     packages=find_packages(),
     include_package_data=True,
     install_requires=packages
