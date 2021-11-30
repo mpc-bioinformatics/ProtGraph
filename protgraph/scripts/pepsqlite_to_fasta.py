@@ -2,17 +2,10 @@ import os
 import argparse
 import zlib
 
+from protgraph.cli import check_if_file_exists
 
 import tqdm
 import apsw
-
-def check_if_file_exists(s: str):
-    """ checks if a folder exists. If not: raise Exception """
-    if os.path.isfile(s):
-        return s
-    else:
-        raise Exception("Filed '{}' does not exists".format(s))
-
 
 def parse_args():
     """ Parse Arguments """
