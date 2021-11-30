@@ -28,34 +28,55 @@ class PCsr(GenericFileExporter):
             out.write(out_str)
 
     def _build_csr_entry(self, graph):
-        # TODO DL we could reorder the CSR in favor on going through the graph sequentially in RAM!?
-
+        # The CSR is reordered in Top Order in favor on going through the RAM sequentially. To be tested...
         
+        # get the topological order
+        TO = self.__get_protein_graph_specific_top_order(graph)  # The Topological Order
+        TO_EDGES = []
+
+        # get Accessions (including isoforms)
         AC = graph.vs[0]["accession"]
         IA = list(set(graph.vs["isoform_accession"]).difference(set([None]))) if "isoform_accession" in graph.vs[0].attributes() else []  # Get List of Isos (Accessions)
         
+
         NO = []  # Get List of Nodes
         ED = []  # Get List of Edges
 
-        out_edges = graph.vs[0].out_edges()
+
+
+        out_edges = graph.vs[TO[0]].out_edges()
+        TO_EDGES.extend(x.index for x in out_edges)
         NO.append(len(out_edges))
         ED.extend([e.target for e in out_edges])
-        for n in graph.vs[1:]:
+        for n_idx in TO[1:]:
+            n = graph.vs[n_idx]
             out_edges = n.out_edges()
             NO.append(len(out_edges) + NO[-1])
+            TO_EDGES.extend(x.index for x in out_edges)
             ED.extend([e.target for e in out_edges])
 
         # All these attributes need to be reordered if NO or ED gets modified!
 
         SQ = graph.vs["aminoacid"]  # Get List of Node[Sequence]
+        SQ = [SQ[x] for x in TO]
         IS = [IA.index(x) + 1 if x is not None else 0 for x in graph.vs["isoform_accession"]] if "isoform_accession" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Isos] substituted (idx + 1 due to AC)
+        IS = [IS[x] for x in TO]
+
         MW = graph.vs["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [] # Get List of Node[Mono Weight]
+        if len(MW) != 0:
+            MW = [MW[x] for x in TO]
         AW = graph.vs["avrg_weight"] if "avrg_weight" in graph.vs[0].attributes() else [] # Get List of Node[Average Weight]
-        TO = self.__get_protein_graph_specific_top_order(graph)  # The Topological Order
+        if len(AW) != 0:
+            AW = [AW[x] for x in TO]
+
+
+        # Attribute for Edges
         CL = ["t" if x else "f" for x in graph.es["cleaved"]]  # Get List of Edges[Cleaved]
+        CL = [CL[x] for x in TO_EDGES]
 
         if "qualifiers" in graph.es[0].attributes():
             VC = [str(_count_feature(x, "VARIANT", min)) for x in graph.es["qualifiers"]]
+            VC = [VC[x] for x in TO_EDGES]
             QU = []  # Get List of Edges[Qualifiers] (simplified as in FASTA)
             for qualifier in graph.es["qualifiers"]:
                 if qualifier is None or len(qualifier) == 0:
@@ -63,10 +84,14 @@ class PCsr(GenericFileExporter):
                 else:
                     QU.append(self._get_qualifier(qualifier))
             QU = ["&".join(x) for x in QU]
+            QU = [QU[x] for x in TO_EDGES]
+
         else:
             VC = [""]*len(ED)
             QU = [""]*len(ED)
 
+
+        # Generate additionall information like PDBs
         if "mono_weight" in graph.vs[0].attributes():
             # Build PDB
             self.__build_pdb(graph, k=self.pdb_count)
@@ -78,6 +103,8 @@ class PCsr(GenericFileExporter):
 
             CN = [graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
             PD = pdb_entries  # List of Lists of PDB-Entries
+            PD = [PD[x] for x in TO]
+
         else:
             CN = [graph.vcount(), graph.ecount(), 0]  # Every Count
             PD = []
@@ -89,7 +116,7 @@ class PCsr(GenericFileExporter):
             ("CN   " + ";".join([str(x) for x in CN])),
             ("NO   " + ";".join([str(x) for x in NO])),
             ("ED   " + ";".join([str(x) for x in ED])),
-            ("TO   " + ";".join([str(x) for x in TO])),
+            # ("TO   " + ";".join([str(x) for x in TO])),
             ("SQ   " + ";".join(SQ)),
             ("IS   " + ";".join([str(x) for x in IS])),
             ("MW   " + ";".join([str(x) for x in MW])),
