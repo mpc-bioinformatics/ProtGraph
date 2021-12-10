@@ -118,87 +118,84 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             ft_dict[i] = True
 
     # Initialize the exporters for graphs
-    graph_exporters = Exporters(**kwargs)
+    with Exporters(**kwargs) as graph_exporters:
 
-    while True:
-        # Get next entry
-        entry = entry_queue.get()
+        while True:
+            # Get next entry
+            entry = entry_queue.get()
 
-        # Stop if entry is None
-        if entry is None:
-            # --> Stop Condition of Process
-            break
+            # Stop if entry is None
+            if entry is None:
+                # --> Stop Condition of Process
+                break
 
-        # Beginning of Graph-Generation
-        # We also collect interesting information here!
+            # Beginning of Graph-Generation
+            # We also collect interesting information here!
 
-        # Generate canonical graph (initialization of the graph)
-        graph = _generate_canonical_graph(entry.sequence, entry.accessions[0])
+            # Generate canonical graph (initialization of the graph)
+            graph = _generate_canonical_graph(entry.sequence, entry.accessions[0])
 
-        # FT parsing and appending of Nodes and Edges into the graph
-        # The amount of isoforms, etc.. can be retrieved on the fly
-        num_isoforms, num_initm, num_signal, num_variant, num_mutagens, num_conficts =\
-            _include_ft_information(entry, graph, ft_dict)
+            # FT parsing and appending of Nodes and Edges into the graph
+            # The amount of isoforms, etc.. can be retrieved on the fly
+            num_isoforms, num_initm, num_signal, num_variant, num_mutagens, num_conficts =\
+                _include_ft_information(entry, graph, ft_dict)
 
-        # Replace Amino Acids based on user defined rules: E.G.: "X -> A,B,C"
-        replace_aa(graph, kwargs["replace_aa"])
+            # Replace Amino Acids based on user defined rules: E.G.: "X -> A,B,C"
+            replace_aa(graph, kwargs["replace_aa"])
 
-        # Digest graph with enzyme (unlimited miscleavages)
-        num_of_cleavages = digest(graph, kwargs["digestion"])
+            # Digest graph with enzyme (unlimited miscleavages)
+            num_of_cleavages = digest(graph, kwargs["digestion"])
 
-        # Merge (summarize) graph if wanted
-        if not kwargs["no_merge"]:
-            merge_aminoacids(graph)
+            # Merge (summarize) graph if wanted
+            if not kwargs["no_merge"]:
+                merge_aminoacids(graph)
 
-        # Collapse parallel edges in a graph
-        if not kwargs["no_collapsing_edges"]:
-            collapse_parallel_edges(graph)
+            # Collapse parallel edges in a graph
+            if not kwargs["no_collapsing_edges"]:
+                collapse_parallel_edges(graph)
 
-        # Annotate weights for edges and nodes (maybe even the smallest weight possible to get to the end node)
-        annotate_weights(graph, **kwargs)
+            # Annotate weights for edges and nodes (maybe even the smallest weight possible to get to the end node)
+            annotate_weights(graph, **kwargs)
 
-        # Calculate statistics on the graph:
-        (
-            num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops,
-            num_paths_var, num_path_mut, num_path_con
-        ) = get_statistics(graph, **kwargs)
-
-        # Verify graphs if wanted:
-        if kwargs["verify_graph"]:
-            verify_graph(graph)
-
-        # Persist or export graphs with speicified exporters
-        graph_exporters.export_graph(graph, common_out_queue)
-
-        # Output statistics we gathered during processing
-        if kwargs["no_description"]:
-            entry_protein_desc = None
-        else:
-            entry_protein_desc = entry.description.split(";", 1)[0]
-            entry_protein_desc = entry_protein_desc[entry_protein_desc.index("=") + 1:]
-
-        graph_queue.put(
+            # Calculate statistics on the graph:
             (
-                entry.accessions[0],  # Protein Accesion
-                entry.entry_name,  # Protein displayed name
-                num_isoforms,  # Number of Isoforms
-                num_initm,  # Number of Init_M (either 0 or 1)
-                num_signal,  # Number of Signal Peptides used (either 0 or 1)
-                num_variant,  # Number of Variants applied to this protein
-                num_mutagens,  # Number of applied mutagens on the graph
-                num_conficts,  # Number of applied conflicts on the graph
-                num_of_cleavages,  # Number of cleavages (marked edges) this protein has
-                num_nodes,  # Number of nodes for the Protein/Peptide Graph
-                num_edges,  # Number of edges for the Protein/Peptide Graph
-                num_paths,  # Possible (non repeating paths) to the end of a graph. (may conatin repeating peptides)
-                num_paths_miscleavages,  # As num_paths, but binned to the number of miscleavages (by list idx, at 0)
-                num_paths_hops,  # As num_paths, only that we bin by hops (E.G. useful for determine DFS or BFS depths)
-                num_paths_var,  # Num paths of feture variant
-                num_path_mut,  # Num paths of feture mutagen
-                num_path_con,  # Num paths of feture conflict
-                entry_protein_desc,  # Description name of the Protein (can be lenghty)
-            )
-        )
+                num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops,
+                num_paths_var, num_path_mut, num_path_con
+            ) = get_statistics(graph, **kwargs)
 
-    # Close exporters (maybe opened files, database connections, etc... )
-    graph_exporters.close()
+            # Verify graphs if wanted:
+            if kwargs["verify_graph"]:
+                verify_graph(graph)
+
+            # Persist or export graphs with speicified exporters
+            graph_exporters.export_graph(graph, common_out_queue)
+
+            # Output statistics we gathered during processing
+            if kwargs["no_description"]:
+                entry_protein_desc = None
+            else:
+                entry_protein_desc = entry.description.split(";", 1)[0]
+                entry_protein_desc = entry_protein_desc[entry_protein_desc.index("=") + 1:]
+
+            graph_queue.put(
+                (
+                    entry.accessions[0],  # Protein Accesion
+                    entry.entry_name,  # Protein displayed name
+                    num_isoforms,  # Number of Isoforms
+                    num_initm,  # Number of Init_M (either 0 or 1)
+                    num_signal,  # Number of Signal Peptides used (either 0 or 1)
+                    num_variant,  # Number of Variants applied to this protein
+                    num_mutagens,  # Number of applied mutagens on the graph
+                    num_conficts,  # Number of applied conflicts on the graph
+                    num_of_cleavages,  # Number of cleavages (marked edges) this protein has
+                    num_nodes,  # Number of nodes for the Protein/Peptide Graph
+                    num_edges,  # Number of edges for the Protein/Peptide Graph
+                    num_paths,  # Possible (non repeating paths) to the end of a graph. (may conatin repeating peptides)
+                    num_paths_miscleavages,  # As num_paths, but binned to the number of miscleavages (by list idx, at 0)
+                    num_paths_hops,  # As num_paths, only that we bin by hops (E.G. useful for determine DFS or BFS depths)
+                    num_paths_var,  # Num paths of feture variant
+                    num_path_mut,  # Num paths of feture mutagen
+                    num_path_con,  # Num paths of feture conflict
+                    entry_protein_desc,  # Description name of the Protein (can be lenghty)
+                )
+            )

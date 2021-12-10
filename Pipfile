@@ -7,7 +7,7 @@ pylint = "*"
 pytest = "*"
 
 [packages]
-python-igraph = "*"
+igraph = "*"
 texttable = "*"
 tqdm = "*"
 biopython = "*"

@@ -7,11 +7,11 @@ from protgraph.graph_collapse_edges import Or
 from protgraph.export.peptides.pep_fasta import PepFasta
 from protgraph.graph_statistics import _count_feature
 
-class PCsr(GenericFileExporter):
+class PCSR(GenericFileExporter):
     """ A simple Protein Compressed Sparse Row  Exporter """
 
     def __init__(self):
-        super(PCsr, self).__init__(
+        super(PCSR, self).__init__(
             self.write_pcsr
         )
         self._get_qualifier = PepFasta()._map_qualifier_to_string

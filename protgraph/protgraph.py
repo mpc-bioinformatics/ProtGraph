@@ -85,6 +85,10 @@ def prot_graph(**kwargs):
 
         # Are writing threads alive?
         if not main_write_thread.is_alive() and not common_out_thread.is_alive():
+            # check if reader is still alive (in case of exceptions)
+            if __check_if_alive([entry_reader]):
+                entry_reader.kill()
+            
             # Then exit the program
             break
 

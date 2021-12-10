@@ -1,9 +1,9 @@
 import os
 
 from protgraph.export.abstract_exporter import AExporter
-from protgraph.export.pcsr import PCsr
+from protgraph.export.pcsr import PCSR
 
-class LargePCsr(AExporter):
+class LargePCSR(AExporter):
     """ A simple Protein Compressed Sparse Row Exporter, exporting to a single file """
 
     def start_up(self, **kwargs):

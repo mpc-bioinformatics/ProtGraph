@@ -18,30 +18,6 @@ class PepMySQL(APeptideExporter):
     NOTE: Maybe even exceeding trillion of results for one protein!
     """
 
-    @property
-    def skip_x(self) -> bool:
-        return self.get_skip_x
-
-    @property
-    def peptide_min_length(self) -> int:
-        return self.get_peptide_min_length
-
-    @property
-    def max_miscleavages(self) -> int:
-        return self.get_miscleavages
-
-    @property
-    def use_igraph(self) -> bool:
-        return self.get_use_igraph
-
-    @property
-    def peptide_max_length(self) -> int:
-        return self.get_peptide_length
-
-    @property
-    def batch_size(self) -> int:
-        return self.get_batch_size
-
     def start_up(self, **kwargs):
         # Here we generate a connection to mysql
         # and generate the corresponding tables
