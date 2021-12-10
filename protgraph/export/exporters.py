@@ -37,6 +37,7 @@ class Exporters(ContextDecorator):
 
     ### Actual supported Exporters are below
     def __add_generic(self, exporters, flag, export_from, export_class):
+        """ Load exporting class dynamically """
         if flag:
             try:
                 module = importlib.import_module(export_from)  # from x.y.z
@@ -49,6 +50,7 @@ class Exporters(ContextDecorator):
                 ))
 
     def __available_exporters(self, **kwargs):
+        """ List of available exporters """
         return [  # (FLAG, MODULE_LOC, CLASS_NAME)
             # Exporter to single graph files
             (kwargs["export_dot"], "protgraph.export.dot", "Dot"),

@@ -1,5 +1,7 @@
 import igraph
 
+from collections import defaultdict
+
 from protgraph.aa_masses_annotation import annotate_weights
 from protgraph.aa_replacer import replace_aa
 from protgraph.digestion import digest
@@ -42,17 +44,24 @@ def _generate_canonical_graph(sequence: str, acc: str):
 
 def _sort_entry_features(entry):
     """ This sorts the features according to their type into a dict. """
-    sorted_features = dict()
+    sorted_features = defaultdict(list)
     # For each features
     for f in entry.features:
         # Append it to a list to its corresponding key -> type
-        if f.type not in sorted_features:
-            sorted_features[f.type] = [f]
-        else:
-            sorted_features[f.type].append(f)
+        sorted_features[f.type].append(f)
 
     # Return the dictionary
     return sorted_features
+
+
+def _include_spefic_ft(graph, ft_type, method, sorted_features, ft_dict):
+    """ Execute features individually """
+    num_of_feature_type = 0 if ft_type in ft_dict else None
+    if ft_type in sorted_features and ft_type in ft_dict:
+        num_of_feature_type = len(sorted_features[ft_type])
+        for f in sorted_features[ft_type]:
+            method(graph, f)
+    return num_of_feature_type
 
 
 def _include_ft_information(entry, graph, ft_dict):
@@ -68,35 +77,12 @@ def _include_ft_information(entry, graph, ft_dict):
         isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
         execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
 
-    num_of_init_m = 0 if "INIT_MET" in ft_dict else None
-    if "INIT_MET" in sorted_features and "INIT_MET" in ft_dict:
-        num_of_init_m = len(sorted_features["INIT_MET"])
-        for f in sorted_features["INIT_MET"]:
-            execute_init_met(graph, f)
-
-    num_of_signal = 0 if "SIGNAL" in ft_dict else None
-    if "SIGNAL" in sorted_features and "SIGNAL" in ft_dict:
-        num_of_signal = len(sorted_features["SIGNAL"])
-        for f in sorted_features["SIGNAL"]:
-            execute_signal(graph, f)
-
-    num_of_variant = 0 if "VARIANT" in ft_dict else None
-    if "VARIANT" in sorted_features and "VARIANT" in ft_dict:
-        num_of_variant = len(sorted_features["VARIANT"])
-        for f in sorted_features["VARIANT"]:
-            execute_variant(graph, f)
-
-    num_of_mutagens = 0 if "MUTAGEN" in ft_dict else None
-    if "MUTAGEN" in sorted_features and "MUTAGEN" in ft_dict:
-        num_of_mutagens = len(sorted_features["MUTAGEN"])
-        for f in sorted_features["MUTAGEN"]:
-            execute_mutagen(graph, f)
-
-    num_of_conflicts = 0 if "CONFLICT" in ft_dict else None
-    if "CONFLICT" in sorted_features and "CONFLICT" in ft_dict:
-        num_of_conflicts = len(sorted_features["CONFLICT"])
-        for f in sorted_features["CONFLICT"]:
-            execute_conflict(graph, f)
+    # Execute the other features tables, per feature
+    num_of_init_m = _include_spefic_ft(graph, "INIT_MET", execute_init_met, sorted_features, ft_dict)
+    num_of_signal = _include_spefic_ft(graph, "SIGNAL", execute_signal, sorted_features, ft_dict)
+    num_of_variant = _include_spefic_ft(graph, "VARIANT", execute_variant, sorted_features, ft_dict)
+    num_of_mutagens = _include_spefic_ft(graph, "MUTAGEN", execute_mutagen, sorted_features, ft_dict)
+    num_of_conflicts = _include_spefic_ft(graph, "CONFLICT", execute_conflict, sorted_features, ft_dict)
 
     return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant, num_of_mutagens, num_of_conflicts
 
