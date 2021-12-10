@@ -5,17 +5,17 @@ verify_ssl = true
 [dev-packages]
 pylint = "*"
 pytest = "*"
-
-[packages]
-igraph = "*"
-texttable = "*"
-tqdm = "*"
-biopython = "*"
 redis = "*"
 redisgraph = "*"
 psycopg = "*"
-networkx = "*"
 gremlinpython = "*"
 mysql-connector-python = "*"
 cassandra-driver = "*"
 apsw = "*"
+
+[packages]
+networkx = "*"
+igraph = "*"
+texttable = "*"
+tqdm = "*"
+biopython = "*"

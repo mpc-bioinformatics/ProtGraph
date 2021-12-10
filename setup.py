@@ -26,6 +26,9 @@ for i in range(packages_sec+1, packages_end):
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
+
+
+
 setup(
     name='protgraph',
     version='0.2.1',
@@ -44,10 +47,19 @@ setup(
     license="BSD",
     python_requires=">=3.6",
     entry_points=dict(console_scripts=[
-        'protgraph=protgraph.protgraph:main',
-        'pepsqlite_to_fasta=protgraph.scripts.pepsqlite_to_fasta:main'
+        'protgraph = protgraph.protgraph:main',
+        'pepsqlite_to_fasta = protgraph.scripts.pepsqlite_to_fasta:main [sqlite]'
     ]),
     packages=find_packages(),
     include_package_data=True,
-    install_requires=packages
+    install_requires=packages,
+    extras_require={
+        "postgres": ["psycopg>=3.0"],
+        "mysql": ["mysql"],
+        "sqlite": ["apsw"],
+        "cassandra": ["cassandra-driver"],
+        "gremlin": ["gremlinpython"],
+        "redis": ["redis", "redisgraph"],
+        "full": ["mysql", "psycopg>=3.0", "apsw", "cassandra-driver", "redis", "redisgraph", "gremlinpython"],
+    },
 )

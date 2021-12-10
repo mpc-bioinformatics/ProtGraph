@@ -1,6 +1,5 @@
 
 
-import sqlite3
 import apsw
 
 import os
@@ -215,28 +214,6 @@ class PepSQLite(APeptideExporter):
                 zip(compressed_peptides, compressed_metas)
             )
         cur.execute('COMMIT')
-
-
-
-
-        # Getting blob entries:
-        # cur.execute("""
-        # Select ROWID from peptides_meta where peptide = x'78da0b020000530053';
-        # """
-        # )
-        # print("=========================================================")
-        # a = cur.fetchone()
-
-        # bl = self.conn.blobopen("main", "peptides_meta", "meta", a[0], 1)
-        # binar = bl.read()
-        # bl.close()
-
-        # stream = binar
-        # while stream:
-        #     dco = zlib.decompressobj()
-        #     print(dco.decompress(stream))
-        #     stream = dco.unused_data
-
 
         # self.conn.commit()
         cur.close()
