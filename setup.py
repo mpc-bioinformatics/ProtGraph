@@ -1,4 +1,5 @@
 from setuptools import find_packages, setup
+from setuptools.command.install import install
 
 # Get Packages from Pipfile by parsing them
 lines = []
@@ -26,9 +27,6 @@ for i in range(packages_sec+1, packages_end):
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-
-
-
 setup(
     name='protgraph',
     version='0.2.1',
@@ -48,7 +46,8 @@ setup(
     python_requires=">=3.6",
     entry_points=dict(console_scripts=[
         'protgraph = protgraph.protgraph:main',
-        'pepsqlite_to_fasta = protgraph.scripts.pepsqlite_to_fasta:main [sqlite]'
+        'protgraph_pepsqlite_to_fasta = protgraph.scripts.pepsqlite_to_fasta:main [sqlite]',
+        'protgraph_replace_fasta_header = protgraph.scripts.replace_fasta_header:main'
     ]),
     packages=find_packages(),
     include_package_data=True,

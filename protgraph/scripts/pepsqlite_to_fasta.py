@@ -5,7 +5,13 @@ import zlib
 from protgraph.cli import check_if_file_exists
 
 import tqdm
-import apsw
+
+# Optional Dependencies, currently installable via [sqlite]
+try:
+    import apsw
+except ImportError:
+    print("Error: 'apsw' is needed for this script to run properly. Exiting...")
+    exit()
 
 def parse_args():
     """ Parse Arguments """
