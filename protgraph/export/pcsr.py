@@ -111,8 +111,8 @@ class PCSR(GenericFileExporter):
 
         # Order to write:
         build_str = [
-            ("AC   " + AC),
-            ("IA   " + ";".join(IA)),
+            # ("AC   " + AC),
+            ("AC   " + ";".join([AC, *IA])),
             ("CN   " + ";".join([str(x) for x in CN])),
             ("NO   " + ";".join([str(x) for x in NO])),
             ("ED   " + ";".join([str(x) for x in ED])),
