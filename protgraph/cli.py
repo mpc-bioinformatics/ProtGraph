@@ -274,6 +274,22 @@ def add_graph_exports(group):
         "--export_large_pcsr_pdb_entries", "-elpcsr_pdbs", type=int, default=10,
         help="Set the number of pdb entries per node. Defaults to 10"
     )
+    group.add_argument(
+        "--export_binary_pcsr", "-ebpcsr", default=False, action="store_true",
+        help="Set this flag to export protein-graph with specific attributes in a binary CSR-format"
+    )
+    group.add_argument(
+        "--export_binary_pcsr_pdb_entries", "-ebpcsr_pdbs", type=int, default=10,
+        help="Set the number of pdb entries per node. Defaults to 10"
+    )
+    group.add_argument(
+        "--export_large_binary_pcsr", "-elbpcsr", default=False, action="store_true",
+        help="Set this flag to export protein-graph with specific attributes in a binary CSR-format"
+    )
+    group.add_argument(
+        "--export_large_binary_pcsr_pdb_entries", "-elbpcsr_pdbs", type=int, default=10,
+        help="Set the number of pdb entries per node. Defaults to 10"
+    )
 
 
 def add_redis_graph_export(group):

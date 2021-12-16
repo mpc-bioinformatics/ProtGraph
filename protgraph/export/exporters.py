@@ -59,10 +59,12 @@ class Exporters(ContextDecorator):
             (kwargs["export_gml"], "protgraph.export.gml", "GML"),
             (kwargs["export_pickle"], "protgraph.export.pickle", "Pickle"),
             (kwargs["export_pcsr"], "protgraph.export.pcsr", "PCSR"),
+            (kwargs["export_binary_pcsr"], "protgraph.export.binary_pcsr", "BinaryPCSR"),
 
             # Exporter to ONE large file
             (kwargs["export_large_csv"], "protgraph.export.large_csv", "LargeCSV"),
             (kwargs["export_large_pcsr"], "protgraph.export.large_pcsr", "LargePCSR"),
+            (kwargs["export_large_binary_pcsr"], "protgraph.export.large_binary_pcsr", "LargeBinaryPCSR"),
             
             # Exporter to "databases" (setup required)
             (kwargs["export_postgres"], "protgraph.export.postgres", "Postgres"),

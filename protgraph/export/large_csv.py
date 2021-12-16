@@ -25,8 +25,8 @@ class LargeCSV(AExporter):
             "Source", "Target", "cleaved", "qualifiers"
         ]
 
-        queue.put((self.nodes_out, ",".join(n_header) + "\n", True, False))
-        queue.put((self.edges_out, ",".join(e_header) + "\n", True, False))
+        queue.put((self.nodes_out, ",".join(n_header) + "\n", True, "a"))
+        queue.put((self.edges_out, ",".join(e_header) + "\n", True, "a"))
 
         # Get Id-Mapper
         node_mapping = [next(self.id_get) for _ in range(prot_graph.vcount())]
@@ -49,7 +49,7 @@ class LargeCSV(AExporter):
             (
                 self.nodes_out,
                 str_out.getvalue(),
-                False, False
+                False, "a"
             )
         )
 
@@ -67,7 +67,7 @@ class LargeCSV(AExporter):
             (
                 self.edges_out,
                 str_out.getvalue(),
-                False, False
+                False, "a"
             )
         )
 

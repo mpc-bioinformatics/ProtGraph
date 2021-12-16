@@ -19,11 +19,11 @@ class PCSR(GenericFileExporter):
 
     def start_up(self, **kwargs):
         self.pdb_count = kwargs["export_pcsr_pdb_entries"]
-        super(PCsr, self).start_up(**kwargs)
+        super(PCSR, self).start_up(**kwargs)
 
 
     def write_pcsr(self, pg, path):
-        out_str = self._build_csr_entry(pg)
+        out_str = self._build_csr_string(self._build_csr_entry(pg))
         with open(path + ".pcsr", "w") as out:
             out.write(out_str)
 
@@ -62,12 +62,8 @@ class PCSR(GenericFileExporter):
         IS = [IA.index(x) + 1 if x is not None else 0 for x in graph.vs["isoform_accession"]] if "isoform_accession" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Isos] substituted (idx + 1 due to AC)
         IS = [IS[x] for x in TO]
 
-        MW = graph.vs["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [] # Get List of Node[Mono Weight]
-        if len(MW) != 0:
-            MW = [MW[x] for x in TO]
-        AW = graph.vs["avrg_weight"] if "avrg_weight" in graph.vs[0].attributes() else [] # Get List of Node[Average Weight]
-        if len(AW) != 0:
-            AW = [AW[x] for x in TO]
+        MW = graph.vs["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Mono Weight]
+        MW = [MW[x] for x in TO]
 
 
         # Attribute for Edges
@@ -75,7 +71,7 @@ class PCSR(GenericFileExporter):
         CL = [CL[x] for x in TO_EDGES]
 
         if "qualifiers" in graph.es[0].attributes():
-            VC = [str(_count_feature(x, "VARIANT", min)) for x in graph.es["qualifiers"]]
+            VC = [_count_feature(x, "VARIANT", min) for x in graph.es["qualifiers"]]
             VC = [VC[x] for x in TO_EDGES]
             QU = []  # Get List of Edges[Qualifiers] (simplified as in FASTA)
             for qualifier in graph.es["qualifiers"]:
@@ -87,7 +83,7 @@ class PCSR(GenericFileExporter):
             QU = [QU[x] for x in TO_EDGES]
 
         else:
-            VC = [""]*len(ED)
+            VC = [0]*len(ED)
             QU = [""]*len(ED)
 
 
@@ -107,24 +103,38 @@ class PCSR(GenericFileExporter):
 
         else:
             CN = [graph.vcount(), graph.ecount(), 0]  # Every Count
-            PD = []
+            PD = [[[0,0]]*self.pdb_count]*len(NO)
 
         # Order to write:
+        build_list= [
+            ("AC", [AC, *IA]),
+            ("CN", CN),
+            ("NO", NO),
+            ("ED", ED),
+            ("SQ", SQ),
+            ("IS", IS),
+            ("MW", MW),
+            ("CL", CL),
+            ("QU", QU),
+            ("VC", VC),
+            ("PD", PD),
+        ]
+
+        return build_list
+
+    def _build_csr_string(self, build_list):
         build_str = [
-            # ("AC   " + AC),
-            ("AC   " + ";".join([AC, *IA])),
-            ("CN   " + ";".join([str(x) for x in CN])),
-            ("NO   " + ";".join([str(x) for x in NO])),
-            ("ED   " + ";".join([str(x) for x in ED])),
-            # ("TO   " + ";".join([str(x) for x in TO])),
-            ("SQ   " + ";".join(SQ)),
-            ("IS   " + ";".join([str(x) for x in IS])),
-            ("MW   " + ";".join([str(x) for x in MW])),
-            ("AW   " + ";".join([str(x) for x in AW])),
-            ("CL   " + ";".join(CL)),
-            ("QU   " + ";".join(QU)),
-            ("VC   " + ";".join(VC)),
-            ("PD   " + ";".join(["^".join(["^".join(str(z) for z in y) for y in x]) for x in PD])),
+            (build_list[0][0]+"   " + ";".join(build_list[0][1])),
+            (build_list[1][0]+"   " + ";".join([str(x) for x in build_list[1][1]])),
+            (build_list[2][0]+"   " + ";".join([str(x) for x in build_list[2][1]])),
+            (build_list[3][0]+"   " + ";".join([str(x) for x in build_list[3][1]])),
+            (build_list[4][0]+"   " + ";".join(build_list[4][1])),
+            (build_list[5][0]+"   " + ";".join([str(x) for x in build_list[5][1]])),
+            (build_list[6][0]+"   " + ";".join([str(x) for x in build_list[6][1]])),
+            (build_list[7][0]+"   " + ";".join(build_list[7][1])),
+            (build_list[8][0]+"   " + ";".join(build_list[8][1])),
+            (build_list[9][0]+"   " + ";".join([str(x) for x in build_list[9][1]])),
+            (build_list[10][0]+"   " + ";".join(["^".join(["^".join(str(z) for z in y) for y in x]) for x in build_list[10][1]])),
         ]
 
         return "\n".join(build_str) + "\n\n"

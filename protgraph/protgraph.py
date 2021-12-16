@@ -314,10 +314,20 @@ def write_to_common_file(queue):
             break
 
         if entry[3]:
-            with open(entry[0], "a") as out:
-                out.write(entry[1])
-                continue
-
+            try:
+                with open(entry[0], entry[3]) as out:
+                    out.write(entry[1])
+                    continue
+            except Exception:
+                # Create folder if needed
+                if os.path.dirname(entry[0]) != "":
+                    os.makedirs(
+                        os.path.dirname(entry[0]),
+                        exist_ok=True
+                    )
+                with open(entry[0], entry[3]) as out:
+                    out.write(entry[1])
+                    continue
 
         if entry[2] and entry[0] in header_dict:
             continue
