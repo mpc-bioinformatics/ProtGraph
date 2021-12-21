@@ -97,12 +97,12 @@ class PCSR(GenericFileExporter):
             # Delete entries in graph itself
             del graph.vs["pdb"]
 
-            CN = [graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
+            CN = [len([AC, *IA]), graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
             PD = pdb_entries  # List of Lists of PDB-Entries
             PD = [PD[x] for x in TO]
 
         else:
-            CN = [graph.vcount(), graph.ecount(), 0]  # Every Count
+            CN = [len([AC, *IA]), graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
             PD = [[[0,0]]*self.pdb_count]*len(NO)
 
         # Order to write:
