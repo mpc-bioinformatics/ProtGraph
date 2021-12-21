@@ -107,8 +107,8 @@ class PCSR(GenericFileExporter):
 
         # Order to write:
         build_list= [
-            ("AC", [AC, *IA]),
             ("CN", CN),
+            ("AC", [AC, *IA]),
             ("NO", NO),
             ("ED", ED),
             ("SQ", SQ),
