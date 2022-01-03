@@ -47,13 +47,13 @@ class PCSR(GenericFileExporter):
         out_edges = graph.vs[TO[0]].out_edges()
         TO_EDGES.extend(x.index for x in out_edges)
         NO.append(len(out_edges))
-        ED.extend([e.target for e in out_edges])
+        ED.extend(sorted([TO.index(e.target) for e in out_edges]))
         for n_idx in TO[1:]:
             n = graph.vs[n_idx]
             out_edges = n.out_edges()
             NO.append(len(out_edges) + NO[-1])
             TO_EDGES.extend(x.index for x in out_edges)
-            ED.extend([e.target for e in out_edges])
+            ED.extend(sorted([TO.index(e.target) for e in out_edges]))
 
         # All these attributes need to be reordered if NO or ED gets modified!
 
@@ -124,8 +124,8 @@ class PCSR(GenericFileExporter):
 
     def _build_csr_string(self, build_list):
         build_str = [
-            (build_list[0][0]+"   " + ";".join(build_list[0][1])),
-            (build_list[1][0]+"   " + ";".join([str(x) for x in build_list[1][1]])),
+            (build_list[0][0]+"   " + ";".join([str(x) for x in build_list[0][1]])),
+            (build_list[1][0]+"   " + ";".join(build_list[1][1])),
             (build_list[2][0]+"   " + ";".join([str(x) for x in build_list[2][1]])),
             (build_list[3][0]+"   " + ";".join([str(x) for x in build_list[3][1]])),
             (build_list[4][0]+"   " + ";".join(build_list[4][1])),

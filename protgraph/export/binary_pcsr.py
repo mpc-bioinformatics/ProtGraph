@@ -12,7 +12,7 @@ class BinaryPCSR(PCSR):
     def _mapping(self):
         return dict(
             AC=str,
-            CN=32,  # 3 Numbers always!
+            CN=32,  # 4 Numbers always!
             NO=32,
             ED=32,
             SQ=str,
