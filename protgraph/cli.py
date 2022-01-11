@@ -501,11 +501,6 @@ def add_sqlite_peptide_export(group):
         help="Set this flag to skip to skip all entries, which contain an X"
     )
     group.add_argument(
-        "--pep_sqlite_no_duplicates",  default=False, action="store_true",
-        help="Set this flag to not insert duplicates into the database. "
-        "NOTE: Setting this value decreases the performance drastically"
-    )
-    group.add_argument(
         "--pep_sqlite_use_igraph",  default=False, action="store_true",
         help="Set this flag to use igraph instead of netx. "
         "NOTE: If setting this flag, the peptide generation will be considerably faster "
