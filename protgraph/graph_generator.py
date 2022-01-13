@@ -11,6 +11,8 @@ from protgraph.ft_execution.init_met import execute_init_met
 from protgraph.ft_execution.generic import (execute_mutagen, 
                                             execute_conflict, 
                                             execute_variant)
+from protgraph.ft_execution.generic_cleaved_peptide import (execute_propeptide,
+                                                            execute_peptide)
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
 from protgraph.graph_collapse_edges import collapse_parallel_edges
@@ -84,6 +86,10 @@ def _include_ft_information(entry, graph, ft_dict):
     num_of_mutagens = _include_spefic_ft(graph, "MUTAGEN", execute_mutagen, sorted_features, ft_dict)
     num_of_conflicts = _include_spefic_ft(graph, "CONFLICT", execute_conflict, sorted_features, ft_dict)
 
+    # TODO to be tested on UniProt!
+    num_of_propeptides = _include_spefic_ft(graph, "PROPEP", execute_propeptide, sorted_features, ft_dict)
+    num_of_peptides = _include_spefic_ft(graph, "PEPTIDE", execute_peptide, sorted_features, ft_dict)
+
     return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant, num_of_mutagens, num_of_conflicts
 
 
@@ -98,7 +104,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
     # Set feature_table dict boolean table
     ft_dict = dict()
     if kwargs["feature_table"] is None or len(kwargs["feature_table"]) == 0 or "ALL" in kwargs["feature_table"]:
-        ft_dict = dict(VARIANT=True, VAR_SEQ=True, SIGNAL=True, INIT_MET=True, MUTAGEN=True, CONFLICT=True)
+        ft_dict = dict(PEPTIDE=True, PROPEP=True, VARIANT=True, VAR_SEQ=True, SIGNAL=True, INIT_MET=True, MUTAGEN=True, CONFLICT=True)
     else:
         for i in kwargs["feature_table"]:
             ft_dict[i] = True

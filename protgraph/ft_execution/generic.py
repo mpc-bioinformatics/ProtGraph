@@ -146,7 +146,7 @@ def _append_edge_list_missing(graph, generic_feature, edge_list, v_before, v_aft
 
 def _get_all_vertices_before_after(graph, aa_before: int, aa_after: int, reference: str):
     """
-    Get the vertices which are at the beginning and end of the referencing mutagen.
+    Get the vertices which are at the beginning and end of the referencing feature.
     We explicitly check here if we need to take the isoform position (and accesion)
     via the reference attribute, or if we simply query the graph for its position
     attribute.
