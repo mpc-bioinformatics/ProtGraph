@@ -73,6 +73,10 @@ class PepFasta(APeptideExporter):
 
     def _map_qualifier_to_string(self, qualifier):
         str_qualifiers = []
+        if qualifier is None:
+            # This case only happens if there are multiple ways from the start or end node due to the feature beeing there
+            # E.G. PROPEP and PEPTIDE have this in common
+            return ["None"]
         for f in qualifier:
             if isinstance(f, Or):
                 f_qs = []
@@ -112,6 +116,14 @@ class PepFasta(APeptideExporter):
             elif f.type == "INIT_MET":
                 str_qualifiers.append(
                     "INIT_MET[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                )
+            elif f.type == "PROPEP":
+                str_qualifiers.append(
+                    "PROPEP[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                )
+            elif f.type == "PEPTIDE":
+                str_qualifiers.append(
+                    "PEPTIDE[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
                 )
 
             else:

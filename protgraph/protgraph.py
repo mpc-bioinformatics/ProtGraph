@@ -300,6 +300,20 @@ def write_to_common_file(queue):
     This method accepts a tuple from a queue where:
     the first element in tuple contains the destination of the file
     and the second the content which should be writton on
+
+    The queue has to contain a truple with the following content:
+    (
+        [0] -> "str" The file where the data should be written
+        [1] -> "<type>" The data to be written into the file. Can be string/binary, etc...
+        [2] -> "Bool" True, writing this entry once accross all processes, False, write into the file for each process
+        [3] -> "str, How the file should be opened (only used to initially open the file)
+    )
+    (
+        [0] -> Mandatory
+        [1] -> Mandatory
+        [2] -> Mandatory (default should be false)
+        [3] -> Optional (should be "None", if not needed)
+    )
     """
     out_dict = dict()
     header_dict = dict()
@@ -313,22 +327,7 @@ def write_to_common_file(queue):
         if entry is None:
             break
 
-        if entry[3]:
-            try:
-                with open(entry[0], entry[3]) as out:
-                    out.write(entry[1])
-                    continue
-            except Exception:
-                # Create folder if needed
-                if os.path.dirname(entry[0]) != "":
-                    os.makedirs(
-                        os.path.dirname(entry[0]),
-                        exist_ok=True
-                    )
-                with open(entry[0], entry[3]) as out:
-                    out.write(entry[1])
-                    continue
-
+        # If writing header but it was already written then skip this entry
         if entry[2] and entry[0] in header_dict:
             continue
 
@@ -343,12 +342,16 @@ def write_to_common_file(queue):
                     exist_ok=True
                 )
             # Set entry
-            out_dict[entry[0]] = open(entry[0], "w")
+            if entry[3]:
+                out_dict[entry[0]] = open(entry[0], entry[3])
+            else: 
+                out_dict[entry[0]] = open(entry[0], "w")
             # Rewrite first line!
             out_dict[entry[0]].write(entry[1])
-
-        if entry[2] and entry[0] not in header_dict:
-            header_dict[entry[0]] = True
+            
+            # Check if this was a header we have written, set to True, to not rewrite header
+            if entry[2] and entry[0] not in header_dict:
+                header_dict[entry[0]] = True
 
     # Close all opened files
     for _, val in out_dict.items():

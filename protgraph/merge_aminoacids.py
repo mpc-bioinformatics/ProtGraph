@@ -1,3 +1,20 @@
+def traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c):
+    # iterate as long as possible.
+    while next_node in single_nodes:
+        single_nodes.remove(next_node)
+        c.append(next_node)
+        next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+
+    # Special case for single in
+    if next_node in single_in:
+        single_in.remove(next_node)
+        c.append(next_node)
+        next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+
+    # Skip chains containing only 1 element
+    if len(c) != 1:
+        complete_chain.append(c)
+
 def find_chains(graph_entry):
     """
     Retrive chain of nodes.
@@ -14,22 +31,7 @@ def find_chains(graph_entry):
     [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
 
 
-    def traverse_to_end(graph_entry, complete_chain, single_nodes, next_node, c):
-        # iterate as long as possible.
-        while next_node in single_nodes:
-            single_nodes.remove(next_node)
-            c.append(next_node)
-            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
 
-        # Special case for single in
-        if next_node in single_in:
-            single_in.remove(next_node)
-            c.append(next_node)
-            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
-
-        # Skip chains containing only 1 element
-        if len(c) != 1:
-            complete_chain.append(c)
 
     # Sort all nodes into 3 possible bins
     single_nodes = set()
@@ -51,7 +53,7 @@ def find_chains(graph_entry):
         c = [so]
         next_node = graph_entry.vs[so].neighbors(mode="OUT")[0].index
 
-        traverse_to_end(graph_entry, complete_chain, single_nodes, next_node, c)
+        traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c)
 
     # CASE 2: it may happen that the start node is at a beginning of chain.
     # Here we do a intersection of remaining nodes in single_nodes with the
@@ -63,7 +65,7 @@ def find_chains(graph_entry):
         next_node = graph_entry.vs[sn].neighbors(mode="OUT")[0].index
         single_nodes.remove(sn)
 
-        traverse_to_end(graph_entry, complete_chain, single_nodes, next_node, c)
+        traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c)
 
     # return complete chain
     return complete_chain
@@ -98,7 +100,7 @@ def merge_aminoacids(graph_entry):
     but can probably be further optimized.
     """
     # Retrive all chains of nodes (sorted by chain order in list of lists)
-    # TODO this is still the slowest part. It may be improved
+    # TODO this is still the slowest part. It may be improved    
     complete_chain = find_chains(graph_entry)
 
     # Generate merged nodes information (iow supernodes attributes)
