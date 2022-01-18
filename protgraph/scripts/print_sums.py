@@ -1,0 +1,126 @@
+import argparse
+import ast
+import csv
+import math
+import os
+import sys
+from operator import add
+
+import tqdm
+
+csv.field_size_limit(sys.maxsize)
+
+
+def _check_if_file_exists(s: str):
+    """ checks if a file exists. If not: raise Exception """
+    # TODO copied from prot_graph.py
+    if os.path.isfile(s):
+        return s
+    else:
+        raise Exception("File '{}' does not exists".format(s))
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Graph-Generator for Proteins/Peptides and Exporter to various formats"
+    )
+
+    # Statistics file
+    parser.add_argument(
+        "input_csv", type=_check_if_file_exists, nargs=1,
+        help="File containing the statistics output from ProtGraph (generated via '-cnp', '-cnpm' or '-cnph', ...)"
+    )
+
+    # Number of entries in csv
+    parser.add_argument(
+        "--num_entries", "-n", type=int, default=None,
+        help="Number of entries in csv. If provided, an estimate of needed time can be reported. Defaults to none"
+    )
+
+    # Number of entries in csv
+    parser.add_argument(
+        "--column_index", "-cidx", type=int, default=2,
+        help="The Index of the column of the graph-statistics file which should be summed up. Defaults to 12 (miscleavages column) "
+        "(The column for counted hops is one index further)"
+    )
+
+    return parser.parse_args()
+
+
+def add_lists(list_a, list_b):
+    """ Appends 0 if list A or B is too short. Does the operation '+' to two lists (vectors, etc.) """
+    if len(list_a) > len(list_b):
+        # Swap elements if the other is larger
+        t = list_a
+        list_a = list_b
+        list_b = t
+    return list(map(
+        add,
+        list_a + [0]*(len(list_b) - len(list_a)),
+        list_b
+    ))
+
+
+def add_numbers(numa, numb):
+    """ returns sum ('+')"""
+    return numa + numb
+
+def main():
+    args = parse_args()
+
+    # Parameters
+    statistics_file = args.input_csv[0]
+    num_entries = args.num_entries
+
+    # Static parameter, always 11th entry in statistics file
+    column_index = args.column_index
+
+    # Open al files and sort them accordingly
+    with open(statistics_file, "r") as in_file:
+        # Initialize CSV reader
+        csv_in = csv.reader(in_file)
+
+        # Skip Header
+        headers = next(csv_in)
+
+        # Set up summation method depending on type
+        first = next(csv_in)[column_index]
+        if not first:
+            raise Exception("Column '{}' (on index {}) contains no entries".format(headers[column_index], column_index))
+        try:
+            parsed_entry = ast.literal_eval(first)
+        except:
+            raise Exception("Column '{}' (on index {}) cannot be evaluated".format(headers[column_index], column_index))
+        if type(parsed_entry) == int:
+            exe_func = add_numbers
+            summation = 0
+        elif type(parsed_entry) == list:
+            exe_func = add_lists
+            summation = []
+        else:
+            raise Exception("Column '{}' (on index {}) cannot be summed, type is not list or int".format(headers[column_index], column_index))
+        
+        # Sum all entries depending on type
+        try:
+            for row in tqdm.tqdm(csv_in, unit="rows", total=num_entries):
+                summation = exe_func(
+                    summation, ast.literal_eval(row[column_index])
+                )
+        except:
+            raise Exception("Column '{}' (on index {}) contains different typed/corrupted entries".format(headers[column_index], column_index))
+
+        # Print results
+        if type(summation) == int:
+            summation = [summation]
+        idx_len = str(int(math.log10(len(summation)))+1)
+        entry_len = str(int(math.log10(max(summation)))+1)
+        print("Results from column '{}':\n".format(headers[column_index]))
+        print("Sum of each entry")
+        for idx, entry in enumerate(summation):
+            print(("{:>" + idx_len + "}:  {:>" + entry_len + "}").format(idx, entry))
+
+        print("\n\n\nCummulative sum")
+        k = 0
+        for idx, entry in enumerate(summation):
+            k += entry
+            print(("{:>" + idx_len + "}:  {:>" + entry_len + "}").format(idx, k))

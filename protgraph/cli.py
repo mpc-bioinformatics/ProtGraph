@@ -47,7 +47,7 @@ def add_main_args(parser):
 def add_graph_generation(group):
 
     # Available features
-    avail_fts = ["ALL", "NONE", "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT"]
+    avail_fts = ["ALL", "NONE", "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT", "PEPTIDE", "PROPEP"]
     group.add_argument(
         "--feature_table", "-ft", choices=avail_fts, type=str.upper, action="append",
         help="Set the features which should be added to the graph. Those feature_tables correspond to"
@@ -477,11 +477,11 @@ def add_sqlite_peptide_export(group):
     )
     group.add_argument(
         "--pep_sqlite_database", type=str, default="peptides.db",
-        help="Set the database which will be used for the postgresql server. Default: proteins"
+        help="Set the database file which will be used for the sqlite server. Default: proteins"
     )
     group.add_argument(
         "--pep_sqlite_output_dir", type=str, default=os.getcwd(),
-        help="Set the database which will be used for the postgresql server. Default: proteins"
+        help="Set the output directory which will be used for the sqlite file. Defaults to ./"
     )
     group.add_argument(
         "--pep_sqlite_hops", type=int, default=None,

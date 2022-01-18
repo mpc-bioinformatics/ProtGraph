@@ -47,7 +47,8 @@ setup(
     entry_points=dict(console_scripts=[
         'protgraph = protgraph.protgraph:main',
         'protgraph_pepsqlite_to_fasta = protgraph.scripts.pepsqlite_to_fasta:main [sqlite]',
-        'protgraph_replace_fasta_header = protgraph.scripts.replace_fasta_header:main'
+        'protgraph_replace_fasta_header = protgraph.scripts.replace_fasta_header:main', 
+        'protgraph_print_sums = protgraph.scripts.print_sums:main'
     ]),
     packages=find_packages(),
     include_package_data=True,
