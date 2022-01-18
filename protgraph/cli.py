@@ -10,6 +10,8 @@ def check_if_file_exists(s: str):
         raise Exception("File '{}' does not exists".format(s))
 
 
+
+
 def add_main_args(parser):
     # Needed Arguments for parsing (and other general/global arguments)
     parser.add_argument(
@@ -37,6 +39,40 @@ def add_main_args(parser):
         "It will write to 'protein_graph_statistics.csv' and overwrite if such a file exists. Default is "
         "set to the current working directory"
     )
+
+    # Available headers
+    avail_headers = [
+        # Basic Information
+        "accession", "gene_id",
+        # Num of Fts
+        "num_var_seq", "num_init_met", "num_signal", "num_variant", "num_mutagen",
+        "num_conflict", "num_peptide", "num_propep", "num_nodes", "num_edges",
+        # Statistics
+        "num_paths", "list_paths_miscleavages", "list_paths_hops", 
+        "list_paths_variant", "list_paths_mutagen", "list_paths_conflict",
+        # Protein description (at the end, since it can be very lengthy)
+        "protein_description",
+        ]
+    # Add list functionality to CLI
+    def _check_if_in_list(input: str):
+        """
+        Check if entries, seperated by ',' are al in the list
+        Returns the list as by user
+        """
+        l = []
+        for i in input.split(","):
+            if l not in avail_headers:
+                raise ArgumentTypeError(
+                "The header-Entry '{}' does not exists.".format(i)
+                )
+            l.append(i)
+        return l
+    parser.add_argument(
+        "--output_csv_layout", type=_check_if_in_list, action="store", default=avail_headers,
+        help="Set the csv layout of the generated graph statistics. You can choose from: " + ",".join(avail_headers) +
+        " (this is also the default order.) You can specify your own order or exclude headers, by using a comma-seperated list."
+    )
+
     parser.add_argument(
         "--no_description", "-no_desc", default=False, action="store_true",
         help="Set this flag to not include the protein descriptions into the output statistics file. "

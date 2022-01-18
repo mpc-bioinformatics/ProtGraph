@@ -59,7 +59,8 @@ def prot_graph(**kwargs):
     ]
     main_write_thread = Thread(
         target=write_output_csv_thread,
-        args=(statistics_queue, prot_graph_args["output_csv"], prot_graph_args["num_of_entries"],)
+        args=(statistics_queue, prot_graph_args["output_csv"], prot_graph_args["num_of_entries"],),
+        kwargs=kwargs
     )
     common_out_thread = Thread(
         target=write_to_common_file,
@@ -242,7 +243,7 @@ def get_defaults_args():
     return defaults
 
 
-def write_output_csv_thread(queue, out_file, total_num_entries):
+def write_output_csv_thread(queue, out_file, total_num_entries, **kwargs):
     """
         The statistics writing thread, which writes to 'out_file', overwriting its
         contents if existing.
@@ -253,30 +254,9 @@ def write_output_csv_thread(queue, out_file, total_num_entries):
     # (Over-)Write to out_file
     with open(out_file, "w") as out_f:
         csv_writer = csv.writer(out_f)
-
+        
         # Write Header Row
-        csv_writer.writerow(
-            [
-                "Accession",
-                "Entry ID",
-                "Number of isoforms",
-                "Has INIT_MET",
-                "Has SIGNAL",
-                "Number of variants",
-                "Number of Mutagens",
-                "Number of Conflicts",
-                "Number of cleaved edges",
-                "Number of nodes",
-                "Number of edges",
-                "Num of possible paths",
-                "Num of possible paths (by miscleavages)",
-                "Num of possible paths (by hops)",
-                "Num of possible paths (by feature variant)",
-                "Num of possible paths (by feature mutagen)",
-                "Num of possible paths (by feature conflict)",
-                "Protein description"
-            ]
-        )
+        csv_writer.writerow(kwargs["output_csv_layout"])
 
         while True:
             # Wait and get next result entry

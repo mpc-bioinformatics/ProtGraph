@@ -3,64 +3,32 @@ from operator import add
 from protgraph.graph_collapse_edges import Or
 
 
-def get_statistics(graph, **kwargs):
+# A list of statistic methods with csv keys, which should be calculated.
+STATISTICS_METHOD_LIST = [
+    ("calc_num_possibilities", lambda graph, or_count: _count_miscleavages_list(graph), "num_paths"),
+    ("calc_num_possibilities_miscleavages", lambda graph, or_count: _count_miscleavages_list(graph), "list_paths_miscleavages"),
+    ("calc_num_possibilities_hops", lambda graph, or_count: _count_hops_list(graph), "list_paths_hops"),
+    ("calc_num_possibilities_variant", lambda graph, or_count: _count_feature_list(graph, feature_type="VARIANT", or_count=or_count), "list_paths_variant"),
+    ("calc_num_possibilities_mutagen", lambda graph, or_count: _count_feature_list(graph, feature_type="MUTAGEN", or_count=or_count), "list_paths_mutagen"),
+    ("calc_num_possibilities_conflict", lambda graph, or_count: _count_feature_list(graph, feature_type="CONFLICT", or_count=or_count), "list_paths_conflict"),
+]
+
+
+def get_statistics(graph, entry_dict, **kwargs):
     """
     TODO can we retrieve even more information!?
     returns #Node, #Edges, #Num_Of_Paths
     """
 
     # Get the number of nodes and edges (an be done instantly)
-    num_edges = _get_edge_count(graph)
-    num_nodes = _get_node_count(graph)
+    entry_dict["num_edges"] = _get_edge_count(graph)
+    entry_dict["num_nodes"] = _get_node_count(graph)
 
-    # Get the number of possible paths if set
-    num_possible_paths = (
-        _count_pos_paths(graph) 
-        if kwargs["calc_num_possibilities"] else None
-    )
-
-    # Get the number of possible paths (with all miscleavages) if set
-    num_possible_paths_all_mis = (
-        _count_miscleavages_list(graph)
-        if kwargs["calc_num_possibilities_miscleavages"] else None
-    )
-
-    # Get the number of possible paths (with number of hops) if set
-    num_possible_paths_all_hops = (
-        _count_hops_list(graph)
-        if kwargs["calc_num_possibilities_hops"] else None
-    )
-
-    # Get the number of possible paths by specific features
-    num_possible_paths_variant = (
-        _count_feature_list(
-            graph, feature_type="VARIANT",
-            or_count=kwargs["calc_num_possibilites_or_count"]
-        )
-        if kwargs["calc_num_possibilities_variant"] else None
-    )
-    num_possible_paths_mutagen = (
-        _count_feature_list(
-            graph, feature_type="MUTAGEN",
-            or_count=kwargs["calc_num_possibilites_or_count"]
-        )
-        if kwargs["calc_num_possibilities_mutagen"] else None
-    )
-    num_possible_paths_conflict = (
-        _count_feature_list(
-            graph, feature_type="CONFLICT",
-            or_count=kwargs["calc_num_possibilites_or_count"]
-        )
-        if kwargs["calc_num_possibilities_conflict"] else None
-    )
+    for calculate_bool, method, entry_dict_key in STATISTICS_METHOD_LIST:
+        if kwargs[calculate_bool]:
+            entry_dict[entry_dict_key] = method(graph, kwargs["calc_num_possibilites_or_count"])
 
     # TODO can we calculate more statistics?
-
-    # Return all information
-    return num_nodes, num_edges, num_possible_paths, \
-        num_possible_paths_all_mis, num_possible_paths_all_hops, \
-        num_possible_paths_variant, num_possible_paths_mutagen, \
-        num_possible_paths_conflict
 
 
 def _get_edge_count(graph_entry):

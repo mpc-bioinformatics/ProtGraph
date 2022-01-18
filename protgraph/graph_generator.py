@@ -19,9 +19,8 @@ from protgraph.graph_collapse_edges import collapse_parallel_edges
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
 from protgraph.verify_graphs import verify_graph
-import tracemalloc
-import linecache
-import os
+
+
 def display_top(snapshot, key_type='lineno', limit=10):
     snapshot = snapshot.filter_traces((
         tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
@@ -91,31 +90,40 @@ def _include_spefic_ft(graph, ft_type, method, sorted_features, ft_dict):
     return num_of_feature_type
 
 
-def _include_ft_information(entry, graph, ft_dict):
-    """ Returns num of possible isoforms and others (on the fly) """
+# Features which are applied in order on the graph
+FT_SINGLE_EXECUTION = [
+    ("INIT_MET", execute_init_met, "num_init_met"),
+    ("SIGNAL", execute_signal, "num_signal"),
+    ("VARIANT", execute_variant, "num_variant"),
+    ("MUTAGEN", execute_mutagen, "num_mutagen"),
+    ("CONFLICT", execute_conflict, "num_conflict"),
+    ("PROPEP", execute_propeptide, "num_propep"),
+    ("PEPTIDE", execute_peptide, "num_peptide"),
+]
+
+
+def _include_ft_information(entry, graph, ft_dict, entry_dict):
+    """ 
+    Apply feature (first isoform, then others as specified in order) on the graph.
+
+    This method can count the number of applied features on the graph on the fly
+    """
     # Sort features of entry according to their type into a dict
     sorted_features = _sort_entry_features(entry)
 
     # VAR_SEQ (isoforms) need to be executed at once and before all other variations
     # since those can be referenced by others
-    num_of_isoforms = 0 if "VAR_SEQ" in ft_dict else None
+    if "VAR_SEQ" in ft_dict:
+        entry_dict["num_var_seq"] = 0 
     if "VAR_SEQ" in sorted_features and "VAR_SEQ" in ft_dict:
         # Get isoform information of entry as a dict
         isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
+        entry_dict["num_var_seq"] = num_of_isoforms
         execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
 
     # Execute the other features tables, per feature
-    num_of_init_m = _include_spefic_ft(graph, "INIT_MET", execute_init_met, sorted_features, ft_dict)
-    num_of_signal = _include_spefic_ft(graph, "SIGNAL", execute_signal, sorted_features, ft_dict)
-    num_of_variant = _include_spefic_ft(graph, "VARIANT", execute_variant, sorted_features, ft_dict)
-    num_of_mutagens = _include_spefic_ft(graph, "MUTAGEN", execute_mutagen, sorted_features, ft_dict)
-    num_of_conflicts = _include_spefic_ft(graph, "CONFLICT", execute_conflict, sorted_features, ft_dict)
-
-    # TODO to be tested on UniProt!
-    num_of_propeptides = _include_spefic_ft(graph, "PROPEP", execute_propeptide, sorted_features, ft_dict)
-    num_of_peptides = _include_spefic_ft(graph, "PEPTIDE", execute_peptide, sorted_features, ft_dict)
-
-    return num_of_isoforms, num_of_init_m, num_of_signal, num_of_variant, num_of_mutagens, num_of_conflicts
+    for (feature, method, entry_dict_key) in FT_SINGLE_EXECUTION:
+        entry_dict[entry_dict_key] = _include_spefic_ft(graph, feature, method, sorted_features, ft_dict)
 
 
 def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id, **kwargs):
@@ -145,6 +153,9 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             if entry is None:
                 # --> Stop Condition of Process
                 break
+            
+            # create new dict to collect information about this entry
+            entry_dict = dict()
 
             # Beginning of Graph-Generation
             # We also collect interesting information here!
@@ -152,10 +163,9 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             # Generate canonical graph (initialization of the graph)
             graph = _generate_canonical_graph(entry.sequence, entry.accessions[0])
 
-            # FT parsing and appending of Nodes and Edges into the graph
+            # FT parsing and appending of nodes and edges into the graph
             # The amount of isoforms, etc.. can be retrieved on the fly
-            num_isoforms, num_initm, num_signal, num_variant, num_mutagens, num_conficts =\
-                _include_ft_information(entry, graph, ft_dict)
+            _include_ft_information(entry, graph, ft_dict, entry_dict)
 
             # Replace Amino Acids based on user defined rules: E.G.: "X -> A,B,C"
             replace_aa(graph, kwargs["replace_aa"])
@@ -175,10 +185,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             annotate_weights(graph, **kwargs)
 
             # Calculate statistics on the graph:
-            (
-                num_nodes, num_edges, num_paths, num_paths_miscleavages, num_paths_hops,
-                num_paths_var, num_path_mut, num_path_con
-            ) = get_statistics(graph, **kwargs)
+            get_statistics(graph, entry_dict, **kwargs)
 
             # Verify graphs if wanted:
             if kwargs["verify_graph"]:
@@ -189,30 +196,16 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
 
             # Output statistics we gathered during processing
             if kwargs["no_description"]:
-                entry_protein_desc = None
+                entry_dict["protein_description"] = entry_protein_desc = None
             else:
                 entry_protein_desc = entry.description.split(";", 1)[0]
-                entry_protein_desc = entry_protein_desc[entry_protein_desc.index("=") + 1:]
+                entry_dict["protein_description"] = entry_protein_desc[entry_protein_desc.index("=") + 1:]
+            
+            # Set accession and gene for csv
+            entry_dict["accession"] = entry.accessions[0]
+            entry_dict["gene_id"] = entry.entry_name
 
+            # Return the statistics which were retrieved
             graph_queue.put(
-                (
-                    entry.accessions[0],  # Protein Accesion
-                    entry.entry_name,  # Protein displayed name
-                    num_isoforms,  # Number of Isoforms
-                    num_initm,  # Number of Init_M (either 0 or 1)
-                    num_signal,  # Number of Signal Peptides used (either 0 or 1)
-                    num_variant,  # Number of Variants applied to this protein
-                    num_mutagens,  # Number of applied mutagens on the graph
-                    num_conficts,  # Number of applied conflicts on the graph
-                    num_of_cleavages,  # Number of cleavages (marked edges) this protein has
-                    num_nodes,  # Number of nodes for the Protein/Peptide Graph
-                    num_edges,  # Number of edges for the Protein/Peptide Graph
-                    num_paths,  # Possible (non repeating paths) to the end of a graph. (may conatin repeating peptides)
-                    num_paths_miscleavages,  # As num_paths, but binned to the number of miscleavages (by list idx, at 0)
-                    num_paths_hops,  # As num_paths, only that we bin by hops (E.G. useful for determine DFS or BFS depths)
-                    num_paths_var,  # Num paths of feture variant
-                    num_path_mut,  # Num paths of feture mutagen
-                    num_path_con,  # Num paths of feture conflict
-                    entry_protein_desc,  # Description name of the Protein (can be lenghty)
-                )
+                [entry_dict[x] if x in entry_dict else None for x in kwargs["output_csv_layout"]]
             )

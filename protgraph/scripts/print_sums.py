@@ -8,6 +8,8 @@ from operator import add
 
 import tqdm
 
+
+from protgraph.graph_statistics import _add_lists
 csv.field_size_limit(sys.maxsize)
 
 
@@ -28,7 +30,8 @@ def parse_args():
     # Statistics file
     parser.add_argument(
         "input_csv", type=_check_if_file_exists, nargs=1,
-        help="File containing the statistics output from ProtGraph (generated via '-cnp', '-cnpm' or '-cnph', ...)"
+        help="File containing the statistics output from ProtGraph (E.G.: Generated via '-cnp', '-cnpm' or '-cnph', ...). "
+        "All columns beginning with 'num' or 'list' can be used."
     )
 
     # Number of entries in csv
@@ -46,24 +49,6 @@ def parse_args():
 
     return parser.parse_args()
 
-
-def add_lists(list_a, list_b):
-    """ Appends 0 if list A or B is too short. Does the operation '+' to two lists (vectors, etc.) """
-    if len(list_a) > len(list_b):
-        # Swap elements if the other is larger
-        t = list_a
-        list_a = list_b
-        list_b = t
-    return list(map(
-        add,
-        list_a + [0]*(len(list_b) - len(list_a)),
-        list_b
-    ))
-
-
-def add_numbers(numa, numb):
-    """ returns sum ('+')"""
-    return numa + numb
 
 def main():
     args = parse_args()
@@ -92,10 +77,10 @@ def main():
         except:
             raise Exception("Column '{}' (on index {}) cannot be evaluated".format(headers[column_index], column_index))
         if type(parsed_entry) == int:
-            exe_func = add_numbers
+            exe_func = add
             summation = 0
         elif type(parsed_entry) == list:
-            exe_func = add_lists
+            exe_func = _add_lists
             summation = []
         else:
             raise Exception("Column '{}' (on index {}) cannot be summed, type is not list or int".format(headers[column_index], column_index))
