@@ -19,6 +19,7 @@ class PepMySQL(APeptideExporter):
     """
 
     def start_up(self, **kwargs):
+        super(PepMySQL, self).start_up(**kwargs)
         # Here we generate a connection to mysql
         # and generate the corresponding tables
 
@@ -29,16 +30,6 @@ class PepMySQL(APeptideExporter):
         self.password = kwargs["pep_mysql_password"]  # Password
         self.database = kwargs["pep_mysql_database"]  # Database
         self.no_duplicates = kwargs["pep_mysql_no_duplicates"]
-
-        # Traversal parameters:
-        self._set_up_taversal(
-            kwargs["pep_mysql_skip_x"],
-            kwargs["pep_mysql_min_pep_length"],
-            kwargs["pep_mysql_miscleavages"],
-            kwargs["pep_mysql_use_igraph"],
-            kwargs["pep_mysql_hops"],
-            kwargs["pep_mysql_batch_size"]
-        )
 
         # Get Unique generator, since mysql can ONLY! return 1 id at once after bulk inserting entries..
         self.id_gen = self.unique_id_gen(**kwargs)

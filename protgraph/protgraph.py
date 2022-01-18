@@ -178,6 +178,7 @@ def create_parser():
         ("postgres_graph_export", cli.add_postgres_graph_export),
         ("mysql_graph_export", cli.add_mysql_graph_export),
         ("cassandra_graph_export", cli.add_cassandra_export),
+        ("peptide_export_traversal_options", cli.add_peptide_export_traversal_options),
         ("postgres_peptide_export", cli.add_postgres_peptide_export),
         ("mysql_peptide_export", cli.add_mysql_peptide_export),
         ("citus_peptide_export", cli.add_citus_peptide_export),

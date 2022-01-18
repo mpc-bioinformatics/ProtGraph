@@ -19,16 +19,38 @@ class APeptideExporter(AExporter):
         self.use_igraph = None  # Use Igraph? (or networkX?)
         self.peptide_max_length = None  # Maximum peptide length to limit possibilites. None to consider all.
         self.batch_size = None  # Batch size of peptides which will be processed at once. (list length)
+        self.mass_factor = None # Mass factor for only allowing min/max weight peptides 
+        self.min_weight = None # The minimum weight of the peptide in Da
+        self.max_weight = None # The maximum weight of the peptide in Da
 
 
-    def _set_up_taversal(self, skip_x, peptide_min_length, max_miscleavages, use_igraph, peptide_max_length, batch_size):
-        """ Set parameters by dedicated function (preferably in start_up) """
+    def _set_up_taversal(self, skip_x, peptide_min_length, max_miscleavages, use_igraph, peptide_max_length, batch_size, min_weight, max_weight):
+        """
+        Set parameters by dedicated function (preferably in start_up)
+        This method is seperately since it may be needed that we want finer control in export at once
+        E.G.: PGExport with 5-60 AAs, SQLiteExport with 5-50 etc...
+        """
         self.skip_x = skip_x
         self.peptide_min_length = peptide_min_length
         self.max_miscleavages = max_miscleavages
         self.use_igraph = use_igraph
         self.peptide_max_length = peptide_max_length
         self.batch_size = batch_size
+        self.min_weight = min_weight
+        self.max_weight = max_weight        
+
+    def start_up(self, **kwargs):
+        self._set_up_taversal(
+            kwargs["pep_skip_x"],
+            kwargs["pep_min_pep_length"],
+            kwargs["pep_miscleavages"],
+            kwargs["pep_use_igraph"],
+            kwargs["pep_hops"],
+            kwargs["pep_batch_size"],
+            int(kwargs["pep_min_weight"] * kwargs["mass_dict_factor"]),
+            int(kwargs["pep_max_weight"] * kwargs["mass_dict_factor"]),
+        )
+
 
     @abstractmethod
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, queue):
@@ -76,6 +98,18 @@ class APeptideExporter(AExporter):
             if self.max_miscleavages != -1:
                 if cleaved > self.max_miscleavages:
                     continue
+
+            if "mono_weight" in prot_graph.vs[0].attributes():
+                if self.min_weight > 0:
+                    w = sum(prot_graph.vs[path]["mono_weight"])
+                    if self.min_weight > w:
+                        continue
+                if self.max_weight > 0:
+                    w = sum(prot_graph.vs[path]["mono_weight"])
+                    if self.max_weight < w:
+                        continue
+
+
 
             # Append information to list
             l_path.append(path)

@@ -12,16 +12,7 @@ class PepFasta(APeptideExporter):
     """
 
     def start_up(self, **kwargs):
-        # Traversal parameters:
-        self._set_up_taversal(
-            kwargs["pep_fasta_skip_x"],
-            kwargs["pep_fasta_min_pep_length"],
-            kwargs["pep_fasta_miscleavages"],
-            kwargs["pep_fasta_use_igraph"],
-            kwargs["pep_fasta_hops"],
-            kwargs["pep_fasta_batch_size"]
-        )
-
+        super(PepFasta, self).start_up(**kwargs)
         self.id_gen = self.unique_id_gen(**kwargs)
 
         # Get output file from configuration

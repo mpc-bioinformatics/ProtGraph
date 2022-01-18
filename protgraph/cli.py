@@ -432,6 +432,54 @@ def add_cassandra_export(group):
     )
 
 
+def add_peptide_export_traversal_options(group):
+    group.add_argument(
+        "--pep_hops", type=int, default=None,
+        help="Set the number of hops (max length of path) which should be used to get paths "
+        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
+        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
+    )
+    group.add_argument(
+        "--pep_miscleavages", type=int, default=-1,
+        help="Set this number to filter the generated paths by their miscleavages."
+        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
+        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
+        "number of miscleavages, if needed."
+    )
+    group.add_argument(
+        "--pep_skip_x",  default=False, action="store_true",
+        help="Set this flag to skip to skip all entries, which contain an X"
+    )
+    group.add_argument(
+        "--pep_use_igraph",  default=False, action="store_true",
+        help="Set this flag to use igraph instead of netx. "
+        "NOTE: If setting this flag, the peptide generation will be considerably faster "
+        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
+        "over each single edge, so some (repeating results) may never be discovered when using "
+        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
+    )
+    group.add_argument(
+        "--pep_min_pep_length", type=int, default=0,
+        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
+        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
+    )
+    group.add_argument(
+        "--pep_batch_size", type=int, default=25000,
+        help="Set the batch size. This defines how many peptides are inserted at once. "
+        "Default: 25000"
+    )
+    group.add_argument(
+        "--pep_min_weight", type=float, default=-1,
+        help="Set the minimum peptide weight in Da which should be considered. Set negative to ignore. "
+        "Default: -1"
+    )
+    group.add_argument(
+        "--pep_max_weight", type=float, default=-1,
+        help="Set the maximum peptide weight in Da which should be considered. Set negative to ignore. "
+        "Default: -1"
+    )
+
+
 def add_postgres_peptide_export(group):
     group.add_argument(
         "--export_peptide_postgres", "-epeppg", default=False, action="store_true",
@@ -461,44 +509,9 @@ def add_postgres_peptide_export(group):
         help="Set the database which will be used for the postgresql server. Default: proteins"
     )
     group.add_argument(
-        "--pep_postgres_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    group.add_argument(
-        "--pep_postgres_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    group.add_argument(
-        "--pep_postgres_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    group.add_argument(
         "--pep_postgres_no_duplicates",  default=False, action="store_true",
         help="Set this flag to not insert duplicates into the database. "
         "NOTE: Setting this value decreases the performance drastically"
-    )
-    group.add_argument(
-        "--pep_postgres_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    group.add_argument(
-        "--pep_postgres_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    group.add_argument(
-        "--pep_postgres_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 25000 (currently limited by psycopg3)"
     )
 
 
@@ -518,41 +531,6 @@ def add_sqlite_peptide_export(group):
     group.add_argument(
         "--pep_sqlite_output_dir", type=str, default=os.getcwd(),
         help="Set the output directory which will be used for the sqlite file. Defaults to ./"
-    )
-    group.add_argument(
-        "--pep_sqlite_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    group.add_argument(
-        "--pep_sqlite_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    group.add_argument(
-        "--pep_sqlite_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    group.add_argument(
-        "--pep_sqlite_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    group.add_argument(
-        "--pep_sqlite_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    group.add_argument(
-        "--pep_sqlite_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 25000 (currently limited by psycopg3)"
     )
     group.add_argument(
         "--pep_sqlite_non_compact",  default=False, action="store_true",
@@ -598,44 +576,9 @@ def add_mysql_peptide_export(group):
         help="Set the database which will be used for the mysql server. Default: proteins"
     )
     group.add_argument(
-        "--pep_mysql_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    group.add_argument(
-        "--pep_mysql_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    group.add_argument(
-        "--pep_mysql_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    group.add_argument(
         "--pep_mysql_no_duplicates",  default=False, action="store_true",
         help="Set this flag to not insert duplicates into the database. "
         "NOTE: Setting this value decreases the performance drastically"
-    )
-    group.add_argument(
-        "--pep_mysql_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    group.add_argument(
-        "--pep_mysql_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    group.add_argument(
-        "--pep_mysql_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 25000"
     )
 
 
@@ -649,41 +592,6 @@ def add_fasta_peptide_export(group):
         type=str,
         help="Set the output file for the peptide fasta export. Default: '${pwd}/peptides.fasta'. "
         "NOTE: This will overwrite existing files."
-    )
-    group.add_argument(
-        "--pep_fasta_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    group.add_argument(
-        "--pep_fasta_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    group.add_argument(
-        "--pep_fasta_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    group.add_argument(
-        "--pep_fasta_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    group.add_argument(
-        "--pep_fasta_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    group.add_argument(
-        "--pep_fasta_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are processed and written at once. "
-        "Default: 25000"
     )
 
 
@@ -699,41 +607,6 @@ def add_trie_peptide_export(group):
         type=str,
         help="Set the output folder for the peptide export. Default: '${pwd}/peptides.fasta'. "
         "NOTE: This will append existing files."
-    )
-    group.add_argument(
-        "--pep_trie_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    group.add_argument(
-        "--pep_trie_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    group.add_argument(
-        "--pep_trie_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    group.add_argument(
-        "--pep_trie_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    group.add_argument(
-        "--pep_trie_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    group.add_argument(
-        "--pep_trie_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are processed and written at once. "
-        "Default: 25000"
     )
 
 
@@ -766,46 +639,10 @@ def add_citus_peptide_export(group):
         help="Set the database which will be used for the postgresql server with citus. Default: proteins"
     )
     group.add_argument(
-        "--pep_citus_hops", type=int, default=None,
-        help="Set the number of hops (max length of path) which should be used to get paths "
-        "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
-    )
-    group.add_argument(
-        "--pep_citus_miscleavages", type=int, default=-1,
-        help="Set this number to filter the generated paths by their miscleavages."
-        "The protein graphs do contain infomration about 'infinite' miscleavages and therefor also return "
-        "those paths/peptides. If setting (default) to '-1', all results are considered. However you can limit the "
-        "number of miscleavages, if needed."
-    )
-    group.add_argument(
-        "--pep_citus_skip_x",  default=False, action="store_true",
-        help="Set this flag to skip to skip all entries, which contain an X"
-    )
-    group.add_argument(
         "--pep_citus_no_duplicates",  default=False, action="store_true",
         help="Set this flag to not insert duplicates into the database. "
         "NOTE: Setting this value decreases the performance drastically"
     )
-    group.add_argument(
-        "--pep_citus_use_igraph",  default=False, action="store_true",
-        help="Set this flag to use igraph instead of netx. "
-        "NOTE: If setting this flag, the peptide generation will be considerably faster "
-        "but also consumes much more memory. Also, the igraph implementation DOES NOT go "
-        "over each single edge, so some (repeating results) may never be discovered when using "
-        "this flag."  # TODO see issue: https://github.com/igraph/python-igraph/issues/366
-    )
-    group.add_argument(
-        "--pep_citus_min_pep_length", type=int, default=0,
-        help="Set the minimum peptide length to filter out smaller existing path/peptides. "
-        "Here, the actual number of aminoacid for a peptide is referenced. Default: 0"
-    )
-    group.add_argument(
-        "--pep_citus_batch_size", type=int, default=25000,
-        help="Set the batch size. This defines how many peptides are inserted at once. "
-        "Default: 25000"
-    )
-
 
 def add_gremlin_graph_export(group):
     group.add_argument(

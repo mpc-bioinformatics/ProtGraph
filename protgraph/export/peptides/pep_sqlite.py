@@ -23,16 +23,7 @@ class PepSQLite(APeptideExporter):
     """
 
     def start_up(self, **kwargs):
-
-        # Traversal parameters:
-        self._set_up_taversal(
-            kwargs["pep_sqlite_skip_x"],
-            kwargs["pep_sqlite_min_pep_length"],
-            kwargs["pep_sqlite_miscleavages"],
-            kwargs["pep_sqlite_use_igraph"],
-            kwargs["pep_sqlite_hops"],
-            kwargs["pep_sqlite_batch_size"]
-        )
+        super(PepSQLite, self).start_up(**kwargs)
 
         self.compact_repr = not kwargs["pep_sqlite_non_compact"]
 

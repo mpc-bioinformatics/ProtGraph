@@ -17,6 +17,7 @@ class PepCitus(PepPostgres):
     """
 
     def start_up(self, **kwargs):
+        super(PepCitus, self).start_up(**kwargs)
         # Here we generate a connection to postgres
         # and generate the corresponding tables
 
@@ -34,16 +35,6 @@ class PepCitus(PepPostgres):
         self.password = kwargs["pep_citus_password"]  # Password
         self.database = kwargs["pep_citus_database"]  # Database
         self.postgres_no_duplicates = kwargs["pep_citus_no_duplicates"]
-
-        # Traversal parameters:
-        self._set_up_taversal(
-            kwargs["pep_citus_skip_x"],
-            kwargs["pep_citus_min_pep_length"],
-            kwargs["pep_citus_miscleavages"],
-            kwargs["pep_citus_use_igraph"],
-            kwargs["pep_citus_hops"],
-            kwargs["pep_citus_batch_size"]
-        )
 
         # Initialize connection
         try:

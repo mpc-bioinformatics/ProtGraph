@@ -12,15 +12,7 @@ class PepTrie(PepFasta):
     """
 
     def start_up(self, **kwargs):
-        # Traversal parameters:
-        self._set_up_taversal(
-            kwargs["pep_trie_skip_x"],
-            kwargs["pep_trie_min_pep_length"],
-            kwargs["pep_trie_miscleavages"],
-            kwargs["pep_trie_use_igraph"],
-            kwargs["pep_trie_hops"],
-            kwargs["pep_trie_batch_size"]
-        )
+        super(PepTrie, self).start_up(**kwargs)
 
         self.id_gen = self.unique_id_gen(**kwargs)
 

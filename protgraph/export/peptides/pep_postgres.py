@@ -17,6 +17,7 @@ class PepPostgres(APeptideExporter):
     """
 
     def start_up(self, **kwargs):
+        super(PepPostgres, self).start_up(**kwargs)
         # Here we generate a connection to postgres
         # and generate the corresponding tables
 
@@ -34,16 +35,6 @@ class PepPostgres(APeptideExporter):
         self.password = kwargs["pep_postgres_password"]  # Password
         self.database = kwargs["pep_postgres_database"]  # Database
         self.postgres_no_duplicates = kwargs["pep_postgres_no_duplicates"]
-
-        # Traversal parameters:
-        self._set_up_taversal(
-            kwargs["pep_postgres_skip_x"],
-            kwargs["pep_postgres_min_pep_length"],
-            kwargs["pep_postgres_miscleavages"],
-            kwargs["pep_postgres_use_igraph"],
-            kwargs["pep_postgres_hops"],
-            kwargs["pep_postgres_batch_size"]
-        )
 
         # Initialize connection
         try:
