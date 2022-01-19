@@ -5,7 +5,7 @@ from protgraph.graph_collapse_edges import Or
 
 # A list of statistic methods with csv keys, which should be calculated.
 STATISTICS_METHOD_LIST = [
-    ("calc_num_possibilities", lambda graph, or_count: _count_miscleavages_list(graph), "num_paths"),
+    ("calc_num_possibilities", lambda graph, or_count: _count_pos_paths(graph), "num_paths"),
     ("calc_num_possibilities_miscleavages", lambda graph, or_count: _count_miscleavages_list(graph), "list_paths_miscleavages"),
     ("calc_num_possibilities_hops", lambda graph, or_count: _count_hops_list(graph), "list_paths_hops"),
     ("calc_num_possibilities_variant", lambda graph, or_count: _count_feature_list(graph, feature_type="VARIANT", or_count=or_count), "list_paths_variant"),
