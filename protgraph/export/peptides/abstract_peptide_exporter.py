@@ -132,9 +132,14 @@ class APeptideExporter(AExporter):
     def _get_peps(self, prot_graph, s, e):
         """ Get peptides depending on selected method """
         # OFFSET +1 since we have dedicated start and end nodes!
-        cutoff = self.peptide_max_length + 1 if self.peptide_max_length is not None else None
-        if self.use_igraph and self.peptide_max_length is None:
-            cutoff = -1
+        # Except for -1, then we consider all paths
+        if self.peptide_max_length < 0:
+            if not self.use_igraph:
+                cutoff = None 
+            else:
+                cutoff = -1
+        else:
+            cutoff = self.peptide_max_length + 1
 
         if self.use_igraph:
             # This can consume lots of memory

@@ -29,7 +29,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='protgraph',
-    version='0.2.1',
+    version='0.3.0',
     author="Dominik Lux",
     description="ProtGraph, a graph generator for proteins.",
     long_description=long_description,

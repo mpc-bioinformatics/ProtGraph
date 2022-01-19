@@ -434,10 +434,10 @@ def add_cassandra_export(group):
 
 def add_peptide_export_traversal_options(group):
     group.add_argument(
-        "--pep_hops", type=int, default=None,
+        "--pep_hops", type=int, default=-1,
         help="Set the number of hops (max length of path) which should be used to get paths "
         "from a graph. NOTE: the larger the number the more memory may be needed. This depends on "
-        "the protein which currently is processed. Default is set to 'None', so all lengths are considered."
+        "the protein which currently is processed. Default is set to '-1', so all lengths are considered."
     )
     group.add_argument(
         "--pep_miscleavages", type=int, default=-1,
