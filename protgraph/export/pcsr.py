@@ -65,6 +65,18 @@ class PCSR(GenericFileExporter):
         MW = graph.vs["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Mono Weight]
         MW = [MW[x] for x in TO]
 
+        PO = graph.vs["position"]
+        PO = [PO[x] if PO[x] is not None else -1 for x in TO]
+
+
+        # Add Position-Information
+        if "isoform_position" in graph.vs[0].attributes():
+            IP = graph.vs["isoform_position"]
+            IP = [IP[x] if IP[x] is not None else -1 for x in TO]
+        else:
+            IP = [-1]*len(NO)
+
+
 
         # Attribute for Edges
         CL = ["t" if x else "f" for x in graph.es["cleaved"]]  # Get List of Edges[Cleaved]
@@ -112,7 +124,9 @@ class PCSR(GenericFileExporter):
             ("NO", NO),
             ("ED", ED),
             ("SQ", SQ),
+            ("PO", PO),
             ("IS", IS),
+            ("IP", IP),
             ("MW", MW),
             ("CL", CL),
             ("QU", QU),
@@ -131,10 +145,12 @@ class PCSR(GenericFileExporter):
             (build_list[4][0]+"   " + ";".join(build_list[4][1])),
             (build_list[5][0]+"   " + ";".join([str(x) for x in build_list[5][1]])),
             (build_list[6][0]+"   " + ";".join([str(x) for x in build_list[6][1]])),
-            (build_list[7][0]+"   " + ";".join(build_list[7][1])),
-            (build_list[8][0]+"   " + ";".join(build_list[8][1])),
-            (build_list[9][0]+"   " + ";".join([str(x) for x in build_list[9][1]])),
-            (build_list[10][0]+"   " + ";".join(["^".join(["^".join(str(z) for z in y) for y in x]) for x in build_list[10][1]])),
+            (build_list[7][0]+"   " + ";".join([str(x) for x in build_list[7][1]])),
+            (build_list[8][0]+"   " + ";".join([str(x) for x in build_list[8][1]])),
+            (build_list[9][0]+"   " + ";".join(build_list[9][1])),
+            (build_list[10][0]+"   " + ";".join(build_list[10][1])),
+            (build_list[11][0]+"   " + ";".join([str(x) for x in build_list[11][1]])),
+            (build_list[12][0]+"   " + ";".join(["^".join(["^".join(str(z) for z in y) for y in x]) for x in build_list[12][1]])),
         ]
 
         return "\n".join(build_str) + "\n\n"

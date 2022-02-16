@@ -16,7 +16,9 @@ class BinaryPCSR(PCSR):
             NO=32,
             ED=32,
             SQ=str,
+            PO=32,
             IS=8,
+            IP=32,
             MW=64,
             CL=bool,
             QU=str,
@@ -61,7 +63,8 @@ class BinaryPCSR(PCSR):
 
             elif type(self.ctype_mapping[key]) == int:
                 uint_bytes = b"".join([
-                    (x).to_bytes(int(self.ctype_mapping[key]/8), byteorder="big", signed=False)
+                    (x).to_bytes(int(self.ctype_mapping[key]/8), byteorder="big", signed=False) if x >=0
+                    else (2**self.ctype_mapping[key]-1).to_bytes(int(self.ctype_mapping[key]/8), byteorder="big", signed=False)
                     for x in values
                 ])
                 b.extend(uint_bytes)
