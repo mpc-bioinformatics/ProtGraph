@@ -18,9 +18,8 @@ def annotate_ptms(graph_entry, var_mods: list, fix_mods: list, mass_factor: int)
 
     TODO we currently CANNOT handly Cterm or Nterm PTMs!
     """
-
-    var_mods_2 = {x: y for x,y in var_mods}
-    fix_mods_2 = {x: y for x,y in fix_mods}
+    var_mods = {x: y for x,y in var_mods} if var_mods else {}
+    fix_mods = {x: y for x,y in fix_mods} if fix_mods else {}
 
     # FIXMOD Handling
     for aa, delta in fix_mods.items():

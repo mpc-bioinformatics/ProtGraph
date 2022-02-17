@@ -118,6 +118,7 @@ def merge_aminoacids(graph_entry):
         # Now the attributes in nodes, which may be present
         m_isoform_accession = _get_single_set_element(sorted_nodes, "isoform_accession")  # Get the ONLY iso_accession
         m_isoform_position = sorted_nodes[0]["isoform_position"] if "isoform_position" in sorted_nodes[0] else None
+        m_delta_mass = sum(x["delta_mass"] if x["delta_mass"] else 0 for x in sorted_nodes) if "delta_mass" in sorted_nodes[0] else None
 
         # Merge edges attributes, which also may be present!
         sorted_nodes_attrs = [x.attributes() for x in sorted_edges]
@@ -136,7 +137,7 @@ def merge_aminoacids(graph_entry):
         # Here we set all available! (So this may need to be appended for new attrs)
         new_node_attrs = dict(
             accession=m_accession, isoform_accession=m_isoform_accession, position=m_position,
-            isoform_position=m_isoform_position, aminoacid=m_aminoacid,
+            isoform_position=m_isoform_position, aminoacid=m_aminoacid, delta_mass=m_delta_mass
         )
         new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers)
 
@@ -167,6 +168,7 @@ def merge_aminoacids(graph_entry):
     # Then add the possibly available attributes
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "isoform_accession")
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "isoform_position")
+    _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "delta_mass")
 
     # 2. Get all edges connected to supernode and add them appropiately!
     supernode_idcs = list(range(cur_node_count, cur_node_count + len(merged_nodes)))

@@ -68,11 +68,11 @@ def annotate_weights(graph_entry, **kwargs):
 
     # If mono or mono_end is set, annotate the graph with the mono weights
     if kwargs["annotate_mono_weights"] or kwargs["annotate_mono_weight_to_end"]:
-        _add_masses(graph_entry, "mono_weight", mass_dict, 0)
+        _add_masses(graph_entry, "mono_weight", mass_dict, kwargs["mass_dict_type"], 0)
 
     # If avrg or avrg_end is set, annotate the graph with the average weights
     if kwargs["annotate_avrg_weights"] or kwargs["annotate_avrg_weight_to_end"]:
-        _add_masses(graph_entry, "avrg_weight", mass_dict, 1)
+        _add_masses(graph_entry, "avrg_weight", mass_dict, kwargs["mass_dict_type"], 1)
 
     # If one of the end weights is set:
     if kwargs["annotate_mono_weight_to_end"] or kwargs["annotate_avrg_weight_to_end"]:
@@ -88,7 +88,7 @@ def annotate_weights(graph_entry, **kwargs):
             _add_end_masses(graph_entry, "mono_weight_to_end", "mono_weight", top_sorted_nodes)
 
 
-def _add_masses(graph_entry, weight_name, mass_dict, idx):
+def _add_masses(graph_entry, weight_name, mass_dict, mass_dict_type, idx):
     """
     Here we simply iterate over each edge, get their target node (sum up, if it contains multiple aminoacid entries
     due to merging) and set the masses in the graph.
@@ -98,20 +98,23 @@ def _add_masses(graph_entry, weight_name, mass_dict, idx):
     idx: Which entry of the list-value from the dictionary should be taken
     """
     mono_masses= [
-        sum(
-            [
-                mass_dict[y][idx]
-                for y in x["aminoacid"]
-                .replace("__start__", "")
-                .replace("__end__", "")
-                # 2. Get the aminoacid (-chain) from target and sum it up
-            ]
+        mass_dict_type(
+            sum(
+                [
+                    mass_dict[y][idx]
+                    for y in x["aminoacid"]
+                    .replace("__start__", "")
+                    .replace("__end__", "")
+                    # 2. Get the aminoacid (-chain) from target and sum it up
+                ] 
+            ) + (x["delta_mass"] if "delta_mass" in x.attributes() and x["delta_mass"] is not None else 0)
         )
         for x in graph_entry.vs[:]
         # 1. For each edge in the graph
     ]
     # Then set the masses for each edge
     graph_entry.vs[:][weight_name] = mono_masses
+    if "delta_mass" in graph_entry.vs[0].attributes(): del graph_entry.vs["delta_mass"] # Delete deltamass if available
 
 
 def _add_end_masses(graph_entry, weight_end_name, weight_name, sorted_nodes):
