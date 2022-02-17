@@ -127,6 +127,45 @@ def add_graph_generation(group):
         " be substituted. So only the format: 'A->B[,C]*' is allowed!"
     )
 
+    def _parse_mod(input: str):
+        """
+        Parse Modification
+        """
+        if ":" not in input:
+            raise ArgumentTypeError(
+                "':' is not set in modification rule! Did you quoted the replacement as here: \"M:15.994915\"?"
+            )
+        s, t = input.split(":", 1)
+
+        s = s.strip().upper()
+        if not s.isalpha() or len(s) != 1:
+            raise ArgumentTypeError(
+                "The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s)
+            )
+
+        try: 
+            t = float(t)
+        except Exception():
+            raise ArgumentTypeError(
+                "The DeltaMass is not a numeric number. Received: '{}'".format(t)
+            )
+
+        return s, t
+    group.add_argument(
+        "--fixed_mod", "-fm", type=_parse_mod, action="append",
+        help="Apply a fixed modification on a special aminoacid."
+        " You can apply multiple fix modifications BUT only one modification per aminoacid is currently allowed."
+        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a fixed oxidation of M."
+        " Note: modifications on the same aminoacid are superseeded"
+    )
+    group.add_argument(
+        "--variable_mod", "-vm", type=_parse_mod, action="append",
+        help="Apply a variable modification on a special aminoacid."
+        " You can apply multiple variable modifications BUT only one modification per aminoacid is currently allowed."
+        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a fixed oxidation of M."
+        " Note: modifications on the same aminoacid are superseeded (superseeding fixed modifications"
+    )
+
     # Flag to check if generated graphs are correctly generated
     group.add_argument(
         "--verify_graph", "--verify", default=False, action="store_true",

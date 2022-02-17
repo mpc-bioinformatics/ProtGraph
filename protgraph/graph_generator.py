@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from protgraph.aa_masses_annotation import annotate_weights
 from protgraph.aa_replacer import replace_aa
+from protgraph.annotate_ptms import annotate_ptms
 from protgraph.digestion import digest
 from protgraph.export.exporters import Exporters
 from protgraph.ft_execution.signal import execute_signal
@@ -111,6 +112,8 @@ def _include_ft_information(entry, graph, ft_dict, entry_dict):
     # Sort features of entry according to their type into a dict
     sorted_features = _sort_entry_features(entry)
 
+
+
     # VAR_SEQ (isoforms) need to be executed at once and before all other variations
     # since those can be referenced by others
     if "VAR_SEQ" in ft_dict:
@@ -171,7 +174,11 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             replace_aa(graph, kwargs["replace_aa"])
 
             # Digest graph with enzyme (unlimited miscleavages)
-            num_of_cleavages = digest(graph, kwargs["digestion"])
+            digest(graph, kwargs["digestion"], entry_dict)
+
+            # Annotate delta masses for PTMs 
+            annotate_ptms(graph, kwargs["variable_mod"], kwargs["fixed_mod"], kwargs["mass_dict_factor"])
+
 
             # Merge (summarize) graph if wanted
             if not kwargs["no_merge"]:

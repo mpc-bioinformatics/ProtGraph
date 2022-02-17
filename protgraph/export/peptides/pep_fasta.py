@@ -1,6 +1,7 @@
 from protgraph.export.peptides.abstract_peptide_exporter import \
     APeptideExporter
 from protgraph.graph_collapse_edges import Or
+from Bio.SwissProt import UnknownPosition
 
 
 class PepFasta(APeptideExporter):
@@ -83,38 +84,43 @@ class PepFasta(APeptideExporter):
 
             elif f.type == "VARIANT":
                 str_qualifiers.append(
-                    "VARIANT[" + str(f.location.start + 1) + ":"
-                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f) + "]"
+                    "VARIANT[" + self._get_location(f) + "," + self._get_variant_mutagen_qualifier(f) + "]"
                 )
 
             elif f.type == "MUTAGEN":
                 str_qualifiers.append(
-                    "MUTAGEN[" + str(f.location.start + 1) + ":"
-                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f, stop_codon=":", offset=0) + "]"
+                    "MUTAGEN[" + self._get_location(f) + "," + self._get_variant_mutagen_qualifier(f, stop_codon=":", offset=0) + "]"
                 )
 
             elif f.type == "CONFLICT":
                 str_qualifiers.append(
-                    "CONFLICT[" + str(f.location.start + 1) + ":"
-                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f) + "]"
+                    "CONFLICT[" + self._get_location(f) + "," + self._get_variant_mutagen_qualifier(f) + "]"
                 )
 
             elif f.type == "SIGNAL":
                 str_qualifiers.append(
-                    "SIGNAL[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                    "SIGNAL[" + self._get_location(f) + "]"
                 )
 
             elif f.type == "INIT_MET":
                 str_qualifiers.append(
-                    "INIT_MET[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                    "INIT_MET[" + self._get_location(f) + "]"
                 )
             elif f.type == "PROPEP":
                 str_qualifiers.append(
-                    "PROPEP[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                    "PROPEP[" + self._get_location(f) + "]"
                 )
             elif f.type == "PEPTIDE":
                 str_qualifiers.append(
-                    "PEPTIDE[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                    "PEPTIDE[" + self._get_location(f) + "]"
+                )
+            elif f.type == "FIXMOD":
+                str_qualifiers.append(
+                    "FIXMOD[" + self._get_location(f) + "," + f.qualifiers["note"] + "]"
+                )
+            elif f.type == "VARMOD":
+                str_qualifiers.append(
+                    "VARMOD[" + self._get_location(f) + "," + f.qualifiers["note"] + "]"
                 )
 
             else:
@@ -122,13 +128,27 @@ class PepFasta(APeptideExporter):
 
         return str_qualifiers
 
+
+    def _get_location(self, feature):
+        if type(feature.location.start) == UnknownPosition:
+            spos = "?"
+        else:
+            spos = str(feature.location.start + 1)
+        if type(feature.location.end) == UnknownPosition:
+            epos = "?"
+        else:
+            epos = str(feature.location.end)
+        return spos + ":" + epos
+
+
+
     def _get_variant_mutagen_qualifier(self, feature, stop_codon="(", offset=1):
         """ Get x -> y or missing """
         message = feature.qualifiers["note"]
         message = message[:message.index(stop_codon)-offset] if stop_codon in message else message
 
         if feature.id is not None:
-            message + ", " + feature.id
+            message += ", " + feature.id
         return message
 
     def _get_accession_or_isoform(self, node):

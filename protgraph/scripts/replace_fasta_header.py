@@ -90,3 +90,4 @@ def main():
             else:
                 # Write entry info
                 f_out_fasta.write(next_line)
+        pbar.close()
