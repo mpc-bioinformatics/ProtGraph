@@ -41,58 +41,49 @@ class PCSR(GenericFileExporter):
 
         NO = []  # Get List of Nodes
         ED = []  # Get List of Edges
-
+        TO_EDGES = []
 
 
         out_edges = graph.vs[TO[0]].out_edges()
-        TO_EDGES.extend(x.index for x in out_edges)
         NO.append(len(out_edges))
-        ED.extend(sorted([TO.index(e.target) for e in out_edges]))
+        sorted_edges = sorted([(TO.index(e.target), e.index) for e in out_edges], key=lambda x: x[0])
+        ED.extend(x[0] for x in sorted_edges)
+        TO_EDGES.extend(x[1] for x in sorted_edges)
         for n_idx in TO[1:]:
-            n = graph.vs[n_idx]
-            out_edges = n.out_edges()
+            out_edges = graph.vs[n_idx].out_edges()
             NO.append(len(out_edges) + NO[-1])
-            TO_EDGES.extend(x.index for x in out_edges)
-            ED.extend(sorted([TO.index(e.target) for e in out_edges]))
+            sorted_edges = sorted([(TO.index(e.target), e.index) for e in out_edges], key=lambda x: x[0])
+            ED.extend(x[0] for x in sorted_edges)
+            TO_EDGES.extend(x[1] for x in sorted_edges)
 
+        CN = [len([AC, *IA]), graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
         # All these attributes need to be reordered if NO or ED gets modified!
 
-        SQ = graph.vs["aminoacid"]  # Get List of Node[Sequence]
-        SQ = [SQ[x] for x in TO]
-        IS = [IA.index(x) + 1 if x is not None else 0 for x in graph.vs["isoform_accession"]] if "isoform_accession" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Isos] substituted (idx + 1 due to AC)
-        IS = [IS[x] for x in TO]
-
-        MW = graph.vs["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Mono Weight]
-        MW = [MW[x] for x in TO]
-
-        PO = graph.vs["position"]
-        PO = [PO[x] if PO[x] is not None else -1 for x in TO]
-
+        SQ = graph.vs[TO]["aminoacid"]  # Get List of Node[Sequence]
+        IS = [IA.index(x) + 1 if x is not None else 0 for x in graph[TO].vs["isoform_accession"]] if "isoform_accession" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Isos] substituted (idx + 1 due to AC)
+        MW = graph.vs[TO]["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Mono Weight]
 
         # Add Position-Information
+        PO = [x if x is not None else -1 for x in  graph.vs[TO]["position"]]
         if "isoform_position" in graph.vs[0].attributes():
-            IP = graph.vs["isoform_position"]
-            IP = [IP[x] if IP[x] is not None else -1 for x in TO]
+            IP = [x if x is not None else -1 for x in  graph.vs[TO]["isoform_position"]]
         else:
             IP = [-1]*len(NO)
 
 
 
         # Attribute for Edges
-        CL = ["t" if x else "f" for x in graph.es["cleaved"]]  # Get List of Edges[Cleaved]
-        CL = [CL[x] for x in TO_EDGES]
+        CL = ["t" if x else "f" for x in graph.es[TO_EDGES]["cleaved"]]  # Get List of Edges[Cleaved]
 
         if "qualifiers" in graph.es[0].attributes():
-            VC = [_count_feature(x, "VARIANT", min) for x in graph.es["qualifiers"]]
-            VC = [VC[x] for x in TO_EDGES]
+            VC = [_count_feature(x, "VARIANT", min) for x in graph.es[TO_EDGES]["qualifiers"]]
             QU = []  # Get List of Edges[Qualifiers] (simplified as in FASTA)
-            for qualifier in graph.es["qualifiers"]:
+            for qualifier in graph.es[TO_EDGES]["qualifiers"]:
                 if qualifier is None or len(qualifier) == 0:
                     QU.append([])
                 else:
                     QU.append(self._get_qualifier(qualifier))
             QU = ["&".join(x) for x in QU]
-            QU = [QU[x] for x in TO_EDGES]
 
         else:
             VC = [0]*len(ED)
@@ -109,12 +100,10 @@ class PCSR(GenericFileExporter):
             # Delete entries in graph itself
             del graph.vs["pdb"]
 
-            CN = [len([AC, *IA]), graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
             PD = pdb_entries  # List of Lists of PDB-Entries
             PD = [PD[x] for x in TO]
 
         else:
-            CN = [len([AC, *IA]), graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
             PD = [[[0,0]]*self.pdb_count]*len(NO)
 
         # Order to write:
