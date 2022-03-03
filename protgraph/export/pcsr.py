@@ -60,7 +60,7 @@ class PCSR(GenericFileExporter):
         # All these attributes need to be reordered if NO or ED gets modified!
 
         SQ = graph.vs[TO]["aminoacid"]  # Get List of Node[Sequence]
-        IS = [IA.index(x) + 1 if x is not None else 0 for x in graph[TO].vs["isoform_accession"]] if "isoform_accession" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Isos] substituted (idx + 1 due to AC)
+        IS = [IA.index(x) + 1 if x is not None else 0 for x in graph.vs[TO]["isoform_accession"]] if "isoform_accession" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Isos] substituted (idx + 1 due to AC)
         MW = graph.vs[TO]["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Mono Weight]
 
         # Add Position-Information
