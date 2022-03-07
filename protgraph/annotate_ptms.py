@@ -73,6 +73,14 @@ def annotate_ptms(graph_entry, var_mods: list, fix_mods: list, mass_factor: int)
                     qualifier_info[-1].append(FeatureTable(location=FeatureLocation(spos, epos), type="VARMOD", strand=None, id=None, qualifiers=dict(note="{}:{}".format(aa, delta))))
                 if "cleaved" in graph_entry.es[0].attributes(): cleaved_info.append(in_edge["cleaved"])
 
+            for out_edge in node.out_edges():
+                edges_to_add.append((offset + vc, in_edge.target))
+                if "qualifiers" in out_edge.attributes():
+                    qualifier_info.append(out_edge["qualifiers"])
+                else:
+                    qualifier_info.append(None)
+                if "cleaved" in graph_entry.es[0].attributes(): cleaved_info.append(out_edge["cleaved"])
+
         # Add edges in bulk
         ec = graph_entry.ecount()
         graph_entry.add_edges(edges_to_add)
