@@ -1,5 +1,6 @@
-import os
 import argparse
+import os
+
 
 def check_if_folder_exists(s: str):
     """ checks if a folder exists. If not: raise Exception """
@@ -34,7 +35,6 @@ def parse_args():
 if __name__ == "__main__":
     # Parse args
     args = parse_args()
-
 
     abs_path = os.path.abspath(args.base_export_folder[0])
     len_abs_path = len(abs_path)

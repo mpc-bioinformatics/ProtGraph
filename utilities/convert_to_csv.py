@@ -1,10 +1,7 @@
 import argparse
-import ast
 import csv
-import math
 import os
 import sys
-from operator import add
 
 import tqdm
 
@@ -40,14 +37,12 @@ def parse_args():
     return parser.parse_args()
 
 
-
 if __name__ == "__main__":
     args = parse_args()
 
     # Parameters
     stdout = args.input_stdout[0]
     out_csv_file = args.output_csv
-
 
     # Open al files and sort them accordingly
     with open(out_csv_file, "w") as out_file, open(stdout, "r") as in_file:
@@ -56,9 +51,8 @@ if __name__ == "__main__":
 
         # Write header
         csv_out.writerow([
-            "query", "protein", "method", "max_vars", "results", "time", 
+            "query", "protein", "method", "max_vars", "results", "time",
         ])
-
 
         # Initial values
         query = None
@@ -72,8 +66,8 @@ if __name__ == "__main__":
                 csv_out.writerow([
                     query,
                     entries[0][len("Protein: "):],
-                    entries[3][len(" method: "):] if len(entries)==5 else entries[3][len(" method: "):-1],
-                    entries[4][len(" max_vars"):-1] if len(entries)==5 else None,
+                    entries[3][len(" method: "):] if len(entries) == 5 else entries[3][len(" method: "):-1],
+                    entries[4][len(" max_vars"):-1] if len(entries) == 5 else None,
                     entries[2][len(" Results: "):],
                     entries[1][len(" Time: "):],
                 ])
