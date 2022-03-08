@@ -1,10 +1,10 @@
-import os
 import argparse
-import zlib
+import os
+
+import tqdm
 
 from protgraph.cli import check_if_file_exists
 
-import tqdm
 
 def parse_args():
     """ Parse Arguments """
@@ -33,13 +33,14 @@ def parse_args():
         "{orig_pre}, {orig_id}, {orig_desc} (from source fasta, splitted by '|' and {index} from target "
         "headers, indicating the index of the written header. "
         "DEFAULT: {orig_pre}|{index}|{orig_id}"
-    )    
+    )
 
     # Output fasta file
     parser.add_argument(
         "--output_fasta", "-of", type=str, default="output.fasta",
         help="Output fasta file. DEFAULT 'output.fasta' (NOTE: This file WILL be overwritten)"
     )
+
     parser.add_argument(
         "--output_header", "-oh", type=str, default="headers.txt",
         help="Output header file containing the headers from the original fasta. "
@@ -62,7 +63,9 @@ def main():
     template = args.header_template + "\n"
     index = 0
 
-    with open(in_fasta, "r") as f_in_fasta, open(out_fasta, "w") as f_out_fasta, open(out_headers, "w") as f_out_headers:
+    with open(in_fasta, "r") as f_in_fasta, \
+         open(out_fasta, "w") as f_out_fasta, \
+         open(out_headers, "w") as f_out_headers:
         # Do for each entry
         pbar = tqdm.tqdm(total=args.num_entries, unit="entries")
         for next_line in f_in_fasta:
@@ -79,9 +82,9 @@ def main():
                     orig_list[idx] = v
                 f_out_fasta.write(template.format(
                     index=index,
-                    orig_pre = orig_list[0],
-                    orig_id = orig_list[1],
-                    orig_desc = orig_list[2],
+                    orig_pre=orig_list[0],
+                    orig_id=orig_list[1],
+                    orig_desc=orig_list[2],
                 ))
 
                 # Extract and write original header

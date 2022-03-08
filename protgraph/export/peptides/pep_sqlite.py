@@ -1,12 +1,12 @@
 
 
-import apsw
-
 import os
 import zlib
+
+import apsw
+
 from protgraph.export.peptides.abstract_peptide_exporter import \
     APeptideExporter
-
 from protgraph.export.peptides.pep_fasta import PepFasta
 
 
@@ -27,7 +27,6 @@ class PepSQLite(APeptideExporter):
 
         self.compact_repr = not kwargs["pep_sqlite_non_compact"]
 
-        
         # Create database file
         os.makedirs(kwargs["pep_sqlite_output_dir"], exist_ok=True)
         # self.conn = sqlite3.connect(kwargs["pep_sqlite_database"], timeout=10, isolation_level=None)
@@ -35,7 +34,6 @@ class PepSQLite(APeptideExporter):
         self.conn.setbusytimeout(10000)
 
         self.pepfasta = PepFasta()
-
 
         # Set sqlite specific parameters
         self.use_blob = kwargs["pep_sqlite_use_blobs"]
@@ -53,9 +51,8 @@ class PepSQLite(APeptideExporter):
             # Create the large peptides table containing most information
             cur = self.conn.cursor()
             cur.execute("""
-            PRAGMA journal_mode=OFF
-            """
-            )
+                PRAGMA journal_mode=OFF
+                """)
         except Exception as e:
             print("Warning: Pragma journal_mode was not set, inserting may be slower (Reason: {})".format(str(e)))
         finally:
@@ -67,8 +64,7 @@ class PepSQLite(APeptideExporter):
             cur = self.conn.cursor()
             cur.execute("""
             PRAGMA synchronous=OFF
-            """
-            )
+            """)
         except Exception as e:
             print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
         finally:
@@ -80,8 +76,7 @@ class PepSQLite(APeptideExporter):
             cur = self.conn.cursor()
             cur.execute("""
             PRAGMA temp_store = MEMORY;
-            """
-            )
+            """)
         except Exception as e:
             print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
         finally:
@@ -93,30 +88,25 @@ class PepSQLite(APeptideExporter):
             cur = self.conn.cursor()
             cur.execute("""
             PRAGMA mmap_size=268435456;
-            """
-            )
+            """)
         except Exception as e:
             print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
         finally:
             # self.conn.commit()
             cur.close()
-
 
         try:
             # Create the large peptides table containing most information
             cur = self.conn.cursor()
             cur.execute("""
             PRAGMA cache_size = 1000000;
-            """
-            )
+            """)
         except Exception as e:
             print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
         finally:
             # self.conn.commit()
             cur.close()
 
-
-        
         try:
             # Create the peptides meta information (can also be extremely large), larger than the peptides tables
             cur = self.conn.cursor()
@@ -124,14 +114,12 @@ class PepSQLite(APeptideExporter):
                 cur.execute("""
                 CREATE TABLE if not exists peptide_meta (
                     peptide {B} PRIMARY KEY,
-                    meta {B});""".format(B="BLOB" if self.use_blob else "TEXT")
-                )
-            else: 
+                    meta {B});""".format(B="BLOB" if self.use_blob else "TEXT"))
+            else:
                 cur.execute("""
                 CREATE TABLE if not exists peptide_meta (
                     peptide {B},
-                    meta {B});""".format(B="BLOB" if self.use_blob else "TEXT")
-                )
+                    meta {B});""".format(B="BLOB" if self.use_blob else "TEXT"))
         except Exception as e:
             print("Warning: Failed creating table 'peptides_meta' (Reason: {})".format(str(e)))
         finally:
@@ -163,17 +151,24 @@ class PepSQLite(APeptideExporter):
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
         # Retrieve Meta Infos
         accs = [self.pepfasta._get_accession_or_isoform(prot_graph.vs[nodes[1]]) for nodes in l_path_nodes]
-        start_poses = [str(self.pepfasta._get_position_or_isoform_position(prot_graph.vs[nodes[1]])) for nodes in l_path_nodes]
-        end_poses = [str(self.pepfasta._get_position_or_isoform_position(prot_graph.vs[nodes[-2]], end=True)) for nodes in l_path_nodes]
-        qualifiers =  [",".join(self.pepfasta._get_qualifiers(prot_graph, edges)) for edges in l_path_edges]
-        qualifiers = ["," + quali if quali else "" for quali in qualifiers ]
+        start_poses = [
+            str(self.pepfasta._get_position_or_isoform_position(prot_graph.vs[nodes[1]]))
+            for nodes in l_path_nodes
+        ]
+        end_poses = [
+            str(self.pepfasta._get_position_or_isoform_position(prot_graph.vs[nodes[-2]], end=True))
+            for nodes in l_path_nodes
+        ]
+        qualifiers = [",".join(self.pepfasta._get_qualifiers(prot_graph, edges)) for edges in l_path_edges]
+        qualifiers = ["," + quali if quali else "" for quali in qualifiers]
         metas = [
             "".join(
                 [
                     acc, "(", str(start_pos), ":", str(end_pos), ",",
                     "mssclvg:", str(misses), quali_entries,  ")"
                 ])
-            for acc, start_pos, end_pos, quali_entries, misses in zip(accs, start_poses, end_poses, qualifiers, l_miscleavages)
+            for acc, start_pos, end_pos, quali_entries, misses
+            in zip(accs, start_poses, end_poses, qualifiers, l_miscleavages)
         ]
 
         if self.use_blob:
@@ -183,7 +178,6 @@ class PepSQLite(APeptideExporter):
             compressed_metas = metas
             compressed_peptides = l_peptide
 
-
         # Insert into database
         cur = self.conn.cursor()
 
@@ -191,13 +185,13 @@ class PepSQLite(APeptideExporter):
         cur.execute('BEGIN TRANSACTION')
         if self.compact_repr:
             self._retry_query_many(
-                cur, 
+                cur,
                 self.set_upsert_query,
                 zip(compressed_peptides, compressed_metas, compressed_metas)
             )
         else:
             self._retry_query_many(
-                cur, 
+                cur,
                 """
                 INSERT INTO peptides_meta (peptide, meta)
                 VALUES (?, ?);

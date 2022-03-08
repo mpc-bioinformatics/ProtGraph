@@ -97,7 +97,7 @@ def _add_masses(graph_entry, weight_name, mass_dict, mass_dict_type, idx):
     mass_dict: The masses dictionary (as in this file)
     idx: Which entry of the list-value from the dictionary should be taken
     """
-    mono_masses= [
+    mono_masses = [
         mass_dict_type(
             sum(
                 [
@@ -106,7 +106,7 @@ def _add_masses(graph_entry, weight_name, mass_dict, mass_dict_type, idx):
                     .replace("__start__", "")
                     .replace("__end__", "")
                     # 2. Get the aminoacid (-chain) from target and sum it up
-                ] 
+                ]
             ) + (x["delta_mass"] if "delta_mass" in x.attributes() and x["delta_mass"] is not None else 0)
         )
         for x in graph_entry.vs[:]
@@ -114,7 +114,8 @@ def _add_masses(graph_entry, weight_name, mass_dict, mass_dict_type, idx):
     ]
     # Then set the masses for each edge
     graph_entry.vs[:][weight_name] = mono_masses
-    if "delta_mass" in graph_entry.vs[0].attributes(): del graph_entry.vs["delta_mass"] # Delete deltamass if available
+    if "delta_mass" in graph_entry.vs[0].attributes():
+        del graph_entry.vs["delta_mass"]  # Delete deltamass if available
 
 
 def _add_end_masses(graph_entry, weight_end_name, weight_name, sorted_nodes):

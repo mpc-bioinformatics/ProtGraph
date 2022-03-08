@@ -1,11 +1,9 @@
-import csv
-import os
 import numpy as np
 
 from protgraph.export.generic_file_exporter import GenericFileExporter
-from protgraph.graph_collapse_edges import Or
 from protgraph.export.peptides.pep_fasta import PepFasta
 from protgraph.graph_statistics import _count_feature
+
 
 class PCSR(GenericFileExporter):
     """ A simple Protein Compressed Sparse Row  Exporter """
@@ -16,11 +14,9 @@ class PCSR(GenericFileExporter):
         )
         self._get_qualifier = PepFasta()._map_qualifier_to_string
 
-
     def start_up(self, **kwargs):
         self.pdb_count = kwargs["export_pcsr_pdb_entries"]
         super(PCSR, self).start_up(**kwargs)
-
 
     def write_pcsr(self, pg, path):
         out_str = self._build_csr_string(self._build_csr_entry(pg))
@@ -29,20 +25,21 @@ class PCSR(GenericFileExporter):
 
     def _build_csr_entry(self, graph):
         # The CSR is reordered in Top Order in favor on going through the RAM sequentially. To be tested...
-        
+
         # get the topological order
         TO = self.__get_protein_graph_specific_top_order(graph)  # The Topological Order
         TO_EDGES = []
 
         # get Accessions (including isoforms)
         AC = graph.vs[0]["accession"]
-        IA = list(set(graph.vs["isoform_accession"]).difference(set([None]))) if "isoform_accession" in graph.vs[0].attributes() else []  # Get List of Isos (Accessions)
-        
+        IA = \
+            list(set(graph.vs["isoform_accession"]).difference(set([None]))) \
+            if "isoform_accession" in graph.vs[0].attributes() \
+            else []  # Get List of Isos (Accessions)
 
         NO = []  # Get List of Nodes
         ED = []  # Get List of Edges
         TO_EDGES = []
-
 
         out_edges = graph.vs[TO[0]].out_edges()
         NO.append(len(out_edges))
@@ -59,18 +56,24 @@ class PCSR(GenericFileExporter):
         CN = [len([AC, *IA]), graph.vcount(), graph.ecount(), self.pdb_count]  # Every Count
         # All these attributes need to be reordered if NO or ED gets modified!
 
-        SQ = graph.vs[TO]["aminoacid"]  # Get List of Node[Sequence]
-        IS = [IA.index(x) + 1 if x is not None else 0 for x in graph.vs[TO]["isoform_accession"]] if "isoform_accession" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Isos] substituted (idx + 1 due to AC)
-        MW = graph.vs[TO]["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [0]*len(NO) # Get List of Node[Mono Weight]
+        # Get List of Node[Sequence]
+        SQ = graph.vs[TO]["aminoacid"]
+
+        # Get List of Node[Isos] substituted (idx + 1 due to AC)
+        IS = [
+            IA.index(x) + 1 if x is not None else 0
+            for x in graph.vs[TO]["isoform_accession"]
+        ] if "isoform_accession" in graph.vs[0].attributes() else [0]*len(NO)
+
+        # Get List of Node[Mono Weight]
+        MW = graph.vs[TO]["mono_weight"] if "mono_weight" in graph.vs[0].attributes() else [0]*len(NO)
 
         # Add Position-Information
-        PO = [x if x is not None else -1 for x in  graph.vs[TO]["position"]]
+        PO = [x if x is not None else -1 for x in graph.vs[TO]["position"]]
         if "isoform_position" in graph.vs[0].attributes():
-            IP = [x if x is not None else -1 for x in  graph.vs[TO]["isoform_position"]]
+            IP = [x if x is not None else -1 for x in graph.vs[TO]["isoform_position"]]
         else:
             IP = [-1]*len(NO)
-
-
 
         # Attribute for Edges
         CL = ["t" if x else "f" for x in graph.es[TO_EDGES]["cleaved"]]  # Get List of Edges[Cleaved]
@@ -89,8 +92,7 @@ class PCSR(GenericFileExporter):
             VC = [0]*len(ED)
             QU = [""]*len(ED)
 
-
-        # Generate additionall information like PDBs
+        # Generate additional information like PDBs
         if "mono_weight" in graph.vs[0].attributes():
             # Build PDB
             self.__build_pdb(graph, k=self.pdb_count)
@@ -104,10 +106,10 @@ class PCSR(GenericFileExporter):
             PD = [PD[x] for x in TO]
 
         else:
-            PD = [[[0,0]]*self.pdb_count]*len(NO)
+            PD = [[[0, 0]]*self.pdb_count]*len(NO)
 
         # Order to write:
-        build_list= [
+        build_list = [
             ("CN", CN),
             ("AC", [AC, *IA]),
             ("NO", NO),
@@ -139,7 +141,7 @@ class PCSR(GenericFileExporter):
             (build_list[9][0]+"   " + ";".join(build_list[9][1])),
             (build_list[10][0]+"   " + ";".join(build_list[10][1])),
             (build_list[11][0]+"   " + ";".join([str(x) for x in build_list[11][1]])),
-            (build_list[12][0]+"   " + ";".join(["^".join(["^".join(str(z) for z in y) for y in x]) for x in build_list[12][1]])),
+            (build_list[12][0]+"   " + ";".join(["^".join(["^".join(str(z) for z in y) for y in x]) for x in build_list[12][1]])), # noqa E501
         ]
 
         return "\n".join(build_str) + "\n\n"
@@ -183,12 +185,9 @@ class PCSR(GenericFileExporter):
 
         return sorted_by_position_attr
 
-
-
     def __shift_interval_by(self, intervals, weight):
         """ Shift the intervals by weight """
         return [[x + weight, y + weight] for [x, y] in intervals]
-
 
     def __merge_overlapping_intervals(self, intervals):
         """ Get overlapping intervals and merge them """
@@ -201,7 +200,6 @@ class PCSR(GenericFileExporter):
         valid[1:-1] = starts[1:] >= ends[:-1]
         return [list(x) for x in np.vstack((starts[:][valid[:-1]], ends[:][valid[1:]])).T]
 
-
     def __merge_closest_intervals(self, intervals):
         """ Get the closest interval and merge those two """
         diff = [y[0]-x[1] for x, y in zip(intervals, intervals[1:])]
@@ -209,7 +207,6 @@ class PCSR(GenericFileExporter):
 
         new_interval = [intervals[argmin][0], intervals[argmin+1][1]]
         return intervals[:argmin] + [new_interval] + intervals[argmin+2:]
-
 
     def __build_pdb(self, graph, k=5):
         """

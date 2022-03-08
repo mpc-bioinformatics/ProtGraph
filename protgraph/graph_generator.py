@@ -1,49 +1,24 @@
-import igraph
-
 from collections import defaultdict
+
+import igraph
 
 from protgraph.aa_masses_annotation import annotate_weights
 from protgraph.aa_replacer import replace_aa
 from protgraph.annotate_ptms import annotate_ptms
 from protgraph.digestion import digest
 from protgraph.export.exporters import Exporters
-from protgraph.ft_execution.signal import execute_signal
-from protgraph.ft_execution.init_met import execute_init_met
-from protgraph.ft_execution.generic import (execute_mutagen, 
-                                            execute_conflict, 
+from protgraph.ft_execution.generic import (execute_conflict, execute_mutagen,
                                             execute_variant)
-from protgraph.ft_execution.generic_cleaved_peptide import (execute_propeptide,
-                                                            execute_peptide)
+from protgraph.ft_execution.generic_cleaved_peptide import (execute_peptide,
+                                                            execute_propeptide)
+from protgraph.ft_execution.init_met import execute_init_met
+from protgraph.ft_execution.signal import execute_signal
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
 from protgraph.graph_collapse_edges import collapse_parallel_edges
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
 from protgraph.verify_graphs import verify_graph
-
-
-def display_top(snapshot, key_type='lineno', limit=10):
-    snapshot = snapshot.filter_traces((
-        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
-        tracemalloc.Filter(False, "<unknown>"),
-    ))
-    top_stats = snapshot.statistics(key_type)
-
-    print("Top %s lines" % limit)
-    for index, stat in enumerate(top_stats[:limit], 1):
-        frame = stat.traceback[0]
-        print("#%s: %s:%s: %.1f KiB"
-              % (index, frame.filename, frame.lineno, stat.size / 1024))
-        line = linecache.getline(frame.filename, frame.lineno).strip()
-        if line:
-            print('    %s' % line)
-
-    other = top_stats[limit:]
-    if other:
-        size = sum(stat.size for stat in other)
-        print("%s other: %.1f KiB" % (len(other), size / 1024))
-    total = sum(stat.size for stat in top_stats)
-    print("Total allocated size: %.1f KiB" % (total / 1024))
 
 
 def _generate_canonical_graph(sequence: str, acc: str):
@@ -104,7 +79,7 @@ FT_SINGLE_EXECUTION = [
 
 
 def _include_ft_information(entry, graph, ft_dict, entry_dict):
-    """ 
+    """
     Apply feature (first isoform, then others as specified in order) on the graph.
 
     This method can count the number of applied features on the graph on the fly
@@ -112,12 +87,10 @@ def _include_ft_information(entry, graph, ft_dict, entry_dict):
     # Sort features of entry according to their type into a dict
     sorted_features = _sort_entry_features(entry)
 
-
-
     # VAR_SEQ (isoforms) need to be executed at once and before all other variations
     # since those can be referenced by others
     if "VAR_SEQ" in ft_dict:
-        entry_dict["num_var_seq"] = 0 
+        entry_dict["num_var_seq"] = 0
     if "VAR_SEQ" in sorted_features and "VAR_SEQ" in ft_dict:
         # Get isoform information of entry as a dict
         isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
@@ -140,7 +113,10 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
     # Set feature_table dict boolean table
     ft_dict = dict()
     if kwargs["feature_table"] is None or len(kwargs["feature_table"]) == 0 or "ALL" in kwargs["feature_table"]:
-        ft_dict = dict(PEPTIDE=True, PROPEP=True, VARIANT=True, VAR_SEQ=True, SIGNAL=True, INIT_MET=True, MUTAGEN=True, CONFLICT=True)
+        ft_dict = dict(
+            PEPTIDE=True, PROPEP=True, VARIANT=True,
+            VAR_SEQ=True, SIGNAL=True, INIT_MET=True, MUTAGEN=True, CONFLICT=True
+        )
     else:
         for i in kwargs["feature_table"]:
             ft_dict[i] = True
@@ -156,7 +132,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             if entry is None:
                 # --> Stop Condition of Process
                 break
-            
+
             # create new dict to collect information about this entry
             entry_dict = dict()
 
@@ -176,9 +152,8 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             # Digest graph with enzyme (unlimited miscleavages)
             digest(graph, kwargs["digestion"], entry_dict)
 
-            # Annotate delta masses for PTMs 
+            # Annotate delta masses for PTMs
             annotate_ptms(graph, kwargs["variable_mod"], kwargs["fixed_mod"], kwargs["mass_dict_factor"])
-
 
             # Merge (summarize) graph if wanted
             if not kwargs["no_merge"]:
@@ -207,7 +182,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             else:
                 entry_protein_desc = entry.description.split(";", 1)[0]
                 entry_dict["protein_description"] = entry_protein_desc[entry_protein_desc.index("=") + 1:]
-            
+
             # Set accession and gene for csv
             entry_dict["accession"] = entry.accessions[0]
             entry_dict["gene_id"] = entry.entry_name

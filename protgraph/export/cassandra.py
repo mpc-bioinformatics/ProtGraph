@@ -1,11 +1,9 @@
-import itertools
 import json
 
-import cassandra
+# import cassandra
+from Bio.SwissProt import FeatureLocation, FeatureTable
 # from cassandra.query import BatchStatement
 from cassandra import InvalidRequest
-
-from Bio.SwissProt import FeatureLocation, FeatureTable
 from cassandra.cluster import Cluster
 
 from protgraph.export.abstract_exporter import AExporter
@@ -203,7 +201,6 @@ class Cassandra(AExporter):
             self.cluster.shutdown()
         except Exception as e:
             print("Connection to Cassandra could not be shutdown. (Reason: {})".format(str(e)))
-
 
     def _get_node_edge_attrs(self, node_edge_attrs, key_list):
         """ Get values of nodes/edges, returning None if not present """

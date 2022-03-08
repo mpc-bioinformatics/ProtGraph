@@ -15,6 +15,7 @@ def traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_n
     if len(c) != 1:
         complete_chain.append(c)
 
+
 def find_chains(graph_entry):
     """
     Retrive chain of nodes.
@@ -29,9 +30,6 @@ def find_chains(graph_entry):
     chains in the graph)
     """
     [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
-
-
-
 
     # Sort all nodes into 3 possible bins
     single_nodes = set()
@@ -100,7 +98,7 @@ def merge_aminoacids(graph_entry):
     but can probably be further optimized.
     """
     # Retrive all chains of nodes (sorted by chain order in list of lists)
-    # TODO this is still the slowest part. It may be improved    
+    # TODO this is still the slowest part. It may be improved
     complete_chain = find_chains(graph_entry)
 
     # Generate merged nodes information (iow supernodes attributes)
@@ -118,7 +116,8 @@ def merge_aminoacids(graph_entry):
         # Now the attributes in nodes, which may be present
         m_isoform_accession = _get_single_set_element(sorted_nodes, "isoform_accession")  # Get the ONLY iso_accession
         m_isoform_position = sorted_nodes[0]["isoform_position"] if "isoform_position" in sorted_nodes[0] else None
-        m_delta_mass = sum(x["delta_mass"] if x["delta_mass"] else 0 for x in sorted_nodes) if "delta_mass" in sorted_nodes[0] else None
+        m_delta_mass = sum(x["delta_mass"] if x["delta_mass"] else 0 for x in sorted_nodes) \
+            if "delta_mass" in sorted_nodes[0] else None
 
         # Merge edges attributes, which also may be present!
         sorted_nodes_attrs = [x.attributes() for x in sorted_edges]

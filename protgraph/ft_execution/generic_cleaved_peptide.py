@@ -1,7 +1,6 @@
 from Bio.SeqFeature import UnknownPosition
 
 from protgraph.ft_execution import _get_qualifiers
-
 from protgraph.ft_execution.generic import _get_all_vertices_before_after
 
 
@@ -9,11 +8,12 @@ def execute_propeptide(graph, propeptide_feature):
     """ Wrapper function to execute propeptide_features"""
     execute_generic_cleaved_peptide(graph, propeptide_feature)
 
+
 def execute_peptide(graph, peptide_feature):
     """ Wrapper function to execute peptide_features"""
-    # NOTE: a few annotations in "proteins" reference the start and end 
-    # of it completely, making parallel edges at start or ending? 
-    # Are these "Proteins" in UniProt actually correct to be annotated as such? 
+    # NOTE: a few annotations in "proteins" reference the start and end
+    # of it completely, making parallel edges at start or ending?
+    # Are these "Proteins" in UniProt actually correct to be annotated as such?
     # These are actually only pepitdes...
     # E.G.: P85078 or P37046 (there are in total a few thousands probably)
     execute_generic_cleaved_peptide(graph, peptide_feature)
@@ -30,7 +30,7 @@ def execute_generic_cleaved_peptide(graph, generic_cleaved_feature):
     Edges: "qualifiers" ( -> adds PROPEP|PEPTIDE)
     """
     if isinstance(generic_cleaved_feature.location.end, UnknownPosition) or \
-        isinstance(generic_cleaved_feature.location.start, UnknownPosition):
+       isinstance(generic_cleaved_feature.location.start, UnknownPosition):
         # The Position of the end or start is not known. Therefore we skip
         # this entry simply. It does not contain any useful information
         return
@@ -44,13 +44,18 @@ def execute_generic_cleaved_peptide(graph, generic_cleaved_feature):
     start_position, end_position = (
         generic_cleaved_feature.location.start + 1,
         generic_cleaved_feature.location.end + 0,
-    )  
+    )
 
-    # Get the corrsponding start and end nodes of the referenced peptide (including isoforms, if not specified or only isoforms)
-    start_nodes, end_nodes = _get_all_vertices_before_after(graph, start_position, end_position, generic_cleaved_feature.ref)
+    # Get the corrsponding start and end nodes of the referenced peptide
+    # (including isoforms, if not specified or only isoforms)
+    start_nodes, end_nodes = _get_all_vertices_before_after(
+        graph, start_position, end_position, generic_cleaved_feature.ref
+    )
 
     # Create the edge-list (cleaving the referenced peptide)
-    edge_list, edge_fts = _create_edges_list_and_feature(start_nodes, end_nodes, __start_node__.index, __stop_node__.index, generic_cleaved_feature)    
+    edge_list, edge_fts = _create_edges_list_and_feature(
+        start_nodes, end_nodes, __start_node__.index, __stop_node__.index, generic_cleaved_feature
+    )
 
     # Bulk adding of edges into the graph
     cur_edges = graph.ecount()
@@ -62,7 +67,8 @@ def _create_edges_list_and_feature(start_nodes, end_nodes, start_idx, stop_idx, 
     """
     Cleaves the ingoing edges of start_nodes and the outgoing edges of end_nodes.
 
-    This function returns two lists containing the edges and the features, which can be later applied on the graph itself
+    This function returns two lists containing the edges and the features,
+    which can be later applied on the graph itself
     """
     # Create the edge-list (cleaving the referenced peptide)
     edge_list = []
@@ -87,6 +93,5 @@ def _create_edges_list_and_feature(start_nodes, end_nodes, start_idx, stop_idx, 
                 if oe.target != stop_idx:  # Check if ingoing node is start
                     edge_list.append((start_idx, oe.target))  # Add outgoing edge from all in-going nodes
                     edge_feature.append([*_get_qualifiers(oe), feature])
-                    
 
     return edge_list, edge_feature

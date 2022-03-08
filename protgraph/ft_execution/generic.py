@@ -1,5 +1,5 @@
-from protgraph.unexpected_exception import UnexpectedException
 from protgraph.ft_execution import _get_qualifiers, get_content
+from protgraph.unexpected_exception import UnexpectedException
 
 
 def execute_variant(graph, variant_feature):
@@ -40,7 +40,9 @@ def _execute_generic_feature(graph, generic_feature, beginning):
             graph, generic_feature, edge_list, vertices_before, vertices_after
         )
     else:
-        _append_edge_list_chain(graph, text, generic_feature, edge_list, vertices_before, vertices_after, beginning=beginning)
+        _append_edge_list_chain(
+            graph, text, generic_feature, edge_list, vertices_before, vertices_after, beginning=beginning
+        )
 
     # Finally bulk add of the remaining edges
     cur_edges = graph.ecount()
@@ -71,7 +73,9 @@ def _get_vertices_before_after(graph, generic_feature):
     return vertices_before, vertices_after
 
 
-def _append_edge_list_chain(graph, text, generic_feature, edge_list, vertices_before, vertices_after, beginning="(", delimiter="->"):
+def _append_edge_list_chain(
+    graph, text, generic_feature, edge_list, vertices_before, vertices_after, beginning="(", delimiter="->"
+):
     # Get to be replaced amino_acids
     y_s = get_content(text, beginning, delimiter)
 
@@ -120,10 +124,6 @@ def _append_edge_list_missing(graph, generic_feature, edge_list, v_before, v_aft
     [__start_node__] = graph.vs.select(aminoacid="__start__")
     [__stop_node__] = graph.vs.select(aminoacid="__end__")
     # A sequence is missing! Just append an edge and its information
-    # Get the aminoacid position before and after it
-    # NOTE: Shifted by 1 due to the __start__ node at 0
-    aa_before = generic_feature.location.start + 1
-    aa_after = generic_feature.location.end + 0
 
     # TODO is such a combination enough?
     # Here we iterate over all possiblites over two pairs of nodes and its edges

@@ -1,7 +1,8 @@
+from Bio.SwissProt import UnknownPosition
+
 from protgraph.export.peptides.abstract_peptide_exporter import \
     APeptideExporter
 from protgraph.graph_collapse_edges import Or
-from Bio.SwissProt import UnknownPosition
 
 
 class PepFasta(APeptideExporter):
@@ -66,7 +67,8 @@ class PepFasta(APeptideExporter):
     def _map_qualifier_to_string(self, qualifier):
         str_qualifiers = []
         if qualifier is None:
-            # This case only happens if there are multiple ways from the start or end node due to the feature beeing there
+            # This case only happens if there are multiple ways from
+            # the start or end node due to the feature beeing there
             # E.G. PROPEP and PEPTIDE have this in common
             return ["None"]
         for f in qualifier:
@@ -89,7 +91,8 @@ class PepFasta(APeptideExporter):
 
             elif f.type == "MUTAGEN":
                 str_qualifiers.append(
-                    "MUTAGEN[" + self._get_location(f) + "," + self._get_variant_mutagen_qualifier(f, stop_codon=":", offset=0) + "]"
+                    "MUTAGEN[" + self._get_location(f) + "," +
+                    self._get_variant_mutagen_qualifier(f, stop_codon=":", offset=0) + "]"
                 )
 
             elif f.type == "CONFLICT":
@@ -128,7 +131,6 @@ class PepFasta(APeptideExporter):
 
         return str_qualifiers
 
-
     def _get_location(self, feature):
         if type(feature.location.start) == UnknownPosition:
             spos = "?"
@@ -139,8 +141,6 @@ class PepFasta(APeptideExporter):
         else:
             epos = str(feature.location.end)
         return spos + ":" + epos
-
-
 
     def _get_variant_mutagen_qualifier(self, feature, stop_codon="(", offset=1):
         """ Get x -> y or missing """

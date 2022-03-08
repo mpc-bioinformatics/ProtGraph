@@ -3,6 +3,7 @@ import os
 from protgraph.export.abstract_exporter import AExporter
 from protgraph.export.binary_pcsr import BinaryPCSR
 
+
 class LargeBinaryPCSR(AExporter):
     """ A simple Protein Compressed Sparse Row Exporter, exporting to a single file """
 
@@ -13,10 +14,9 @@ class LargeBinaryPCSR(AExporter):
         self.out_folder = kwargs["export_output_folder"]
         self.out_file = os.path.join(self.out_folder, "database.bpcsr")
 
-
     def export(self, prot_graph, queue):
         queue.put((
-            self.out_file, 
+            self.out_file,
             self.bpcsr_exporter._pcsr_to_bytes(
                 self.bpcsr_exporter._build_csr_entry(prot_graph)
             ),

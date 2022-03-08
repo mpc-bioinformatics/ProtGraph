@@ -1,5 +1,4 @@
 import importlib
-
 from contextlib import ContextDecorator
 
 
@@ -35,7 +34,7 @@ class Exporters(ContextDecorator):
         for ec in self.export_classes:
             ec.tear_down()
 
-    ### Actual supported Exporters are below
+    # Actual supported Exporters are below
     def __add_generic(self, exporters, flag, export_from, export_class):
         """ Load exporting class dynamically """
         if flag:
@@ -44,7 +43,7 @@ class Exporters(ContextDecorator):
                 clazz = getattr(module, export_class)  # import class
                 exporters.append(clazz())
             except ImportError as e:
-                print ("Skipping export into {export_name}! This export misses the dependency '{dep}'".format(
+                print("Skipping export into {export_name}! This export misses the dependency '{dep}'".format(
                     export_name=export_class,
                     dep=e.name
                 ))
@@ -65,19 +64,19 @@ class Exporters(ContextDecorator):
             (kwargs["export_large_csv"], "protgraph.export.large_csv", "LargeCSV"),
             (kwargs["export_large_pcsr"], "protgraph.export.large_pcsr", "LargePCSR"),
             (kwargs["export_large_binary_pcsr"], "protgraph.export.large_binary_pcsr", "LargeBinaryPCSR"),
-            
+
             # Exporter to "databases" (setup required)
             (kwargs["export_postgres"], "protgraph.export.postgres", "Postgres"),
             (kwargs["export_redisgraph"], "protgraph.export.redisgraph", "RedisGraph"),
             (kwargs["export_mysql"], "protgraph.export.mysql", "MySQL"),
             (kwargs["export_gremlin"], "protgraph.export.gremlin", "Gremlin"),
             (kwargs["export_cassandra"], "protgraph.export.cassandra", "Cassandra"),
-            
+
             # Peptide Exporter to "databases" (setup required)
             (kwargs["export_peptide_citus"], "protgraph.export.peptides.pep_citus", "PepCitus"),
             (kwargs["export_peptide_postgres"], "protgraph.export.peptides.pep_postgres", "PepPostgres"),
             (kwargs["export_peptide_mysql"], "protgraph.export.peptides.pep_mysql", "PepMySQL"),
-            
+
             # Peptide Exporter to local filesystem (no setup required)
             (kwargs["export_peptide_fasta"], "protgraph.export.peptides.pep_fasta", "PepFasta"),
             (kwargs["export_peptide_trie"], "protgraph.export.peptides.pep_trie", "PepTrie"),

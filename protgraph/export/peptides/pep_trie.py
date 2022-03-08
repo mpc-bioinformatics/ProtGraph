@@ -1,7 +1,7 @@
-from protgraph.export.peptides.pep_fasta import \
-    PepFasta
-
 import os
+
+from protgraph.export.peptides.pep_fasta import PepFasta
+
 
 class PepTrie(PepFasta):
     """
@@ -22,9 +22,7 @@ class PepTrie(PepFasta):
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, queue):
         # Export a batch of peptides at onces
         # Build up the entries for the batch
-        entries = ""
         for peptide, nodes, edges, misses in zip(l_peptide, l_path_nodes, l_path_edges, l_miscleavages):
-            
             # Get Peptide information
             acc = self._get_accession_or_isoform(prot_graph.vs[nodes[1]])
             start_pos = self._get_position_or_isoform_position(prot_graph.vs[nodes[1]])
@@ -46,6 +44,6 @@ class PepTrie(PepFasta):
 
             # Write actual Peptide
             queue.put((
-                os.path.join(p, ".proteins"), 
+                os.path.join(p, ".proteins"),
                 entry, False, True
             ))

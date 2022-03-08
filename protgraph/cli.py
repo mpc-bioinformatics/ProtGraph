@@ -10,8 +10,6 @@ def check_if_file_exists(s: str):
         raise Exception("File '{}' does not exists".format(s))
 
 
-
-
 def add_main_args(parser):
     # Needed Arguments for parsing (and other general/global arguments)
     parser.add_argument(
@@ -48,29 +46,31 @@ def add_main_args(parser):
         "num_var_seq", "num_init_met", "num_signal", "num_variant", "num_mutagen",
         "num_conflict", "num_peptide", "num_propep", "num_nodes", "num_edges",
         # Statistics
-        "num_paths", "list_paths_miscleavages", "list_paths_hops", 
+        "num_paths", "list_paths_miscleavages", "list_paths_hops",
         "list_paths_variant", "list_paths_mutagen", "list_paths_conflict",
         # Protein description (at the end, since it can be very lengthy)
         "protein_description",
         ]
     # Add list functionality to CLI
+
     def _check_if_in_list(input: str):
         """
-        Check if entries, seperated by ',' are al in the list
+        Check if entries, seperated by ',' are all in the list
         Returns the list as by user
         """
-        l = []
+        header_l = []
         for i in input.split(","):
-            if l not in avail_headers:
+            if i not in avail_headers:
                 raise ArgumentTypeError(
-                "The header-Entry '{}' does not exists.".format(i)
+                    "The header-Entry '{}' does not exists.".format(i)
                 )
-            l.append(i)
-        return l
+            header_l.append(i)
+        return header_l
     parser.add_argument(
         "--output_csv_layout", type=_check_if_in_list, action="store", default=avail_headers,
         help="Set the csv layout of the generated graph statistics. You can choose from: " + ",".join(avail_headers) +
-        " (this is also the default order.) You can specify your own order or exclude headers, by using a comma-seperated list."
+        " (this is also the default order.) You can specify your own order or exclude headers,"
+        " by using a comma-seperated list."
     )
 
     parser.add_argument(
@@ -143,7 +143,7 @@ def add_graph_generation(group):
                 "The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s)
             )
 
-        try: 
+        try:
             t = float(t)
         except Exception():
             raise ArgumentTypeError(
@@ -155,15 +155,15 @@ def add_graph_generation(group):
         "--fixed_mod", "-fm", type=_parse_mod, action="append",
         help="Apply a fixed modification on a special aminoacid."
         " You can apply multiple fix modifications BUT only one modification per aminoacid is currently allowed."
-        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a fixed oxidation of M."
-        " Note: modifications on the same aminoacid are superseeded"
+        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a"
+        " fixed oxidation of M. Note: modifications on the same aminoacid are superseeded"
     )
     group.add_argument(
         "--variable_mod", "-vm", type=_parse_mod, action="append",
         help="Apply a variable modification on a special aminoacid."
         " You can apply multiple variable modifications BUT only one modification per aminoacid is currently allowed."
-        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a fixed oxidation of M."
-        " Note: modifications on the same aminoacid are superseeded (superseeding fixed modifications"
+        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a fixed oxidation"
+        " of M. Note: modifications on the same aminoacid are superseeded (superseeding fixed modifications"
     )
 
     # Flag to check if generated graphs are correctly generated
@@ -682,6 +682,7 @@ def add_citus_peptide_export(group):
         help="Set this flag to not insert duplicates into the database. "
         "NOTE: Setting this value decreases the performance drastically"
     )
+
 
 def add_gremlin_graph_export(group):
     group.add_argument(

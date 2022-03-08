@@ -1,5 +1,6 @@
 from protgraph.ft_execution import get_content
 
+
 def execute_var_seq(
     isoforms, graph, sequence: str, var_seqs_features, displayed_accession
 ):

@@ -24,9 +24,9 @@ class PepPostgres(APeptideExporter):
         # TODO psycopg3 changed the bulk inserts in such a way
         # that no nore then 65535 parameters can be sent at once.
         # We therefore need to limit the number of params here!
-        self.pg_max_allowed_entries_to_send  = int(65535/29)  # --> deduced by the length of l_peptide_tuple
+        self.pg_max_allowed_entries_to_send = int(65535/29)  # --> deduced by the length of l_peptide_tuple
         self.pg_max_allowed_entries_to_send_compressed = int(65535/30)  # --> deduced by the length of l_peptide_tuple
-        self.pg_max_allowed_entries_to_send_meta  = int(65535/4)  # --> deduced by the length of l_peptide_tuple
+        self.pg_max_allowed_entries_to_send_meta = int(65535/4)  # --> deduced by the length of l_peptide_tuple
 
         # Connection and other parameters
         self.host = kwargs["pep_postgres_host"]  # Host
@@ -212,7 +212,9 @@ class PepPostgres(APeptideExporter):
             )
             for peptides_id, path_nodes, miscleavages in zip(l_peptides_id, l_path_nodes, l_miscleavages)
         ]
-        for in_l_peptides_meta_tup in self.chunked_iterable(l_peptides_meta_tup, self.pg_max_allowed_entries_to_send_meta):
+        for in_l_peptides_meta_tup in self.chunked_iterable(
+            l_peptides_meta_tup, self.pg_max_allowed_entries_to_send_meta
+        ):
             # Bulk insert statement and execute
             stmt = "INSERT INTO peptides_meta (" \
                 + ",".join(self.peptides_meta_keys) \
@@ -249,7 +251,9 @@ class PepPostgres(APeptideExporter):
             for x in l_peptides_tup
         ]
 
-        for zipped in self.chunked_iterable(zip(l_peptides_tup, pep_ids), self.pg_max_allowed_entries_to_send_compressed):
+        for zipped in self.chunked_iterable(
+            zip(l_peptides_tup, pep_ids), self.pg_max_allowed_entries_to_send_compressed
+        ):
             # Bulk insert into the peptides table
             ins_stmt = " INSERT INTO peptides (" \
                 + ",".join(self.peptides_keys) \

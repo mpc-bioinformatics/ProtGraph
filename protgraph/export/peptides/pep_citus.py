@@ -1,7 +1,6 @@
 import psycopg
 
-from protgraph.export.peptides.pep_postgres import \
-    PepPostgres
+from protgraph.export.peptides.pep_postgres import PepPostgres
 
 
 class PepCitus(PepPostgres):
@@ -24,9 +23,9 @@ class PepCitus(PepPostgres):
         # TODO psycopg3 changed the bulk inserts in such a way
         # that no nore then 65535 parameters can be sent at once.
         # We therefore need to limit the number of params here!
-        self.pg_max_allowed_entries_to_send  = int(65535/29)  # --> deduced by the length of l_peptide_tuple
+        self.pg_max_allowed_entries_to_send = int(65535/29)  # --> deduced by the length of l_peptide_tuple
         self.pg_max_allowed_entries_to_send_compressed = int(65535/30)  # --> deduced by the length of l_peptide_tuple
-        self.pg_max_allowed_entries_to_send_meta  = int(65535/4)  # --> deduced by the length of l_peptide_tuple
+        self.pg_max_allowed_entries_to_send_meta = int(65535/4)  # --> deduced by the length of l_peptide_tuple
 
         # Connection and other parameters
         self.host = kwargs["pep_citus_host"]  # Host
@@ -157,7 +156,6 @@ class PepCitus(PepPostgres):
         self.statement_accession = "INSERT INTO accessions(accession) VALUES (%s) RETURNING id;"
         self.statement_peptides_inner_values = "(" + ",".join(["%s"]*len(self.peptides_keys)) + ")"
         self.statement_peptides_meta_inner_values = "(" + ",".join(["%s"]*len(self.peptides_meta_keys)) + ")"
-
 
     def tear_down(self):
         # Close the connection to postgres citus

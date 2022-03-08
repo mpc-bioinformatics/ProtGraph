@@ -2,15 +2,14 @@ from operator import add
 
 from protgraph.graph_collapse_edges import Or
 
-
 # A list of statistic methods with csv keys, which should be calculated.
 STATISTICS_METHOD_LIST = [
-    ("calc_num_possibilities", lambda graph, or_count: _count_pos_paths(graph), "num_paths"),
-    ("calc_num_possibilities_miscleavages", lambda graph, or_count: _count_miscleavages_list(graph), "list_paths_miscleavages"),
-    ("calc_num_possibilities_hops", lambda graph, or_count: _count_hops_list(graph), "list_paths_hops"),
-    ("calc_num_possibilities_variant", lambda graph, or_count: _count_feature_list(graph, feature_type="VARIANT", or_count=or_count), "list_paths_variant"),
-    ("calc_num_possibilities_mutagen", lambda graph, or_count: _count_feature_list(graph, feature_type="MUTAGEN", or_count=or_count), "list_paths_mutagen"),
-    ("calc_num_possibilities_conflict", lambda graph, or_count: _count_feature_list(graph, feature_type="CONFLICT", or_count=or_count), "list_paths_conflict"),
+    ("calc_num_possibilities", lambda graph, or_count: _count_pos_paths(graph), "num_paths"),  # noqa: E501
+    ("calc_num_possibilities_miscleavages", lambda graph, or_count: _count_miscleavages_list(graph), "list_paths_miscleavages"),  # noqa: E501
+    ("calc_num_possibilities_hops", lambda graph, or_count: _count_hops_list(graph), "list_paths_hops"),  # noqa: E501
+    ("calc_num_possibilities_variant", lambda graph, or_count: _count_feature_list(graph, feature_type="VARIANT", or_count=or_count), "list_paths_variant"),  # noqa: E501
+    ("calc_num_possibilities_mutagen", lambda graph, or_count: _count_feature_list(graph, feature_type="MUTAGEN", or_count=or_count), "list_paths_mutagen"),  # noqa: E501
+    ("calc_num_possibilities_conflict", lambda graph, or_count: _count_feature_list(graph, feature_type="CONFLICT", or_count=or_count), "list_paths_conflict"),  # noqa: E501
 ]
 
 
@@ -97,7 +96,7 @@ def _count_feature_list(graph_entry, feature_type="VARIANT", or_count=min):
     def kernel(edge, s_list, edge_list):
         offset = _count_feature(edge["qualifiers"], feature_type, or_count)
         # if variant then shift by offset!
-        return  _add_lists(s_list, [0]*offset + edge_list)
+        return _add_lists(s_list, [0]*offset + edge_list)
 
     return _dynamic_programming(graph_entry, kernel)
 

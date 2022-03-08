@@ -1,5 +1,6 @@
-from abc import ABC, abstractmethod
 import itertools
+from abc import ABC, abstractmethod
+
 
 class AExporter(ABC):
     """

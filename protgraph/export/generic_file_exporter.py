@@ -1,5 +1,7 @@
-from protgraph.export.abstract_exporter import AExporter
 import os
+
+from protgraph.export.abstract_exporter import AExporter
+
 
 class GenericFileExporter(AExporter):
     """ A simple Generic File Exporter """
@@ -9,7 +11,6 @@ class GenericFileExporter(AExporter):
         Insert Export-Function as Lambda, containing the following inputs:
         Input: (Graph, Output-Folder)
         Output: <None>
-        
         """
         self.export_function = export_function
 

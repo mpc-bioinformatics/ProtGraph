@@ -1,10 +1,10 @@
-import os
 import argparse
+import os
 import zlib
 
-from protgraph.cli import check_if_file_exists
-
 import tqdm
+
+from protgraph.cli import check_if_file_exists
 
 # Optional Dependencies, currently installable via [sqlite]
 try:
@@ -12,6 +12,7 @@ try:
 except ImportError:
     print("Error: 'apsw' is needed for this script to run properly. Exiting...")
     exit()
+
 
 def parse_args():
     """ Parse Arguments """
@@ -34,6 +35,7 @@ def parse_args():
 
     return parser.parse_args()
 
+
 def export_with_text(conn, output, num_of_entries):
     """ Export Case for Text columns """
     cur = conn.cursor()
@@ -42,7 +44,7 @@ def export_with_text(conn, output, num_of_entries):
     pep_id = 0
     for pep, meta in tqdm.tqdm(cur, total=num_of_entries, unit="entries"):
 
-        # Write Output-Entry            
+        # Write Output-Entry
         output.write(
             ">pg|ID_" + str(pep_id) + "|" + meta + "\n" + '\n'.join(pep[i:i+60] for i in range(0, len(pep), 60)) + "\n"
         )
@@ -59,9 +61,7 @@ def export_with_blob(conn, output, num_of_entries):
     cur.execute("SELECT peptide from peptide_meta;")
 
     pep_id = 0
-    for rowid in tqdm.tqdm(range(1,num_of_entries+1), total=num_of_entries):
-        
-        
+    for rowid in tqdm.tqdm(range(1, num_of_entries + 1), total=num_of_entries):
         bl = conn.blobopen("main", "peptide_meta", "meta", rowid, False)
         binar_meta = bl.read()
         bl.close()
@@ -78,8 +78,7 @@ def export_with_blob(conn, output, num_of_entries):
         bl.close()
         pep = zlib.decompress(binar_pep).decode("ascii")
 
-
-        # Write Output-Entry            
+        # Write Output-Entry
         output.write(
             ">pg|ID_" + str(pep_id) + "|" + meta + "\n" + '\n'.join(pep[i:i+60] for i in range(0, len(pep), 60)) + "\n"
         )
@@ -91,7 +90,6 @@ def main():
     # Parse args
     args = parse_args()
     abs_file = os.path.abspath(args.sqlite_file[0])
-
 
     # Get Connection, column and size info
     conn = apsw.Connection(abs_file)

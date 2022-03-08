@@ -1,8 +1,8 @@
 import argparse
 import csv
+import multiprocessing as mp
 import os
 import time
-import multiprocessing as mp
 from multiprocessing import cpu_count
 from threading import Thread
 
@@ -89,7 +89,7 @@ def prot_graph(**kwargs):
             # check if reader is still alive (in case of exceptions)
             if __check_if_alive([entry_reader]):
                 entry_reader.kill()
-            
+
             # Then exit the program
             break
 
@@ -255,7 +255,7 @@ def write_output_csv_thread(queue, out_file, total_num_entries, **kwargs):
     # (Over-)Write to out_file
     with open(out_file, "w") as out_f:
         csv_writer = csv.writer(out_f)
-        
+
         # Write Header Row
         csv_writer.writerow(kwargs["output_csv_layout"])
 
@@ -325,11 +325,11 @@ def write_to_common_file(queue):
             # Set entry
             if entry[3]:
                 out_dict[entry[0]] = open(entry[0], entry[3])
-            else: 
+            else:
                 out_dict[entry[0]] = open(entry[0], "w")
             # Rewrite first line!
             out_dict[entry[0]].write(entry[1])
-            
+
             # Check if this was a header we have written, set to True, to not rewrite header
             if entry[2] and entry[0] not in header_dict:
                 header_dict[entry[0]] = True
