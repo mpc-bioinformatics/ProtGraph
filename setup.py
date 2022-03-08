@@ -1,6 +1,5 @@
 from setuptools import find_packages, setup
 
-
 # Get Packages from Pipfile by parsing them
 lines = []
 with open("Pipfile", "r") as pipfile:
