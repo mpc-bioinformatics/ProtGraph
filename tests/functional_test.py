@@ -122,15 +122,15 @@ class FunctionalTest(unittest.TestCase):
         protgraph.prot_graph(**args)
 
     def test_export_pep_fasta(self):
-        args = protgraph.parse_args(["-epepfasta", "--pep_fasta_hops", "2"] + self.procs_num + self.example_files)
+        args = protgraph.parse_args(["-epepfasta", "--pep_hops", "2"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_export_pep_trie(self):
-        args = protgraph.parse_args(["-epeptrie", "--pep_fasta_hops", "2"] + self.procs_num + self.example_files)
+        args = protgraph.parse_args(["-epeptrie", "--pep_hops", "2"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_export_pep_sqlite(self):
-        args = protgraph.parse_args(["-epepsqlite", "--pep_sqlite_hops", "2"] + self.procs_num + self.example_files)
+        args = protgraph.parse_args(["-epepsqlite", "--pep_hops", "2"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_issue8(self):
