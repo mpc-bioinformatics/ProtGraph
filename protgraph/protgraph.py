@@ -324,11 +324,17 @@ def write_to_common_file(queue):
                 )
             # Set entry
             if entry[3]:
-                out_dict[entry[0]] = open(entry[0], entry[3])
+                if entry[3] == "ac":  # Special Case append and close (for trie)
+                    with open(entry[0], "a") as o:
+                        o.write(entry[1])
+                else:
+                    out_dict[entry[0]] = open(entry[0], entry[3])
+                    # Rewrite firs  t line!
+                    out_dict[entry[0]].write(entry[1])
             else:
                 out_dict[entry[0]] = open(entry[0], "w")
-            # Rewrite first line!
-            out_dict[entry[0]].write(entry[1])
+                # Rewrite first line!
+                out_dict[entry[0]].write(entry[1])
 
             # Check if this was a header we have written, set to True, to not rewrite header
             if entry[2] and entry[0] not in header_dict:

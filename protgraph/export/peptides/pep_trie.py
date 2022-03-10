@@ -45,5 +45,5 @@ class PepTrie(PepFasta):
             # Write actual Peptide
             queue.put((
                 os.path.join(p, ".proteins"),
-                entry, False, True
+                entry, False, "ac"
             ))

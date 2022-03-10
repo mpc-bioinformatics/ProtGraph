@@ -126,7 +126,7 @@ class FunctionalTest(unittest.TestCase):
         protgraph.prot_graph(**args)
 
     def test_export_pep_trie(self):
-        args = protgraph.parse_args(["-epeptrie", "--pep_hops", "2"] + self.procs_num + self.example_files)
+        args = protgraph.parse_args(["-epeptrie", "--pep_hops", "5"] + self.procs_num + [os.path.join(self.examples_path, "Q9QXS1.txt")])
         protgraph.prot_graph(**args)
 
     def test_export_pep_sqlite(self):
