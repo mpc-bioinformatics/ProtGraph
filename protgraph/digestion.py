@@ -1,7 +1,7 @@
 from typing import List
 
 
-def digest(graph, enzymes: List[str]):
+def digest(graph, enzymes: List[str], entry_dict):
     """
     Select digestion method depending on enzyme
 
@@ -23,7 +23,7 @@ def digest(graph, enzymes: List[str]):
             # Add more Enzymes if needed here!
         )[i](graph)
 
-    return sum_of_cleavages
+    entry_dict["num_cleavages"] = sum_of_cleavages
 
 
 def _digest_via_skip(graph):

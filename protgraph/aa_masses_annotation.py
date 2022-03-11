@@ -43,7 +43,7 @@ def annotate_weights(graph_entry, **kwargs):
     """
     This method annotates the graph (if explicitly set) with the
     average and monoisotopic weight. It also has the possibility to set
-    the end weight of the edges. This value tells from a specific edge (node)
+    the end weight of the nodes. This value tells from a specific node
     how much weight it has at least to go to get to the end.
 
     Such information could e.g. be used to reduce the number of paths early on,
@@ -60,19 +60,19 @@ def annotate_weights(graph_entry, **kwargs):
     NOTE: This transforms the graph without returning it!
 
     Following Keys maybe set here:
-    Nodes: <None>
-    Edges: "mono_weight", "avrg_weight", "mono_weight_to_end", "avrg_weight_to_end"
+    Nodes: "mono_weight", "avrg_weight", "mono_weight_to_end", "avrg_weight_to_end"
+    Edges: <None>
     """
     # Get the mass dictionary, which should be happen instantly.
     mass_dict = _get_mass_dict(factor=kwargs["mass_dict_factor"], type=kwargs["mass_dict_type"])
 
     # If mono or mono_end is set, annotate the graph with the mono weights
     if kwargs["annotate_mono_weights"] or kwargs["annotate_mono_weight_to_end"]:
-        _add_masses(graph_entry, "mono_weight", mass_dict, 0)
+        _add_masses(graph_entry, "mono_weight", mass_dict, kwargs["mass_dict_type"], 0)
 
     # If avrg or avrg_end is set, annotate the graph with the average weights
     if kwargs["annotate_avrg_weights"] or kwargs["annotate_avrg_weight_to_end"]:
-        _add_masses(graph_entry, "avrg_weight", mass_dict, 1)
+        _add_masses(graph_entry, "avrg_weight", mass_dict, kwargs["mass_dict_type"], 1)
 
     # If one of the end weights is set:
     if kwargs["annotate_mono_weight_to_end"] or kwargs["annotate_avrg_weight_to_end"]:
@@ -88,7 +88,7 @@ def annotate_weights(graph_entry, **kwargs):
             _add_end_masses(graph_entry, "mono_weight_to_end", "mono_weight", top_sorted_nodes)
 
 
-def _add_masses(graph_entry, weight_name, mass_dict, idx):
+def _add_masses(graph_entry, weight_name, mass_dict, mass_dict_type, idx):
     """
     Here we simply iterate over each edge, get their target node (sum up, if it contains multiple aminoacid entries
     due to merging) and set the masses in the graph.
@@ -98,20 +98,24 @@ def _add_masses(graph_entry, weight_name, mass_dict, idx):
     idx: Which entry of the list-value from the dictionary should be taken
     """
     mono_masses = [
-        sum(
-            [
-                mass_dict[y][idx]
-                for y in x.target_vertex["aminoacid"]
-                .replace("__start__", "")
-                .replace("__end__", "")
-                # 2. Get the aminoacid (-chain) from target and sum it up
-            ]
+        mass_dict_type(
+            sum(
+                [
+                    mass_dict[y][idx]
+                    for y in x["aminoacid"]
+                    .replace("__start__", "")
+                    .replace("__end__", "")
+                    # 2. Get the aminoacid (-chain) from target and sum it up
+                ]
+            ) + (x["delta_mass"] if "delta_mass" in x.attributes() and x["delta_mass"] is not None else 0)
         )
-        for x in graph_entry.es[:]
+        for x in graph_entry.vs[:]
         # 1. For each edge in the graph
     ]
     # Then set the masses for each edge
-    graph_entry.es[:][weight_name] = mono_masses
+    graph_entry.vs[:][weight_name] = mono_masses
+    if "delta_mass" in graph_entry.vs[0].attributes():
+        del graph_entry.vs["delta_mass"]  # Delete deltamass if available
 
 
 def _add_end_masses(graph_entry, weight_end_name, weight_name, sorted_nodes):
@@ -138,14 +142,7 @@ def _add_end_masses(graph_entry, weight_end_name, weight_name, sorted_nodes):
         # Grab its edges, which targets the node. For each of the edge:
         for edge in graph_entry.es.select(_target=node):
             # Get the end weight of the node and the weight from the current edge
-            temp_weight = edge.target_vertex[weight_end_name] + edge[weight_name]
+            temp_weight = edge.target_vertex[weight_end_name] + edge.source_vertex[weight_name]
             # Set this weight for the source node if smaller
             if graph_entry.vs[edge.source][weight_end_name] > temp_weight:
                 graph_entry.vs[edge.source][weight_end_name] = temp_weight
-
-    # Since we want this information on the edges, simply shift it from the target nodes
-    mono_end_masses = [x.target_vertex[weight_end_name] for x in graph_entry.es[:]]
-    graph_entry.es[:][weight_end_name] = mono_end_masses
-
-    # Finally, remove the attribute from the nodes, since we used it temporarily
-    del graph_entry.vs[weight_end_name]

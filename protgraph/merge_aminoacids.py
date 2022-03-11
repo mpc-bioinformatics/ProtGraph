@@ -1,3 +1,21 @@
+def traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c):
+    # iterate as long as possible.
+    while next_node in single_nodes:
+        single_nodes.remove(next_node)
+        c.append(next_node)
+        next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+
+    # Special case for single in
+    if next_node in single_in:
+        single_in.remove(next_node)
+        c.append(next_node)
+        next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+
+    # Skip chains containing only 1 element
+    if len(c) != 1:
+        complete_chain.append(c)
+
+
 def find_chains(graph_entry):
     """
     Retrive chain of nodes.
@@ -33,21 +51,7 @@ def find_chains(graph_entry):
         c = [so]
         next_node = graph_entry.vs[so].neighbors(mode="OUT")[0].index
 
-        # iterate as long as possible.
-        while next_node in single_nodes:
-            single_nodes.remove(next_node)
-            c.append(next_node)
-            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
-
-        # Special case for single in
-        if next_node in single_in:
-            single_in.remove(next_node)
-            c.append(next_node)
-            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
-
-        # Skip chains containing only 1 element
-        if len(c) != 1:
-            complete_chain.append(c)
+        traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c)
 
     # CASE 2: it may happen that the start node is at a beginning of chain.
     # Here we do a intersection of remaining nodes in single_nodes with the
@@ -59,21 +63,7 @@ def find_chains(graph_entry):
         next_node = graph_entry.vs[sn].neighbors(mode="OUT")[0].index
         single_nodes.remove(sn)
 
-        # iterate as long as possible
-        while next_node in single_nodes:
-            single_nodes.remove(next_node)
-            c.append(next_node)
-            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
-
-        # Special case for single in
-        if next_node in single_in:
-            single_in.remove(next_node)
-            c.append(next_node)
-            next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
-
-        # Skip chains containing only 1 element
-        if len(c) != 1:
-            complete_chain.append(c)
+        traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c)
 
     # return complete chain
     return complete_chain
@@ -126,6 +116,8 @@ def merge_aminoacids(graph_entry):
         # Now the attributes in nodes, which may be present
         m_isoform_accession = _get_single_set_element(sorted_nodes, "isoform_accession")  # Get the ONLY iso_accession
         m_isoform_position = sorted_nodes[0]["isoform_position"] if "isoform_position" in sorted_nodes[0] else None
+        m_delta_mass = sum(x["delta_mass"] if x["delta_mass"] else 0 for x in sorted_nodes) \
+            if "delta_mass" in sorted_nodes[0] else None
 
         # Merge edges attributes, which also may be present!
         sorted_nodes_attrs = [x.attributes() for x in sorted_edges]
@@ -144,7 +136,7 @@ def merge_aminoacids(graph_entry):
         # Here we set all available! (So this may need to be appended for new attrs)
         new_node_attrs = dict(
             accession=m_accession, isoform_accession=m_isoform_accession, position=m_position,
-            isoform_position=m_isoform_position, aminoacid=m_aminoacid,
+            isoform_position=m_isoform_position, aminoacid=m_aminoacid, delta_mass=m_delta_mass
         )
         new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers)
 
@@ -175,6 +167,7 @@ def merge_aminoacids(graph_entry):
     # Then add the possibly available attributes
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "isoform_accession")
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "isoform_position")
+    _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "delta_mass")
 
     # 2. Get all edges connected to supernode and add them appropiately!
     supernode_idcs = list(range(cur_node_count, cur_node_count + len(merged_nodes)))

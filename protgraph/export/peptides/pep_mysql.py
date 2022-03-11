@@ -18,31 +18,8 @@ class PepMySQL(APeptideExporter):
     NOTE: Maybe even exceeding trillion of results for one protein!
     """
 
-    @property
-    def skip_x(self) -> bool:
-        return self.get_skip_x
-
-    @property
-    def peptide_min_length(self) -> int:
-        return self.get_peptide_min_length
-
-    @property
-    def max_miscleavages(self) -> int:
-        return self.get_miscleavages
-
-    @property
-    def use_igraph(self) -> bool:
-        return self.get_use_igraph
-
-    @property
-    def peptide_max_length(self) -> int:
-        return self.get_peptide_length
-
-    @property
-    def batch_size(self) -> int:
-        return self.get_batch_size
-
     def start_up(self, **kwargs):
+        super(PepMySQL, self).start_up(**kwargs)
         # Here we generate a connection to mysql
         # and generate the corresponding tables
 
@@ -53,14 +30,6 @@ class PepMySQL(APeptideExporter):
         self.password = kwargs["pep_mysql_password"]  # Password
         self.database = kwargs["pep_mysql_database"]  # Database
         self.no_duplicates = kwargs["pep_mysql_no_duplicates"]
-
-        # Traversal parameters:
-        self.get_peptide_length = kwargs["pep_mysql_hops"]  # Number of hops. E.G. 2: s -> h_1 -> h_2 -> e
-        self.get_miscleavages = kwargs["pep_mysql_miscleavages"]  # A filter criterion how many miscleavages?
-        self.get_peptide_min_length = kwargs["pep_mysql_min_pep_length"]  # Peptide minimum length
-        self.get_skip_x = kwargs["pep_mysql_skip_x"]
-        self.get_use_igraph = kwargs["pep_mysql_use_igraph"]
-        self.get_batch_size = kwargs["pep_mysql_batch_size"]
 
         # Get Unique generator, since mysql can ONLY! return 1 id at once after bulk inserting entries..
         self.id_gen = self.unique_id_gen(**kwargs)
@@ -205,8 +174,8 @@ class PepMySQL(APeptideExporter):
 
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
         # Get the weight
-        if "mono_weight" in prot_graph.es[l_path_edges[0][0]].attributes():
-            l_weight = [sum(prot_graph.es[x]["mono_weight"]) for x in l_path_edges]
+        if "mono_weight" in prot_graph.vs[l_path_nodes[0][0]].attributes():
+            l_weight = [sum(prot_graph.vs[x]["mono_weight"]) for x in l_path_nodes]
         else:
             l_weight = [-1]*len(l_path_nodes)
 

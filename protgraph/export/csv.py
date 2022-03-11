@@ -1,34 +1,21 @@
 import csv
-import os
 
-from protgraph.export.abstract_exporter import AExporter
+from protgraph.export.generic_file_exporter import GenericFileExporter
 
 
-class CSV(AExporter):
-    """ A simple CSV Exporter. This export is compatible with Gephi """
+class CSV(GenericFileExporter):
+    """ A simple CSV exporter. This export is compatible with Gephi."""
 
-    def start_up(self, **kwargs):
-        # Here we simply create the folder if it does not exist
-        self.out_folder = kwargs["export_output_folder"]
-        os.makedirs(self.out_folder, exist_ok=True)
+    def __init__(self):
+        super(CSV, self).__init__(
+            self._lambda_export
+        )
 
-        self.flat = not kwargs["export_in_directories"]
+    def _lambda_export(self, pg, path):
+        self.write_nodes_data(path + "_nodes.csv", pg)
+        self.write_edges_data(path + "_edges.csv", pg)
 
-    def export(self, prot_graph, _):
-        if self.flat:
-            accession = prot_graph.vs["accession"][0]
-            self._write_nodes_data(os.path.join(self.out_folder, accession + "_nodes.csv"), prot_graph)
-            self._write_edges_data(os.path.join(self.out_folder, accession + "_edges.csv"), prot_graph)
-        else:
-            accession = prot_graph.vs["accession"][0]
-            out_dir = os.path.join(self.out_folder, *[x for x in accession[:-1]])
-            # Create outfolders if needed
-            os.makedirs(out_dir, exist_ok=True)
-
-            self._write_nodes_data(os.path.join(os.path.join(out_dir, accession[-1:] + "_nodes.csv")), prot_graph)
-            self._write_edges_data(os.path.join(os.path.join(out_dir, accession[-1:] + "_edges.csv")), prot_graph)
-
-    def _write_nodes_data(self, out_file, graph):
+    def write_nodes_data(self, out_file, graph):
         with open(out_file, "w") as csvfile:
             writer = csv.writer(csvfile)
             # Write Header
@@ -39,7 +26,7 @@ class CSV(AExporter):
             for n in graph.vs:
                 writer.writerow([n.index, *n.attributes().values()])
 
-    def _write_edges_data(self, out_file, graph):
+    def write_edges_data(self, out_file, graph):
         with open(out_file, "w") as csvfile:
             writer = csv.writer(csvfile)
             # Write Header
@@ -49,7 +36,3 @@ class CSV(AExporter):
             # Write "Body"
             for e in graph.es:
                 writer.writerow([e.source, e.target, *e.attributes().values()])
-
-    def tear_down(self):
-        # We do not need to tear down a graph export to dot files
-        pass

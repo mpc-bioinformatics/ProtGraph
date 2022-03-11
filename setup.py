@@ -28,7 +28,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='protgraph',
-    version='0.2.1',
+    version='0.3.0',
     author="Dominik Lux",
     description="ProtGraph, a graph generator for proteins.",
     long_description=long_description,
@@ -43,8 +43,23 @@ setup(
     ],
     license="BSD",
     python_requires=">=3.6",
-    entry_points=dict(console_scripts=['protgraph=protgraph.protgraph:main']),
+    entry_points=dict(console_scripts=[
+        'protgraph = protgraph.protgraph:main',
+        'protgraph_pepsqlite_to_fasta = protgraph.scripts.pepsqlite_to_fasta:main [sqlite]',
+        'protgraph_replace_fasta_header = protgraph.scripts.replace_fasta_header:main',
+        'protgraph_generate_fasta_decoys = protgraph.scripts.generate_fasta_decoys:main',
+        'protgraph_print_sums = protgraph.scripts.print_sums:main'
+    ]),
     packages=find_packages(),
     include_package_data=True,
-    install_requires=packages
+    install_requires=packages,
+    extras_require={
+        "postgres": ["psycopg>=3.0"],
+        "mysql": ["mysql"],
+        "sqlite": ["apsw"],
+        "cassandra": ["cassandra-driver"],
+        "gremlin": ["gremlinpython"],
+        "redis": ["redis", "redisgraph"],
+        "full": ["mysql", "psycopg>=3.0", "apsw", "cassandra-driver", "redis", "redisgraph", "gremlinpython"],
+    },
 )

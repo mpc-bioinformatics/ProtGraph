@@ -5,7 +5,7 @@ import os
 from protgraph.export.abstract_exporter import AExporter
 
 
-class Large_CSV(AExporter):
+class LargeCSV(AExporter):
     """ A CSV Exporter to export to one/two large files. This export is compatible with Gephi """
 
     def start_up(self, **kwargs):
@@ -17,14 +17,16 @@ class Large_CSV(AExporter):
 
     def export(self, prot_graph, queue):
         # Write Header Once!
-        n_header = ["Id", "accession", "aminoacid", "position", "isoform_accession", "isoform_position"]
+        n_header = [
+            "Id", "accession", "aminoacid", "position", "isoform_accession", "isoform_position",
+            "mono_weight", "mono_weight_to_end", "avrg_weight", "avrg_weight_to_end"
+        ]
         e_header = [
-            "Source", "Target", "cleaved", "mono_weight", "mono_weight_to_end",
-            "avrg_weight", "avrg_weight_to_end", "qualifiers"
+            "Source", "Target", "cleaved", "qualifiers"
         ]
 
-        queue.put((self.nodes_out, ",".join(n_header) + "\n", True))
-        queue.put((self.edges_out, ",".join(e_header) + "\n", True))
+        queue.put((self.nodes_out, ",".join(n_header) + "\n", True, "a"))
+        queue.put((self.edges_out, ",".join(e_header) + "\n", True, "a"))
 
         # Get Id-Mapper
         node_mapping = [next(self.id_get) for _ in range(prot_graph.vcount())]
@@ -47,7 +49,7 @@ class Large_CSV(AExporter):
             (
                 self.nodes_out,
                 str_out.getvalue(),
-                False
+                False, "a"
             )
         )
 
@@ -65,7 +67,7 @@ class Large_CSV(AExporter):
             (
                 self.edges_out,
                 str_out.getvalue(),
-                False
+                False, "a"
             )
         )
 

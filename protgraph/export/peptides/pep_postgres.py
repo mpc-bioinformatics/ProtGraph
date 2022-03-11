@@ -16,33 +16,17 @@ class PepPostgres(APeptideExporter):
     NOTE: Maybe even exceeding trillion of results for one protein!
     """
 
-    @property
-    def skip_x(self) -> bool:
-        return self.get_postgres_skip_x
-
-    @property
-    def peptide_min_length(self) -> int:
-        return self.get_peptide_min_length
-
-    @property
-    def max_miscleavages(self) -> int:
-        return self.get_miscleavages
-
-    @property
-    def use_igraph(self) -> bool:
-        return self.get_use_igraph
-
-    @property
-    def peptide_max_length(self) -> int:
-        return self.get_peptide_length
-
-    @property
-    def batch_size(self) -> int:
-        return self.get_batch_size
-
     def start_up(self, **kwargs):
+        super(PepPostgres, self).start_up(**kwargs)
         # Here we generate a connection to postgres
         # and generate the corresponding tables
+
+        # TODO psycopg3 changed the bulk inserts in such a way
+        # that no nore then 65535 parameters can be sent at once.
+        # We therefore need to limit the number of params here!
+        self.pg_max_allowed_entries_to_send = int(65535/29)  # --> deduced by the length of l_peptide_tuple
+        self.pg_max_allowed_entries_to_send_compressed = int(65535/30)  # --> deduced by the length of l_peptide_tuple
+        self.pg_max_allowed_entries_to_send_meta = int(65535/4)  # --> deduced by the length of l_peptide_tuple
 
         # Connection and other parameters
         self.host = kwargs["pep_postgres_host"]  # Host
@@ -51,14 +35,6 @@ class PepPostgres(APeptideExporter):
         self.password = kwargs["pep_postgres_password"]  # Password
         self.database = kwargs["pep_postgres_database"]  # Database
         self.postgres_no_duplicates = kwargs["pep_postgres_no_duplicates"]
-
-        # Traversal parameters:
-        self.get_peptide_length = kwargs["pep_postgres_hops"]  # Number of hops. E.G. 2: s -> h_1 -> h_2 -> e
-        self.get_miscleavages = kwargs["pep_postgres_miscleavages"]  # A filter criterion how many miscleavages?
-        self.get_peptide_min_length = kwargs["pep_postgres_min_pep_length"]  # Peptide minimum length
-        self.get_postgres_skip_x = kwargs["pep_postgres_skip_x"]
-        self.get_use_igraph = kwargs["pep_postgres_use_igraph"]
-        self.get_batch_size = kwargs["pep_postgres_batch_size"]
 
         # Initialize connection
         try:
@@ -199,8 +175,8 @@ class PepPostgres(APeptideExporter):
 
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, _):
         # Get the weight
-        if "mono_weight" in prot_graph.es[l_path_edges[0][0]].attributes():
-            l_weight = [sum(prot_graph.es[x]["mono_weight"]) for x in l_path_edges]
+        if "mono_weight" in prot_graph.vs[l_path_nodes[0][0]].attributes():
+            l_weight = [sum(prot_graph.vs[x]["mono_weight"]) for x in l_path_nodes]
         else:
             l_weight = [-1]*len(l_path_nodes)
 
@@ -236,23 +212,30 @@ class PepPostgres(APeptideExporter):
             )
             for peptides_id, path_nodes, miscleavages in zip(l_peptides_id, l_path_nodes, l_miscleavages)
         ]
-        # Bulk insert statement and execute
-        stmt = "INSERT INTO peptides_meta (" \
-            + ",".join(self.peptides_meta_keys) \
-            + ") VALUES " \
-            + ",".join([self.statement_peptides_meta_inner_values]*len(l_peptides_id))
-        self.cursor.execute(stmt, [y for x in l_peptides_meta_tup for y in x])
+        for in_l_peptides_meta_tup in self.chunked_iterable(
+            l_peptides_meta_tup, self.pg_max_allowed_entries_to_send_meta
+        ):
+            # Bulk insert statement and execute
+            stmt = "INSERT INTO peptides_meta (" \
+                + ",".join(self.peptides_meta_keys) \
+                + ") VALUES " \
+                + ",".join([self.statement_peptides_meta_inner_values]*len(in_l_peptides_meta_tup))
+            self.cursor.execute(stmt, [y for x in in_l_peptides_meta_tup for y in x])
 
     def _export_peptide_simple_insert(self, l_peptides_tup, l_path_nodes, l_miscleavages):
         """ Simply export them by using simple bulk insert statements """
-        stmt = "INSERT INTO peptides (" \
-            + ",".join(self.peptides_keys) \
-            + ") VALUES " \
-            + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
-            + " returning id"
-        self.cursor.execute(stmt, [y for x in l_peptides_tup for y in x])
-        peptides_id_fetched = self.cursor.fetchall()
-        return [x[0] for x in peptides_id_fetched]
+
+        all_ids_fetched = []
+        for in_l_peptides_tup in self.chunked_iterable(l_peptides_tup, self.pg_max_allowed_entries_to_send):
+            stmt = "INSERT INTO peptides (" \
+                + ",".join(self.peptides_keys) \
+                + ") VALUES " \
+                + ",".join([self.statement_peptides_inner_values]*len(in_l_peptides_tup)) \
+                + " returning id"
+            self.cursor.execute(stmt, [y for x in in_l_peptides_tup for y in x])
+            peptides_id_fetched = self.cursor.fetchall()
+            all_ids_fetched.extend([x[0] for x in peptides_id_fetched])
+        return all_ids_fetched
 
     def _export_peptide_no_duplicate(self, l_peptides_tup, l_path_nodes, l_miscleavages):
         """ Export peptides ONLY if it is not already inserted into the peptides table """
@@ -268,16 +251,19 @@ class PepPostgres(APeptideExporter):
             for x in l_peptides_tup
         ]
 
-        # Bulk insert into the peptides table
-        ins_stmt = " INSERT INTO peptides (" \
-            + ",".join(self.peptides_keys) \
-            + ") VALUES " \
-            + ",".join([self.statement_peptides_inner_values]*len(l_peptides_tup)) \
-            + " ON CONFLICT DO NOTHING"
-        self._execute_export_no_duplicates(
-            ins_stmt,
-            [y for a, b in zip(l_peptides_tup, pep_ids) for y in [b] + list(a)]
-        )
+        for zipped in self.chunked_iterable(
+            zip(l_peptides_tup, pep_ids), self.pg_max_allowed_entries_to_send_compressed
+        ):
+            # Bulk insert into the peptides table
+            ins_stmt = " INSERT INTO peptides (" \
+                + ",".join(self.peptides_keys) \
+                + ") VALUES " \
+                + ",".join([self.statement_peptides_inner_values]*len(zipped)) \
+                + " ON CONFLICT DO NOTHING"
+            self._execute_export_no_duplicates(
+                ins_stmt,
+                [y for a, b in zipped for y in [b] + list(a)]
+            )
 
         # No need to fetch ids, since we generate them ourselves!
         return pep_ids

@@ -64,8 +64,12 @@ class MySQL(AExporter):
                     position INT,
                     isoform_accession VARCHAR(20),
                     isoform_position INT,
+                    mono_weight {0},
+                    mono_weight_to_end {0},
+                    avrg_weight {0},
+                    avrg_weight_to_end {0},
                     PRIMARY KEY (id)
-                );""")
+                );""".format("BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE"))
 
         except Exception as e:
             print("Warning: Failed creating table 'nodes' (Reason: {})".format(str(e)))
@@ -77,7 +81,11 @@ class MySQL(AExporter):
                 "aminoacid",
                 "position",
                 "isoform_accession",
-                "isoform_position"
+                "isoform_position",
+                "mono_weight",
+                "mono_weight_to_end",
+                "avrg_weight",
+                "avrg_weight_to_end",
             ]
 
         try:
@@ -89,13 +97,9 @@ class MySQL(AExporter):
                     source BIGINT references nodes(id),
                     target BIGINT references nodes(id),
                     cleaved TINYINT(1),
-                    mono_weight {0},
-                    mono_weight_to_end {0},
-                    avrg_weight {0},
-                    avrg_weight_to_end {0},
                     qualifiers MEDIUMTEXT,
                     PRIMARY KEY (id)
-                );""".format("BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE"))
+                );""")
 
         except Exception as e:
             print("Warning: Failed creating table 'edges' (Reason: {})".format(str(e)))
@@ -104,10 +108,6 @@ class MySQL(AExporter):
             cur.close()
             self.edges_keys = [
                 "cleaved",
-                "mono_weight",
-                "mono_weight_to_end",
-                "avrg_weight",
-                "avrg_weight_to_end",
                 "qualifiers"
             ]
 

@@ -68,5 +68,3 @@ def collapse_parallel_edges(graph):
 
             # We finally remove all edges at once for the current node we looked into
             graph.delete_edges(remove_dup_edges)
-
-            # so we do something more sophisticated only iff there are

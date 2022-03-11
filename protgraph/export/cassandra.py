@@ -1,8 +1,8 @@
-import itertools
 import json
 
-# from cassandra.query import BatchStatement
+# import cassandra
 from Bio.SwissProt import FeatureLocation, FeatureTable
+# from cassandra.query import BatchStatement
 from cassandra import InvalidRequest
 from cassandra.cluster import Cluster
 
@@ -55,8 +55,9 @@ class Cassandra(AExporter):
         # All currently used keys:
         # Nodes:
         # accession, aminoacid, position, isoform_accession, isoform_position
+        # mono_weight, avrg_weight, mono_weight_to_end, avrg_weight_to_end
         # Edges:
-        # qualifiers (List), mono_weight, avrg_weight, mono_weight_to_end, avrg_weight_to_end, cleaved
+        # qualifiers (List),  cleaved
         try:
             # create nodes
             self.session.execute("""
@@ -66,8 +67,12 @@ class Cassandra(AExporter):
                     aminoacid ascii,
                     position int,
                     isoform_accession ascii,
-                    isoform_position int
-                );""")
+                    isoform_position int,
+                    mono_weight {0},
+                    mono_weight_to_end {0},
+                    avrg_weight {0},
+                    avrg_weight_to_end {0}
+                );""".format("bigint" if kwargs["mass_dict_type"] is int else "decimal"))
 
         except Exception as e:
             print("Warning: Failed creating table 'nodes' (Reason: {})".format(str(e)))
@@ -77,7 +82,11 @@ class Cassandra(AExporter):
                 "aminoacid",
                 "position",
                 "isoform_accession",
-                "isoform_position"
+                "isoform_position",
+                "mono_weight",
+                "mono_weight_to_end",
+                "avrg_weight",
+                "avrg_weight_to_end",
             ]
 
         try:
@@ -88,22 +97,14 @@ class Cassandra(AExporter):
                     source bigint,
                     target bigint,
                     cleaved boolean,
-                    mono_weight {0},
-                    mono_weight_to_end {0},
-                    avrg_weight {0},
-                    avrg_weight_to_end {0},
                     qualifiers text
-                );""".format("bigint" if kwargs["mass_dict_type"] is int else "decimal"))
+                );""")
 
         except Exception as e:
             print("Warning: Failed creating table 'edges' (Reason: {})".format(str(e)))
         finally:
             self.edges_keys = [
                 "cleaved",
-                "mono_weight",
-                "mono_weight_to_end",
-                "avrg_weight",
-                "avrg_weight_to_end",
                 "qualifiers"
             ]
 
@@ -158,7 +159,7 @@ class Cassandra(AExporter):
                 for x in prot_graph.vs[:]
             ]
             # batch_nodes = BatchStatement()
-            for n_chunk in self._chunked_iterable(nodes, self.chunk_size):  # Longest possible batch
+            for n_chunk in self.chunked_iterable(nodes, self.chunk_size):  # Longest possible batch
                 for n in n_chunk:
                     # batch_nodes.add(self.prep_stmt_nodes, n)
                     self.prep_insert_nodes_lambda(n)
@@ -176,7 +177,7 @@ class Cassandra(AExporter):
                 for x in prot_graph.es[:]
             ]
             # batch_edges = BatchStatement()
-            for e_chunk in self._chunked_iterable(edges, self.chunk_size):  # Longest possible batch
+            for e_chunk in self.chunked_iterable(edges, self.chunk_size):  # Longest possible batch
                 for e in e_chunk:
                     # batch_nodes.add(self.prep_stmt_edges, e)
                     self.prep_insert_edges_lambda(e)
@@ -200,15 +201,6 @@ class Cassandra(AExporter):
             self.cluster.shutdown()
         except Exception as e:
             print("Connection to Cassandra could not be shutdown. (Reason: {})".format(str(e)))
-
-    def _chunked_iterable(self, iterable, size):
-        """ Chunk down an iterable to a specific size """
-        it = iter(iterable)
-        while True:
-            chunk = tuple(itertools.islice(it, size))
-            if not chunk:
-                break
-            yield chunk
 
     def _get_node_edge_attrs(self, node_edge_attrs, key_list):
         """ Get values of nodes/edges, returning None if not present """

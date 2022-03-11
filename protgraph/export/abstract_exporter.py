@@ -1,3 +1,4 @@
+import itertools
 from abc import ABC, abstractmethod
 
 
@@ -42,3 +43,12 @@ class AExporter(ABC):
         while True:
             yield val
             val += jump
+
+    def chunked_iterable(self, iterable, size):
+        """ Chunk down an iterable to a specific size """
+        it = iter(iterable)
+        while True:
+            chunk = tuple(itertools.islice(it, size))
+            if not chunk:
+                break
+            yield chunk

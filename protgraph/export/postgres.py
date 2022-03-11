@@ -63,8 +63,12 @@ class Postgres(AExporter):
                     aminoacid TEXT NOT NULL,
                     position INT,
                     isoform_accession VARCHAR(20),
-                    isoform_position INT
-                );""")
+                    isoform_position INT,
+                    mono_weight {0},
+                    mono_weight_to_end {0},
+                    avrg_weight {0},
+                    avrg_weight_to_end {0}
+                );""".format("BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE PRECISION"))
 
         except Exception as e:
             print("Warning: Failed creating table 'nodes' (Reason: {})".format(str(e)))
@@ -76,7 +80,11 @@ class Postgres(AExporter):
                 "aminoacid",
                 "position",
                 "isoform_accession",
-                "isoform_position"
+                "isoform_position",
+                "mono_weight",
+                "mono_weight_to_end",
+                "avrg_weight",
+                "avrg_weight_to_end"
             ]
 
         try:
@@ -88,12 +96,8 @@ class Postgres(AExporter):
                     source BIGINT references nodes(id),
                     target BIGINT references nodes(id),
                     cleaved BOOLEAN,
-                    mono_weight {0},
-                    mono_weight_to_end {0},
-                    avrg_weight {0},
-                    avrg_weight_to_end {0},
                     qualifiers JSONB
-                );""".format("BIGINT" if kwargs["mass_dict_type"] is int else "DOUBLE PRECISION"))
+                );""")
 
         except Exception as e:
             print("Warning: Failed creating table 'edges' (Reason: {})".format(str(e)))
@@ -102,10 +106,6 @@ class Postgres(AExporter):
             cur.close()
             self.edges_keys = [
                 "cleaved",
-                "mono_weight",
-                "mono_weight_to_end",
-                "avrg_weight",
-                "avrg_weight_to_end",
                 "qualifiers"
             ]
 

@@ -105,8 +105,34 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-egml"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
+    def test_export_pcsr(self):
+        args = protgraph.parse_args(["-epcsr"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_export_bpcsr(self):
+        args = protgraph.parse_args(["-ebpcsr"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_export_lpcsr(self):
+        args = protgraph.parse_args(["-elpcsr"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_export_lbpcsr(self):
+        args = protgraph.parse_args(["-elbpcsr"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
     def test_export_pep_fasta(self):
-        args = protgraph.parse_args(["-epepfasta", "--pep_fasta_hops", "2"] + self.procs_num + self.example_files)
+        args = protgraph.parse_args(["-epepfasta", "--pep_hops", "2"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_export_pep_trie(self):
+        args = protgraph.parse_args(
+            ["-epeptrie", "--pep_hops", "5"] + self.procs_num + [os.path.join(self.examples_path, "Q9QXS1.txt")]
+        )
+        protgraph.prot_graph(**args)
+
+    def test_export_pep_sqlite(self):
+        args = protgraph.parse_args(["-epepsqlite", "--pep_hops", "2"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_issue8(self):

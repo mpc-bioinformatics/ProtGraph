@@ -1,3 +1,5 @@
+from Bio.SwissProt import UnknownPosition
+
 from protgraph.export.peptides.abstract_peptide_exporter import \
     APeptideExporter
 from protgraph.graph_collapse_edges import Or
@@ -11,39 +13,8 @@ class PepFasta(APeptideExporter):
     exporter make sure that it can terminate in forseable future!
     """
 
-    @property
-    def skip_x(self) -> bool:
-        return self.get_postgres_skip_x
-
-    @property
-    def peptide_min_length(self) -> int:
-        return self.get_peptide_min_length
-
-    @property
-    def max_miscleavages(self) -> int:
-        return self.get_miscleavages
-
-    @property
-    def use_igraph(self) -> bool:
-        return self.get_use_igraph
-
-    @property
-    def peptide_max_length(self) -> int:
-        return self.get_peptide_length
-
-    @property
-    def batch_size(self) -> int:
-        return self.get_batch_size
-
     def start_up(self, **kwargs):
-        # Traversal parameters:
-        self.get_peptide_length = kwargs["pep_fasta_hops"]  # Number of hops. E.G. 2: s -> h_1 -> h_2 -> e
-        self.get_miscleavages = kwargs["pep_fasta_miscleavages"]  # A filter criterion how many miscleavages?
-        self.get_peptide_min_length = kwargs["pep_fasta_min_pep_length"]  # Peptide minimum length
-        self.get_postgres_skip_x = kwargs["pep_fasta_skip_x"]
-        self.get_use_igraph = kwargs["pep_fasta_use_igraph"]
-        self.get_batch_size = kwargs["pep_fasta_batch_size"]
-
+        super(PepFasta, self).start_up(**kwargs)
         self.id_gen = self.unique_id_gen(**kwargs)
 
         # Get output file from configuration
@@ -77,7 +48,7 @@ class PepFasta(APeptideExporter):
             entries += "\n" + '\n'.join(peptide[i:i+60] for i in range(0, len(peptide), 60)) + "\n"
 
         # put the entries into the queue, so that the main thread can write the actual content.
-        queue.put((self.output_file, entries, False))
+        queue.put((self.output_file, entries, False, "a"))
 
     def _get_qualifiers(self, prot_graph, edges):
         """ Generate a list of strings for all avilable qualifiers. """
@@ -95,6 +66,11 @@ class PepFasta(APeptideExporter):
 
     def _map_qualifier_to_string(self, qualifier):
         str_qualifiers = []
+        if qualifier is None:
+            # This case only happens if there are multiple ways from
+            # the start or end node due to the feature beeing there
+            # E.G. PROPEP and PEPTIDE have this in common
+            return ["None"]
         for f in qualifier:
             if isinstance(f, Or):
                 f_qs = []
@@ -110,30 +86,44 @@ class PepFasta(APeptideExporter):
 
             elif f.type == "VARIANT":
                 str_qualifiers.append(
-                    "VARIANT[" + str(f.location.start + 1) + ":"
-                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f) + "]"
+                    "VARIANT[" + self._get_location(f) + "," + self._get_variant_mutagen_qualifier(f) + "]"
                 )
 
             elif f.type == "MUTAGEN":
                 str_qualifiers.append(
-                    "MUTAGEN[" + str(f.location.start + 1) + ":"
-                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f, stop_codon=":", offset=0) + "]"
+                    "MUTAGEN[" + self._get_location(f) + "," +
+                    self._get_variant_mutagen_qualifier(f, stop_codon=":", offset=0) + "]"
                 )
 
             elif f.type == "CONFLICT":
                 str_qualifiers.append(
-                    "CONFLICT[" + str(f.location.start + 1) + ":"
-                    + str(f.location.end) + "," + self._get_variant_mutagen_qualifier(f) + "]"
+                    "CONFLICT[" + self._get_location(f) + "," + self._get_variant_mutagen_qualifier(f) + "]"
                 )
 
             elif f.type == "SIGNAL":
                 str_qualifiers.append(
-                    "SIGNAL[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                    "SIGNAL[" + self._get_location(f) + "]"
                 )
 
             elif f.type == "INIT_MET":
                 str_qualifiers.append(
-                    "INIT_MET[" + str(f.location.start + 1) + ":" + str(f.location.end) + "]"
+                    "INIT_MET[" + self._get_location(f) + "]"
+                )
+            elif f.type == "PROPEP":
+                str_qualifiers.append(
+                    "PROPEP[" + self._get_location(f) + "]"
+                )
+            elif f.type == "PEPTIDE":
+                str_qualifiers.append(
+                    "PEPTIDE[" + self._get_location(f) + "]"
+                )
+            elif f.type == "FIXMOD":
+                str_qualifiers.append(
+                    "FIXMOD[" + self._get_location(f) + "," + f.qualifiers["note"] + "]"
+                )
+            elif f.type == "VARMOD":
+                str_qualifiers.append(
+                    "VARMOD[" + self._get_location(f) + "," + f.qualifiers["note"] + "]"
                 )
 
             else:
@@ -141,13 +131,24 @@ class PepFasta(APeptideExporter):
 
         return str_qualifiers
 
+    def _get_location(self, feature):
+        if type(feature.location.start) == UnknownPosition:
+            spos = "?"
+        else:
+            spos = str(feature.location.start + 1)
+        if type(feature.location.end) == UnknownPosition:
+            epos = "?"
+        else:
+            epos = str(feature.location.end)
+        return spos + ":" + epos
+
     def _get_variant_mutagen_qualifier(self, feature, stop_codon="(", offset=1):
         """ Get x -> y or missing """
         message = feature.qualifiers["note"]
         message = message[:message.index(stop_codon)-offset] if stop_codon in message else message
 
         if feature.id is not None:
-            message + ", " + feature.id
+            message += ", " + feature.id
         return message
 
     def _get_accession_or_isoform(self, node):

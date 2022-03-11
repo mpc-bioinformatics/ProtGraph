@@ -47,7 +47,7 @@ With `ProtGraph`, a graph can be generated. In this example, it would look like 
 ![Example Graph](https://raw.githubusercontent.com/mpc-bioinformatics/ProtGraph/master/resources/example_graph.png)
 
 With such a graph representation, the earlier mentioned peptides, which might not be covered are now covered and could be retrieved, by traversing from the dedicated `s`tart node to the dedicated `e`nd node. (These start and end nodes are internally denoted by: `__start__` and `__end__`).
-The `black drawn` edges (with the label `TRYPSIN`) indicate that this graph was additionally digested via the enzyme Trypsin (default) leading to a compact directed and acyclic graph (in short DAG). From such DAGs, all possible peptides and further statistics can be retrieved.
+The `orange drawn` edges (with the label `TRYPSIN`) indicate that this graph was additionally digested via the enzyme Trypsin (default) leading to a compact directed and acyclic graph (in short DAG). From such DAGs, all possible peptides and further statistics can be retrieved.
 
 ProtGraph will generate a statistics file when generating a graph from an UniProt-entry, containing various information about the protein/entry which were retrieved during generation (partially on the fly).
 

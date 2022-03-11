@@ -1,75 +1,87 @@
+from protgraph.ft_execution import _get_qualifiers, get_content
 from protgraph.unexpected_exception import UnexpectedException
 
 
 def execute_variant(graph, variant_feature):
+    """ Wrapper for VARIANT """
+    _execute_generic_feature(graph, variant_feature, "(")
+
+
+def execute_mutagen(graph, mutagen_feature):
+    """ Wrapper for MUTAGEN """
+    _execute_generic_feature(graph, mutagen_feature, ":")
+
+
+def execute_conflict(graph, conflict_feature):
+    """ Wrapper for CONFLICT """
+    _execute_generic_feature(graph, conflict_feature, "(")
+
+
+def _execute_generic_feature(graph, generic_feature, beginning):
     """
     This function adds vertices and edges depending on the feature variant.
     Effectively, the variant information get executed. This method can skip
-    feature variants which may reference ONLY isoforms. Skipped variants are printed.
+    features which may reference ONLY isoforms. Skipped features are printed (no thrown error).
 
     NOTE: This transforms the graph without returning it!
 
     Following Keys are set here:
     Nodes: <None>
-    Edges: "qualifiers" ( -> adds VARIANT)
+    Edges: "qualifiers" ( -> adds VARIANT|MUTAGEN|CONFLICT)
     """
+    # Get vertices before and after the chain (including "null"-chain)
+    vertices_before, vertices_after = _get_vertices_before_after(graph, generic_feature)
+
+    # Now we check if we skip or add nodes
+    text = generic_feature.qualifiers["note"]
+    edge_list = []  # Here we append all edges, which should be added at the end
+    if text.lower().startswith("missing"):
+        _append_edge_list_missing(
+            graph, generic_feature, edge_list, vertices_before, vertices_after
+        )
+    else:
+        _append_edge_list_chain(
+            graph, text, generic_feature, edge_list, vertices_before, vertices_after, beginning=beginning
+        )
+
+    # Finally bulk add of the remaining edges
+    cur_edges = graph.ecount()
+    graph.add_edges([x[0] for x in edge_list])
+    graph.es[cur_edges:]["qualifiers"] = [x[1] for x in edge_list]
+
+
+def _get_vertices_before_after(graph, generic_feature):
+    """ TODO DESC """
     [__start_node__] = graph.vs.select(aminoacid="__start__")
     [__stop_node__] = graph.vs.select(aminoacid="__end__")
     # Get start and end position first
     # NOTE: Shifted by 1 due to the __start__ node beeing at 0
-    aa_before = variant_feature.location.start + 1
-    aa_after = variant_feature.location.end + 0
+    aa_before = generic_feature.location.start + 1
+    aa_after = generic_feature.location.end + 0
 
     # Get all vertices which are at beginning (before)
     # and all vertices which are at the end (after)
     vertices_before, vertices_after = _get_all_vertices_before_after(
-        graph, aa_before, aa_after, variant_feature.ref
+        graph, aa_before, aa_after, generic_feature.ref
     )
     if len(vertices_before) == 0 or len(vertices_after) == 0:
         # Check if we have vertices, if not simply skip
-        print("No Vertices retrieved for protein {}, using VARIANT: {} (referencing: {}). Skipping...".format(
-            graph.vs[0]["accession"], variant_feature.id, variant_feature.ref))
+        print("No Vertices retrieved for protein {}, using {}: {} (referencing: {}). Skipping...".format(
+            graph.vs[0]["accession"], generic_feature.type, generic_feature.id, generic_feature.ref))
         return
 
-    # Now we check if we skip or add nodes
-    text = variant_feature.qualifiers["note"]
-    edge_list = []  # Here we append all edges, which should be added at the end
-    if text.lower().startswith("missing"):
-        # A sequence is missing! Just append an edge and its information
-        # Get the aminoacid position before and after it
-        # NOTE: Shifted by 1 due to the __start__ node at 0
-        aa_before = variant_feature.location.start + 1
-        aa_after = variant_feature.location.end + 0
+    return vertices_before, vertices_after
 
-        # TODO is such a combination enough?
-        # Here we iterate over all possiblites over two pairs of nodes and its edges
-        for aa_in_list, aa_out_list in zip(vertices_before, vertices_after):
-            for aa_in in aa_in_list:
-                for aa_edge_in in list(graph.es.select(_target=aa_in)):  # Get all incoming edges
-                    for aa_out in aa_out_list:
-                        for aa_edge_out in list(graph.es.select(_source=aa_out)):  # Get all outgoing edges
-                            # Add corresponding edges and the qualifiers information
-                            # for that edge (At least the VARIANT feature)
-                            # Only if they not point to start_end directly! (#special case e.g. in P49782)
-                            if aa_edge_in.source != __start_node__.index or aa_edge_out.target != __stop_node__.index:
-                                edge_list.append(
-                                    (
-                                        (aa_edge_in.source, aa_edge_out.target),
-                                        [*_get_qualifiers(aa_edge_in), variant_feature],
-                                    )
-                                )
 
-    else:
-        # A Sequence (or AA) is added
-        # Get   X -> Y   Information
-        # TODO duplicated in VAR_SEQ?
-        idx = text.find("(")
-        if idx != -1:
-            text = text[:idx]
-        xy = text.split("->")
-        assert len(xy) == 2
-        y = xy[1].strip().replace(" ", "")
+def _append_edge_list_chain(
+    graph, text, generic_feature, edge_list, vertices_before, vertices_after, beginning="(", delimiter="->"
+):
+    # Get to be replaced amino_acids
+    y_s = get_content(text, beginning, delimiter)
 
+    # Generalizing: It can reference multiple substitutions
+    for y in y_s.split(","):
+        y = y.strip().replace(" ", "")
         # TODO is such a combination enough?
         for aa_in_list, aa_out_list in zip(vertices_before, vertices_after):
             if len(aa_out_list) == 0 or len(aa_in_list) == 0:
@@ -98,7 +110,7 @@ def execute_variant(graph, variant_feature):
             for aa_in in aa_in_list:
                 for aa_edge_in in list(graph.es.select(_target=aa_in)):  # Get all incoming edges
                     edge_list.append(
-                        ((aa_edge_in.source, first_node), [*_get_qualifiers(aa_edge_in), variant_feature],)
+                        ((aa_edge_in.source, first_node), [*_get_qualifiers(aa_edge_in), generic_feature],)
                     )
             for aa_out in aa_out_list:
                 for aa_edge_out in list(graph.es.select(_source=aa_out)):  # Get all outgoing edges
@@ -106,15 +118,35 @@ def execute_variant(graph, variant_feature):
                         ((last_node, aa_edge_out.target), [])
                     )
 
-    # Finally bulk add of the remaining edges
-    cur_edges = graph.ecount()
-    graph.add_edges([x[0] for x in edge_list])
-    graph.es[cur_edges:]["qualifiers"] = [x[1] for x in edge_list]
+
+def _append_edge_list_missing(graph, generic_feature, edge_list, v_before, v_after):
+    """ TODO DESC! """
+    [__start_node__] = graph.vs.select(aminoacid="__start__")
+    [__stop_node__] = graph.vs.select(aminoacid="__end__")
+    # A sequence is missing! Just append an edge and its information
+
+    # TODO is such a combination enough?
+    # Here we iterate over all possiblites over two pairs of nodes and its edges
+    for aa_in_list, aa_out_list in zip(v_before, v_after):
+        for aa_in in aa_in_list:
+            for aa_edge_in in list(graph.es.select(_target=aa_in)):  # Get all incoming edges
+                for aa_out in aa_out_list:
+                    for aa_edge_out in list(graph.es.select(_source=aa_out)):  # Get all outgoing edges
+                        # Add corresponding edges and the qualifiers information
+                        # for that edge (At least the generic feature)
+                        # Only if they not point to start_end directly! (#special case e.g. in P49782)
+                        if aa_edge_in.source != __start_node__.index or aa_edge_out.target != __stop_node__.index:
+                            edge_list.append(
+                                (
+                                    (aa_edge_in.source, aa_edge_out.target),
+                                    [*_get_qualifiers(aa_edge_in), generic_feature],
+                                )
+                            )
 
 
 def _get_all_vertices_before_after(graph, aa_before: int, aa_after: int, reference: str):
     """
-    Get the vertices which are at the beginning and end of the referencing variant.
+    Get the vertices which are at the beginning and end of the referencing feature.
     We explicitly check here if we need to take the isoform position (and accesion)
     via the reference attribute, or if we simply query the graph for its position
     attribute.
@@ -130,13 +162,13 @@ def _get_all_vertices_before_after(graph, aa_before: int, aa_after: int, referen
     elif "isoform_accession" in graph.vs[0].attributes() and \
          "isoform_position" in graph.vs[0].attributes():
         # Get list of all aa before and after the specified position from the isoforms,
-        # since this variant references explicitly a isoform!
+        # since this mutagen references explicitly a isoform!
         vertices_before_raw = list(graph.vs.select(isoform_position=aa_before, isoform_accession=reference))
         vertices_after_raw = list(graph.vs.select(isoform_position=aa_after, isoform_accession=reference))
     else:
         # No vertex found return empty lists.
-        # this case happens e.g. if the user wants variants but no isoforms,
-        # but since there are variants specifically referencing isoforms, we return
+        # this case happens e.g. if the user wants mutagen but no isoforms,
+        # but since there are mutagen specifically referencing isoforms, we return
         # nothing
         vertices_before_raw, vertices_after_raw = [], []
 
@@ -192,10 +224,3 @@ def _combine_vertices(list_a, list_b):
     a_s = [x[1]["inn"] if "inn" in x[1] else [] for x in k]
     b_s = [x[1]["out"] if "out" in x[1] else [] for x in k]
     return a_s, b_s
-
-
-def _get_qualifiers(edge):
-    """ A simple method to retrieve qualifiers. It always returns a list """
-    qualifiers = edge["qualifiers"] if "qualifiers" in edge.attributes() else []
-    qualifiers = [] if qualifiers is None else qualifiers
-    return qualifiers

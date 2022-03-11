@@ -1,8 +1,9 @@
 import argparse
 import csv
+import multiprocessing as mp
 import os
 import time
-from multiprocessing import Process, Queue, active_children, cpu_count
+from multiprocessing import cpu_count
 from threading import Thread
 
 from tqdm import tqdm
@@ -19,6 +20,11 @@ def main():
 
 def prot_graph(**kwargs):
     """ MAIN DESCRIPTION TODO """
+
+    # Instead of forking, we spawn these processes
+    # They terminate more reliably in this way
+    ctx = mp.get_context("spawn")
+
     prot_graph_args = get_defaults_args()  # Get default values
     prot_graph_args.update(kwargs)
 
@@ -27,9 +33,9 @@ def prot_graph(**kwargs):
         raise TypeError("missing argument 'files'")
 
     # Set up queues
-    entry_queue = Queue(10000)
-    statistics_queue = Queue(10000)
-    common_out_file_queue = Queue(10000)
+    entry_queue = ctx.Queue(10000)
+    statistics_queue = ctx.Queue(10000)
+    common_out_file_queue = ctx.Queue(10000)
 
     # Get the number of processes.
     number_of_procs = \
@@ -37,7 +43,7 @@ def prot_graph(**kwargs):
     prot_graph_args["num_of_processes"] = number_of_procs
 
     # Create processes
-    entry_reader = Process(
+    entry_reader = ctx.Process(
         target=read_embl,
         args=(
             prot_graph_args["files"], prot_graph_args["num_of_entries"],
@@ -45,7 +51,7 @@ def prot_graph(**kwargs):
         )
     )
     graph_gen = [
-        Process(
+        ctx.Process(
             target=generate_graph_consumer, args=(entry_queue, statistics_queue, common_out_file_queue, i),
             kwargs=prot_graph_args
         )
@@ -53,7 +59,8 @@ def prot_graph(**kwargs):
     ]
     main_write_thread = Thread(
         target=write_output_csv_thread,
-        args=(statistics_queue, prot_graph_args["output_csv"], prot_graph_args["num_of_entries"],)
+        args=(statistics_queue, prot_graph_args["output_csv"], prot_graph_args["num_of_entries"],),
+        kwargs=kwargs
     )
     common_out_thread = Thread(
         target=write_to_common_file,
@@ -75,10 +82,14 @@ def prot_graph(**kwargs):
 
         # Do Side-Effect of "joining" to remove zombie processes
         # see: https://docs.python.org/3/library/multiprocessing.html#multiprocessing.active_children
-        _ = active_children()
+        _ = ctx.active_children()
 
         # Are writing threads alive?
         if not main_write_thread.is_alive() and not common_out_thread.is_alive():
+            # check if reader is still alive (in case of exceptions)
+            if __check_if_alive([entry_reader]):
+                entry_reader.kill()
+
             # Then exit the program
             break
 
@@ -167,10 +178,13 @@ def create_parser():
         ("postgres_graph_export", cli.add_postgres_graph_export),
         ("mysql_graph_export", cli.add_mysql_graph_export),
         ("cassandra_graph_export", cli.add_cassandra_export),
+        ("peptide_export_traversal_options", cli.add_peptide_export_traversal_options),
         ("postgres_peptide_export", cli.add_postgres_peptide_export),
         ("mysql_peptide_export", cli.add_mysql_peptide_export),
         ("citus_peptide_export", cli.add_citus_peptide_export),
+        ("sqlite_peptide_export", cli.add_sqlite_peptide_export),
         ("fasta_peptide_export", cli.add_fasta_peptide_export),
+        ("trie_peptide_export", cli.add_trie_peptide_export),
         ("gremlin_graph_export", cli.add_gremlin_graph_export),
     ]
 
@@ -230,41 +244,20 @@ def get_defaults_args():
     return defaults
 
 
-def write_output_csv_thread(queue, out_file, total_num_entries):
+def write_output_csv_thread(queue, out_file, total_num_entries, **kwargs):
     """
         The statistics writing thread, which writes to 'out_file', overwriting its
         contents if existing.
     """
     # Generate Progrssbar
-    pbar = tqdm(total=total_num_entries, mininterval=0.5, unit="proteins")
+    pbar = tqdm(total=total_num_entries, unit="proteins")
 
     # (Over-)Write to out_file
     with open(out_file, "w") as out_f:
         csv_writer = csv.writer(out_f)
 
         # Write Header Row
-        csv_writer.writerow(
-            [
-                "Accession",
-                "Entry ID",
-                "Number of isoforms",
-                "Has INIT_MET",
-                "Has SIGNAL",
-                "Number of variants",
-                "Number of Mutagens",
-                "Number of Conflicts",
-                "Number of cleaved edges",
-                "Number of nodes",
-                "Number of edges",
-                "Num of possible paths",
-                "Num of possible paths (by miscleavages)",
-                "Num of possible paths (by hops)",
-                "Num of possible paths (by feature variant)",
-                "Num of possible paths (by feature mutagen)",
-                "Num of possible paths (by feature conflict)",
-                "Protein description"
-            ]
-        )
+        csv_writer.writerow(kwargs["output_csv_layout"])
 
         while True:
             # Wait and get next result entry
@@ -288,6 +281,20 @@ def write_to_common_file(queue):
     This method accepts a tuple from a queue where:
     the first element in tuple contains the destination of the file
     and the second the content which should be writton on
+
+    The queue has to contain a truple with the following content:
+    (
+        [0] -> "str" The file where the data should be written
+        [1] -> "<type>" The data to be written into the file. Can be string/binary, etc...
+        [2] -> "Bool" True, writing this entry once accross all processes, False, write into the file for each process
+        [3] -> "str, How the file should be opened (only used to initially open the file)
+    )
+    (
+        [0] -> Mandatory
+        [1] -> Mandatory
+        [2] -> Mandatory (default should be false)
+        [3] -> Optional (should be "None", if not needed)
+    )
     """
     out_dict = dict()
     header_dict = dict()
@@ -301,6 +308,7 @@ def write_to_common_file(queue):
         if entry is None:
             break
 
+        # If writing header but it was already written then skip this entry
         if entry[2] and entry[0] in header_dict:
             continue
 
@@ -315,12 +323,22 @@ def write_to_common_file(queue):
                     exist_ok=True
                 )
             # Set entry
-            out_dict[entry[0]] = open(entry[0], "w")
-            # Rewrite first line!
-            out_dict[entry[0]].write(entry[1])
+            if entry[3]:
+                if entry[3] == "ac":  # Special Case append and close (for trie)
+                    with open(entry[0], "a") as o:
+                        o.write(entry[1])
+                else:
+                    out_dict[entry[0]] = open(entry[0], entry[3])
+                    # Rewrite firs  t line!
+                    out_dict[entry[0]].write(entry[1])
+            else:
+                out_dict[entry[0]] = open(entry[0], "w")
+                # Rewrite first line!
+                out_dict[entry[0]].write(entry[1])
 
-        if entry[2] and entry[0] not in header_dict:
-            header_dict[entry[0]] = True
+            # Check if this was a header we have written, set to True, to not rewrite header
+            if entry[2] and entry[0] not in header_dict:
+                header_dict[entry[0]] = True
 
     # Close all opened files
     for _, val in out_dict.items():
