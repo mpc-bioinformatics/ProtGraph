@@ -40,7 +40,7 @@ def _get_node_count(graph_entry):
     return graph_entry.vcount()
 
 
-def _dynamic_programming(graph_entry, kernel_func):
+def _dynamic_programming(graph_entry, kernel_func, init_first_val=[1], _summed=[]):
     """
     Get the Number of all possible simple Paths depending on kernel function for a Protein or Peptide.
     A dynamic programming approach is taken here. We can minimize this problem
@@ -66,14 +66,14 @@ def _dynamic_programming(graph_entry, kernel_func):
     # Initialize Path from the very first node! For convenience we set it to one (actually 0!)
     # The very first node should always be the __start__ of a protein
     first = sorted_nodes[0]
-    var_paths[first] = [1]  # as LIST entry!
+    var_paths[first] = init_first_val  # as LIST entry!
 
     # Iterative approach look how many paths are possible from previous to itself (O(n^2))
     # TODO is the runtime 100% correct?
     # Get next node in topological sorted nodes
     for v in sorted_nodes[1:]:
         # Get the summed number from it, looking at each node which points to it
-        summed = []
+        summed = _summed
         for e_in in graph_entry.vs[v].in_edges():
             summed = kernel_func(e_in, summed, var_paths[e_in.source])
 
@@ -126,6 +126,16 @@ def _count_pos_paths(graph_entry):
     """ Wrapper for counting number of possible paths """
     # Here we return directly the value, since list will always have len==1
     return _dynamic_programming(graph_entry, lambda _, a, b: _add_lists(a, b))[0]
+
+
+def _extend_lists(graph_entry):
+    """ DL EXREMELY BIG TODO, for a possible graph splitting algorithm! """
+    def kernel(edge, a, b):
+        return (
+            a[0] + b[0],
+            [*a[1], b[0]]    
+        )
+    return _dynamic_programming(graph_entry, kernel, init_first_val=(1, [1]), _summed=(0, []))[0]
 
 
 def _count_feature(fts, feature_type, or_count):
