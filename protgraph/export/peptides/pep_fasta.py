@@ -152,7 +152,7 @@ class PepFasta(APeptideExporter):
         return message
 
     def _get_accession_or_isoform(self, node):
-        """ get accesion in every case """
+        """ get accession in every case """
         attrs = node.attributes()
         if "isoform_accession" in attrs and attrs["isoform_accession"] is not None:
             return attrs["isoform_accession"]

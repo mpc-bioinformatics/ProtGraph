@@ -11,7 +11,7 @@ def execute_var_seq(
     NOTE: This transforms the graph without returning it.
 
     Following Keys are set here:
-    Nodes: "isoform_accesion", "isoform_position"
+    Nodes: "isoform_accession", "isoform_position"
     Edges: "qualifiers" ( -> adds VAR_SEQ)
     """
     # First sort all isoforms

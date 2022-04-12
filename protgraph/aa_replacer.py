@@ -40,7 +40,7 @@ def replace_aa(graph_entry, substitutions: list):
             # Set the attributes of the new node(s) (bulk)
             graph_entry.vs[vc:]["aminoacid"] = targets
             graph_entry.vs[vc:]["position"] = [v["position"]]*len(targets)
-            graph_entry.vs[vc:]["accesion"] = [v["accession"]]*len(targets)
+            graph_entry.vs[vc:]["accession"] = [v["accession"]]*len(targets)
             # If the graph (or vertex) has isoform-information add it here too!
             if "isoform_accession" in v.attributes():
                 graph_entry.vs[vc:]["isoform_accession"] = [v["isoform_accession"]]*len(targets)
