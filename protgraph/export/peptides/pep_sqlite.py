@@ -94,7 +94,7 @@ class PepSQLite(APeptideExporter):
         finally:
             # self.conn.commit()
             for x in cur:
-                pass
+                pass  # satisfy aspw, which throws errors, if we do not read the results
             cur.close()
 
         try:
