@@ -133,7 +133,7 @@ def _extend_lists(graph_entry):
     def kernel(edge, a, b):
         return (
             a[0] + b[0],
-            [*a[1], b[0]]    
+            [*a[1], b[0]]
         )
     return _dynamic_programming(graph_entry, kernel, init_first_val=(1, [1]), _summed=(0, []))[0]
 

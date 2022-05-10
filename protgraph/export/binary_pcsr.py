@@ -28,7 +28,6 @@ class BinaryPCSR(PCSR):
         super(BinaryPCSR, self).start_up(**kwargs)
         self.pdb_count = kwargs["export_binary_pcsr_pdb_entries"]
 
-
     def write_pcsr(self, pg, path):
         out_list = self._build_csr_entry(pg)
         out_bytes = self._pcsr_to_bytes(out_list)

@@ -1,8 +1,8 @@
-from collections import defaultdict
-from tqdm import tqdm
 import argparse
 import os
+from collections import defaultdict
 
+from tqdm import tqdm
 
 from protgraph.cli import check_if_file_exists
 
@@ -52,12 +52,12 @@ def main():
 
             if line.startswith(">"):
                 if header is None:
-                    # Edge Case very first entry 
+                    # Edge Case very first entry
                     header = line[:-1]
                     continue
                 seq_identifier[sequence].add(header.split("|", 2)[2])
                 sequence = ""
-                header = line[:-1]    
+                header = line[:-1]
             else:
                 sequence += line[:-1]
 
@@ -68,7 +68,7 @@ def main():
         for index, (key, val) in tqdm(enumerate(seq_identifier.items()), unit="entries", total=len(seq_identifier)):
             outf.write(
                 # Write header
-                ">pg|" + identifier + str(index) + "|" + ",".join(val) + "\n" + 
+                ">pg|" + identifier + str(index) + "|" + ",".join(val) + "\n" +
                 # Write sequence
                 '\n'.join(key[i:i+60] for i in range(0, len(key), 60)) + "\n"
             )
