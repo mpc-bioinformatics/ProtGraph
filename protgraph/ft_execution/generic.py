@@ -31,6 +31,8 @@ def _execute_generic_feature(graph, generic_feature, beginning):
     """
     # Get vertices before and after the chain (including "null"-chain)
     vertices_before, vertices_after = _get_vertices_before_after(graph, generic_feature)
+    if vertices_after is None:
+        return
 
     # Now we check if we skip or add nodes
     text = generic_feature.qualifiers["note"]
@@ -68,7 +70,7 @@ def _get_vertices_before_after(graph, generic_feature):
         # Check if we have vertices, if not simply skip
         print("No Vertices retrieved for protein {}, using {}: {} (referencing: {}). Skipping...".format(
             graph.vs[0]["accession"], generic_feature.type, generic_feature.id, generic_feature.ref))
-        return
+        return None, None
 
     return vertices_before, vertices_after
 
@@ -147,7 +149,7 @@ def _append_edge_list_missing(graph, generic_feature, edge_list, v_before, v_aft
 def _get_all_vertices_before_after(graph, aa_before: int, aa_after: int, reference: str):
     """
     Get the vertices which are at the beginning and end of the referencing feature.
-    We explicitly check here if we need to take the isoform position (and accesion)
+    We explicitly check here if we need to take the isoform position (and accession)
     via the reference attribute, or if we simply query the graph for its position
     attribute.
 

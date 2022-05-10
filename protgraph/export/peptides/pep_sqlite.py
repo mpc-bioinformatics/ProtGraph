@@ -93,6 +93,8 @@ class PepSQLite(APeptideExporter):
             print("Warning: pragma synchronous was not set, inserting may be slower (Reason: {})".format(str(e)))
         finally:
             # self.conn.commit()
+            for x in cur:
+                pass  # satisfy aspw, which throws errors, if we do not read the results
             cur.close()
 
         try:

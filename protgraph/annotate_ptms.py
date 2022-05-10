@@ -94,7 +94,7 @@ def annotate_ptms(graph_entry, var_mods: list, fix_mods: list, mass_factor: int)
                     cleaved_info.append(in_edge["cleaved"])
 
             for out_edge in node.out_edges():
-                edges_to_add.append((offset + vc, in_edge.target))
+                edges_to_add.append((offset + vc, out_edge.target))
                 if "qualifiers" in out_edge.attributes():
                     qualifier_info.append(out_edge["qualifiers"])
                 else:

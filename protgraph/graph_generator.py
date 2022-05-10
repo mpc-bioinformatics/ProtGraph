@@ -37,7 +37,7 @@ def _generate_canonical_graph(sequence: str, acc: str):
     # Add their amino acid to the corresponding nodes
     graph.vs["aminoacid"] = ["__start__", *[x for x in sequence], "__end__"]
 
-    # Add position attributes to nodes as well as from which accesion they originate
+    # Add position attributes to nodes as well as from which accession they originate
     graph.vs["position"] = list(range(len(sequence) + 2))  # Set position of aa on every node!
     graph.vs["accession"] = [acc, *[acc] * len(sequence), acc]  # Set accession on every node!
 
