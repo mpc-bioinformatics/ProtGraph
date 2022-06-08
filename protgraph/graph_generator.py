@@ -1,5 +1,7 @@
 from collections import defaultdict
 
+from Bio import SwissProt
+import io
 import igraph
 
 from protgraph.aa_masses_annotation import annotate_weights
@@ -102,6 +104,9 @@ def _include_ft_information(entry, graph, ft_dict, entry_dict):
         entry_dict[entry_dict_key] = _include_spefic_ft(graph, feature, method, sorted_features, ft_dict)
 
 
+
+
+
 def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id, **kwargs):
     """
     TODO
@@ -126,12 +131,19 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
 
         while True:
             # Get next entry
-            entry = entry_queue.get()
+            io_entry = entry_queue.get()
 
             # Stop if entry is None
-            if entry is None:
+            if io_entry is None:
                 # --> Stop Condition of Process
                 break
+
+            # Parse entry in graph generation process, so that more work is done in the consumer
+            entry = SwissProt.read(io.BytesIO(io_entry))
+
+            if kwargs["exclude_accessions"] and entry.accessions[0] in kwargs["exclude_accessions"]:
+                # This effectively skips an entry at the cost to check whether to skip in EACH entry!
+                continue
 
             # create new dict to collect information about this entry
             entry_dict = dict()
