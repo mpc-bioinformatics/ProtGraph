@@ -3,8 +3,6 @@ import csv
 import io
 import mmap
 
-import line_profiler
-
 from Bio import SwissProt
 
 def rows(f, chunksize=4096):
