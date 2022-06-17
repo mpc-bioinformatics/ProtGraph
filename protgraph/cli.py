@@ -176,7 +176,7 @@ def add_graph_generation(group):
     # Arguments for graph processing/digestion
     group.add_argument(
         "--digestion", "-d", type=str.lower, action="append",
-        choices=["trypsin", "skip", "full"],
+        choices=["gluc", "trypsin", "skip", "full"],
         help="Set the digestion method. The full digestion cleaves at every edge, which can be useful for retrieving "
         "all possible peptides with arbitrary cutting points. The digestion method skip skips the digestion "
         "completely. You can use multiple digestions at once! Default: Trypsin"

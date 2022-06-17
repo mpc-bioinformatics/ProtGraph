@@ -5,8 +5,7 @@ def get_content(text, beginning="(", delimiter="->"):
     idx = text.find(beginning)
     if idx != -1:
         text = text[:idx]
-    xy = text.split(delimiter)
-    assert len(xy) == 2
+    xy = text.split(delimiter, 2)
     y_s = xy[1].strip().replace(" ", "")
     return y_s
 

@@ -10,7 +10,7 @@ def rows(f, chunksize=4096):
     Split entry and add as bytearray into the queue 
     """
     curr_row = bytearray()
-    sep_array = bytearray(b"\nID")
+    sep_array = bytearray(b"\n//\n")
     beg_array = bytearray(b"ID")
 
     # Alternative, which only uses read/find and tell
@@ -31,8 +31,8 @@ def rows(f, chunksize=4096):
             i = curr_row.split(sep_array, 1)  # If python would allow us to add an offset, this could be even faster!
             if len(i) == 1:
                 break  # We could update here the offset
-            yield i[0]
-            curr_row = beg_array + i[1]
+            yield i[0] + sep_array
+            curr_row = i[1]
 
 
 def read_embl(path_to_embls: list, queue):
