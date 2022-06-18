@@ -57,7 +57,13 @@ def collapse_parallel_edges(graph):
 
                     # Get and set all attributes in edges on the first edge
                     cleaved = s_cleaved.pop()
-                    qualifiers = [Or([x["qualifiers"] for x in edge_list])]
+                    collapsed_qualifiers = [x["qualifiers"] for x in edge_list if x["qualifiers"]]
+                    if collapsed_qualifiers:
+                        # TODO DL we need a compate function, since most features here are the same.
+                        # We export information like: "Or[VAR_012345|VAE012345]" which can be simplified to: "VAR_012345"
+                        qualifiers = [Or(collapsed_qualifiers)]
+                    else:
+                        qualifiers = None
 
                     e_to_keep = edge_list[0].index
                     graph.es[e_to_keep]["cleaved"] = cleaved

@@ -117,7 +117,7 @@ def _append_edge_list_chain(
             for aa_out in aa_out_list:
                 for aa_edge_out in list(graph.es.select(_source=aa_out)):  # Get all outgoing edges
                     edge_list.append(
-                        ((last_node, aa_edge_out.target), [])
+                        ((last_node, aa_edge_out.target), _get_qualifiers(aa_edge_out))
                     )
 
 

@@ -67,24 +67,25 @@ def _digest_via_trypsin(graph):
 
     # Digest the graph into smaller parts
     # Explicitly we add ->
-    trypsin_in = [
+    trypsin_in = [ # BUG missing qualfier infos on nodes from start to node!!!!
         (__start_node__.index, k.target) for k in k_s_edges_remaining + r_s_edges_remaining
     ]  # edges for Nodes which should have an edge to __start__
     trypsin_out = [
         (k.source, __end_node__.index) for k in k_s_edges_remaining + r_s_edges_remaining
     ]  # edges for Nodes which should have an edge to __end__
+    if "qualifiers" in graph.es[0].attributes():
+        qualifiers_info = [
+            k["qualifiers"] for k in k_s_edges_remaining + r_s_edges_remaining
+        ] + [None]*len(cleaved_idcs)
 
-    # Check if edge already exists, if so skip it:
-    remaining_edges = []
-    for x in set(trypsin_out).union(set(trypsin_in)):
-        try:
-            # Skip if found
-            graph.es.find(_between=((x[0],), (x[1],)))
-        except ValueError:
-            remaining_edges.append(x)
+
 
     # Add the newly created edges to the graph
-    graph.add_edges(remaining_edges)
+    e_count = graph.ecount()
+    graph.add_edges(trypsin_in + trypsin_out)
+    if "qualifiers" in graph.es[0].attributes():
+        graph.es[e_count:]["qualifiers"] = qualifiers_info
+
 
     # Return the number of cleaved edges
     return len(cleaved_idcs)
@@ -138,23 +139,23 @@ def _digest_via_glu_c(graph):
     gluc_out = [
         (e.source, __end_node__.index) for e in d_s_edges_remaining + e_s_edges_remaining
     ]  # edges for Nodes which should have an edge to __end__
+    if "qualifiers" in graph.es[0].attributes():
+        qualifiers_info = [
+            k["qualifiers"] for k in d_s_edges_remaining + e_s_edges_remaining
+        ] + [None]*len(cleaved_idcs)
 
-    # Check if edge already exists, if so skip it:
-    remaining_edges = []
-    for x in set(gluc_out).union(set(gluc_in)):
-        try:
-            # Skip if found
-            graph.es.find(_between=((x[0],), (x[1],)))
-        except ValueError:
-            remaining_edges.append(x)
 
     # Add the newly created edges to the graph
-    graph.add_edges(remaining_edges)
+    e_count = graph.ecount()
+    graph.add_edges(trypsin_in + trypsin_out)
+    if "qualifiers" in graph.es[0].attributes():
+        graph.es[e_count:]["qualifiers"] = qualifiers_info
 
     # Return the number of cleaved edges
     return len(cleaved_idcs)
 
 def _digest_via_full(graph):
+    # TODO DL add qualfiers!!
     """
     Digestion via Full. Here we digest at every possible and available edge in the graph.
 

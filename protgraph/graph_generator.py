@@ -72,11 +72,11 @@ def _include_spefic_ft(graph, ft_type, method, sorted_features, ft_dict):
 FT_SINGLE_EXECUTION = [
     ("INIT_MET", execute_init_met, "num_init_met"),
     ("SIGNAL", execute_signal, "num_signal"),
+    ("PROPEP", execute_propeptide, "num_propep"),
+    ("PEPTIDE", execute_peptide, "num_peptide"),
     ("VARIANT", execute_variant, "num_variant"),
     ("MUTAGEN", execute_mutagen, "num_mutagen"),
     ("CONFLICT", execute_conflict, "num_conflict"),
-    ("PROPEP", execute_propeptide, "num_propep"),
-    ("PEPTIDE", execute_peptide, "num_peptide"),
 ]
 
 
@@ -101,7 +101,7 @@ def _include_ft_information(entry, graph, ft_dict, entry_dict):
 
     # Execute the other features tables, per feature
     for (feature, method, entry_dict_key) in FT_SINGLE_EXECUTION:
-        entry_dict[entry_dict_key] = _include_spefic_ft(graph, feature, method, sorted_features, ft_dict)
+            entry_dict[entry_dict_key] = _include_spefic_ft(graph, feature, method, sorted_features, ft_dict)
 
 
 
@@ -167,13 +167,13 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             # Annotate delta masses for PTMs
             annotate_ptms(graph, kwargs["variable_mod"], kwargs["fixed_mod"], kwargs["mass_dict_factor"])
 
-            # Merge (summarize) graph if wanted
-            if not kwargs["no_merge"]:
-                merge_aminoacids(graph)
-
             # Collapse parallel edges in a graph
             if not kwargs["no_collapsing_edges"]:
                 collapse_parallel_edges(graph)
+
+            # Merge (summarize) graph if wanted
+            if not kwargs["no_merge"]:
+                merge_aminoacids(graph)
 
             # Annotate weights for edges and nodes (maybe even the smallest weight possible to get to the end node)
             annotate_weights(graph, **kwargs)
