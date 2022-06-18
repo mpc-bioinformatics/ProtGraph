@@ -104,9 +104,6 @@ def _include_ft_information(entry, graph, ft_dict, entry_dict):
             entry_dict[entry_dict_key] = _include_spefic_ft(graph, feature, method, sorted_features, ft_dict)
 
 
-
-
-
 def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id, **kwargs):
     """
     TODO

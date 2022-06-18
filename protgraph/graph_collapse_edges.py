@@ -61,6 +61,8 @@ def collapse_parallel_edges(graph):
                     if collapsed_qualifiers:
                         # TODO DL we need a compate function, since most features here are the same.
                         # We export information like: "Or[VAR_012345|VAE012345]" which can be simplified to: "VAR_012345"
+                        # SeqFeature implements an __eq__ function (FeatureTable inherits from it)
+                        # where it compares type, loacation and qualifiers
                         qualifiers = [Or(collapsed_qualifiers)]
                     else:
                         qualifiers = None

@@ -147,7 +147,7 @@ def _digest_via_glu_c(graph):
 
     # Add the newly created edges to the graph
     e_count = graph.ecount()
-    graph.add_edges(trypsin_in + trypsin_out)
+    graph.add_edges(gluc_in + gluc_out)
     if "qualifiers" in graph.es[0].attributes():
         graph.es[e_count:]["qualifiers"] = qualifiers_info
 
@@ -167,52 +167,29 @@ def _digest_via_full(graph):
     [__start_node__] = graph.vs.select(aminoacid="__start__")
     [__end_node__] = graph.vs.select(aminoacid="__end__")
 
-    # Get all Nodes which should have an IN edge from start
-    start_in = graph.vs.indices
-    # Remove all nodes which already have an edge (and are start and end itself)
-    start_in.remove(__start_node__.index)
-    start_in.remove(__end_node__.index)
-    for i in graph.neighbors(__start_node__, mode="OUT"):
-        try:
-            start_in.remove(i)
-        except Exception:
-            print(
-                "WARNING: Graph has parallel edges, which may be due to the input file. "
-                "Please check that features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
-            )
+    # Prune start and end
+    all_edges = list(graph.es[:])
+    all_edges_wo_start = [x for x in all_edges if x.source != __start_node__.index]
+    all_edges_wo_start_end = [x for x in all_edges_wo_start if x.target != __end_node__.index]
 
-    # Do the same for end to get all nodes which need OUT edges
-    end_out = graph.vs.indices
-    # As above, remove all nodes to end
-    end_out.remove(__start_node__.index)
-    end_out.remove(__end_node__.index)
-    for i in graph.neighbors(__end_node__, mode="IN"):
-        try:
-            end_out.remove(i)
-        except Exception:
-            print(
-                "WARNING: Graph has parallel edges, which may be due to the input file. "
-                "Please check that features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
-            )
-
-    # Get all edges, which should be cleaved and mark them
-    cleaved_edges = [
-        x.index
-        for x in graph.es[:]
-        if x.source != __start_node__.index and
-        x.target != __end_node__.index
-    ]
-    graph.es[cleaved_edges]["cleaved"] = True
+    # Mark cleaved edges
+    graph.es[[x.index for x in all_edges_wo_start_end]]["cleaved"] = True
 
     # Generate the edges, which should be added:
-    start_in_edges = [(__start_node__.index, x) for x in start_in]
-    end_out_edges = [(x, __end_node__.index) for x in end_out]
+    start_in_edges = [(__start_node__.index, x.target) for x in all_edges_wo_start_end]
+    end_out_edges = [(x.source, __end_node__.index) for x in all_edges_wo_start_end]
+    if "qualifiers" in graph.es[0].attributes():
+        qualifiers = [x["qualifiers"] for x in all_edges_wo_start_end] + [None]* len(all_edges_wo_start_end)
 
     # Add the edges to the graph
-    graph.add_edges(start_in_edges + end_out_edges)
+    # Add the newly created edges to the graph
+    e_count = graph.ecount()
+    graph.add_edges(start_in_edges + end_out_edges) # TODO DL edges cannot be added? We are doing something wrong!
+    if "qualifiers" in graph.es[0].attributes():
+        graph.es[e_count:]["qualifiers"] = qualifiers
 
     # Return the number of cleaved edges
-    return len(cleaved_edges)
+    return len(all_edges_wo_start_end)
 
 
 DIGESTION_MAP = dict(
