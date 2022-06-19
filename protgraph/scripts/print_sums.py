@@ -91,9 +91,10 @@ def main():
         # Sum all entries depending on type
         try:
             for row in tqdm.tqdm(csv_in, unit="rows", total=num_entries):
-                summation = exe_func(
-                    summation, ast.literal_eval(row[column_index])
-                )
+                if row[column_index]:
+                    summation = exe_func(
+                        summation, ast.literal_eval(row[column_index])
+                    )
         except Exception:
             raise Exception("Column '{}' (on index {}) contains different typed/corrupted entries".format(
                 headers[column_index], column_index)

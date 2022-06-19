@@ -1,6 +1,8 @@
+import io
 from collections import defaultdict
 
 import igraph
+from Bio import SwissProt
 
 from protgraph.aa_masses_annotation import annotate_weights
 from protgraph.aa_replacer import replace_aa
@@ -70,11 +72,11 @@ def _include_spefic_ft(graph, ft_type, method, sorted_features, ft_dict):
 FT_SINGLE_EXECUTION = [
     ("INIT_MET", execute_init_met, "num_init_met"),
     ("SIGNAL", execute_signal, "num_signal"),
+    ("PROPEP", execute_propeptide, "num_propep"),
+    ("PEPTIDE", execute_peptide, "num_peptide"),
     ("VARIANT", execute_variant, "num_variant"),
     ("MUTAGEN", execute_mutagen, "num_mutagen"),
     ("CONFLICT", execute_conflict, "num_conflict"),
-    ("PROPEP", execute_propeptide, "num_propep"),
-    ("PEPTIDE", execute_peptide, "num_peptide"),
 ]
 
 
@@ -126,12 +128,19 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
 
         while True:
             # Get next entry
-            entry = entry_queue.get()
+            io_entry = entry_queue.get()
 
             # Stop if entry is None
-            if entry is None:
+            if io_entry is None:
                 # --> Stop Condition of Process
                 break
+
+            # Parse entry in graph generation process, so that more work is done in the consumer
+            entry = SwissProt.read(io.BytesIO(io_entry))
+
+            if kwargs["exclude_accessions"] and entry.accessions[0] in kwargs["exclude_accessions"]:
+                # This effectively skips an entry at the cost to check whether to skip in EACH entry!
+                continue
 
             # create new dict to collect information about this entry
             entry_dict = dict()
@@ -155,13 +164,13 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             # Annotate delta masses for PTMs
             annotate_ptms(graph, kwargs["variable_mod"], kwargs["fixed_mod"], kwargs["mass_dict_factor"])
 
-            # Merge (summarize) graph if wanted
-            if not kwargs["no_merge"]:
-                merge_aminoacids(graph)
-
             # Collapse parallel edges in a graph
             if not kwargs["no_collapsing_edges"]:
                 collapse_parallel_edges(graph)
+
+            # Merge (summarize) graph if wanted
+            if not kwargs["no_merge"]:
+                merge_aminoacids(graph)
 
             # Annotate weights for edges and nodes (maybe even the smallest weight possible to get to the end node)
             annotate_weights(graph, **kwargs)

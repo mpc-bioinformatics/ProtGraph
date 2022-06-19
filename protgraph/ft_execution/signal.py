@@ -1,6 +1,7 @@
 from Bio.SeqFeature import UnknownPosition
 
 from protgraph.ft_execution import _get_qualifiers
+from protgraph.unexpected_exception import UnexpectedException
 
 
 def execute_signal(graph, signal_feature):
@@ -37,12 +38,18 @@ def execute_signal(graph, signal_feature):
     # Check if only one end point exists for each start
     for x in all_end_points:
         if len(x) > 1:
-            # TODO custom exception, something which should not happen!
-            raise Exception("WARNING, there are multiple defined ENDPOINTS!!")
+            # This is unexpected and should not happen!
+            raise UnexpectedException(
+                accession=graph.vs[0]["accession"],
+                position=signal_feature.location.end,
+                message="Multiple End-Points for Signal-Feature defined. All end points are listed below",
+                additional_info=str(all_end_points)
+            )
 
     # TODO should the signal peptide be exactly the same as in canonical? Or can we leave it as is for isoforms?
     # Should we check this? If so: do this here!!
     # TODO can we associate the end points with the start points, according to its index?
+    # TODO this can be probably summarized in generic (with INIT_MET!)
 
     # Create edge list
     all_edges = []

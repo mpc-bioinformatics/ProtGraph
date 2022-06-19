@@ -33,9 +33,9 @@ def prot_graph(**kwargs):
         raise TypeError("missing argument 'files'")
 
     # Set up queues
-    entry_queue = ctx.Queue(10000)
-    statistics_queue = ctx.Queue(10000)
-    common_out_file_queue = ctx.Queue(10000)
+    entry_queue = ctx.Queue(300000)
+    statistics_queue = ctx.Queue(300000)
+    common_out_file_queue = ctx.Queue(300000)
 
     # Get the number of processes.
     number_of_procs = \
@@ -46,8 +46,7 @@ def prot_graph(**kwargs):
     entry_reader = ctx.Process(
         target=read_embl,
         args=(
-            prot_graph_args["files"], prot_graph_args["num_of_entries"],
-            prot_graph_args["exclude_accessions"], entry_queue
+            prot_graph_args["files"], entry_queue
         )
     )
     graph_gen = [

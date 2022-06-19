@@ -1,38 +1,43 @@
-import csv
-
-from Bio import SwissProt
+import mmap
 
 
-def read_embl(path_to_embls: list, num_of_entries: int, exclude_csv: str, queue):
+def rows(f, chunksize=4096):
+    """
+    Split entry and add as bytearray into the queue
+    """
+    curr_row = bytearray()
+    sep_array = bytearray(b"\n//\n")
+
+    # Alternative, which only uses read/find and tell
+    # This is slower but reads the file faster
+    # sep=b'\nID'
+    # while True:
+    #     pos = f.find(sep)
+    #     if pos == -1:
+    #         yield f.read()
+    #         break
+    #     yield f.read(pos - f.tell() + 1)
+
+    # The Graph Generator parse the entries
+    # offset = 0
+    for chunk in iter(lambda: f.read(chunksize), b''):
+        curr_row.extend(chunk)
+        while True:
+            i = curr_row.split(sep_array, 1)  # If python would allow us to add an offset, this could be even faster!
+            if len(i) == 1:
+                break  # We could update here the offset
+            yield i[0] + sep_array
+            curr_row = i[1]
+
+    # Special case, if we have a malformed entry (missing new line at very end of file!)
+    if len(curr_row) != 0 and curr_row.endswith(b"\n//"):
+        yield curr_row
+
+
+def read_embl(path_to_embls: list, queue):
     """ Reads entries from a list of existing embl files """
-    if exclude_csv is None:
-        # If no exclude csv is provided, we execute the reading without an if checking! (performance)
-        for input_f in path_to_embls:
-            # For each entry: try to read it and
-            # add it to the queue
-            try:
-                entries = SwissProt.parse(input_f)
-                for entry in entries:
-                    queue.put(entry)
-            except Exception as e:
-                print("File '{}' could not be parsed and was excluded. Reason: {}".format(input_f, e))
-
-    else:
-        # If a exclude csv is provided, then a simple if check is added (reduced performance)
-        with open(exclude_csv) as in_f:
-            # Read the contents of the csv
-            csv_reader = csv.reader(in_f)
-            exclude_set = set(x[0] for x in list(csv_reader))
-
-            for input_f in path_to_embls:
-                # For each entry: try to read it and
-                # add it to the queue
-                try:
-                    entries = SwissProt.parse(input_f)
-                    for entry in entries:
-                        if entry.accessions[0] in exclude_set:
-                            # This effectively skips an entry at the cost to check whether to skip in EACH entry!
-                            continue
-                        queue.put(entry)
-                except Exception as e:
-                    print("File '{}' could not be parsed and was excluded. Reason: {}".format(input_f, e))
+    for input_f in path_to_embls:
+        with open(input_f, "rb") as in_file:
+            with mmap.mmap(in_file.fileno(), 0, access=mmap.ACCESS_READ) as mf:
+                for r in rows(mf):
+                    queue.put(r)

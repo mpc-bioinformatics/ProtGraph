@@ -98,11 +98,11 @@ class FunctionalTest(unittest.TestCase):
         protgraph.prot_graph(**args)
 
     def test_export_gml(self):
-        args = protgraph.parse_args(["-epickle"] + self.procs_num + self.example_files)
+        args = protgraph.parse_args(["-egml"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_export_pickle(self):
-        args = protgraph.parse_args(["-egml"] + self.procs_num + self.example_files)
+        args = protgraph.parse_args(["-epickle"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_export_pcsr(self):

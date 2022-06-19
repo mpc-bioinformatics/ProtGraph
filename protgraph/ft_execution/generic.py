@@ -54,8 +54,6 @@ def _execute_generic_feature(graph, generic_feature, beginning):
 
 def _get_vertices_before_after(graph, generic_feature):
     """ TODO DESC """
-    [__start_node__] = graph.vs.select(aminoacid="__start__")
-    [__stop_node__] = graph.vs.select(aminoacid="__end__")
     # Get start and end position first
     # NOTE: Shifted by 1 due to the __start__ node beeing at 0
     aa_before = generic_feature.location.start + 1
@@ -117,7 +115,7 @@ def _append_edge_list_chain(
             for aa_out in aa_out_list:
                 for aa_edge_out in list(graph.es.select(_source=aa_out)):  # Get all outgoing edges
                     edge_list.append(
-                        ((last_node, aa_edge_out.target), [])
+                        ((last_node, aa_edge_out.target), _get_qualifiers(aa_edge_out))
                     )
 
 

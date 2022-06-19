@@ -16,12 +16,7 @@ def digest(graph, enzymes: List[str], entry_dict):
 
     sum_of_cleavages = 0
     for i in enzymes:
-        sum_of_cleavages += dict(
-            skip=_digest_via_skip,
-            trypsin=_digest_via_trypsin,
-            full=_digest_via_full
-            # Add more Enzymes if needed here!
-        )[i](graph)
+        sum_of_cleavages += DIGESTION_MAP[i](graph)
 
     entry_dict["num_cleavages"] = sum_of_cleavages
 
@@ -78,24 +73,85 @@ def _digest_via_trypsin(graph):
     trypsin_out = [
         (k.source, __end_node__.index) for k in k_s_edges_remaining + r_s_edges_remaining
     ]  # edges for Nodes which should have an edge to __end__
-
-    # Check if edge already exists, if so skip it:
-    remaining_edges = []
-    for x in set(trypsin_out).union(set(trypsin_in)):
-        try:
-            # Skip if found
-            graph.es.find(_between=((x[0],), (x[1],)))
-        except ValueError:
-            remaining_edges.append(x)
+    if "qualifiers" in graph.es[0].attributes():
+        qualifiers_info = [
+            k["qualifiers"] for k in k_s_edges_remaining + r_s_edges_remaining
+        ] + [None]*len(cleaved_idcs)
 
     # Add the newly created edges to the graph
-    graph.add_edges(remaining_edges)
+    e_count = graph.ecount()
+    graph.add_edges(trypsin_in + trypsin_out)
+    if "qualifiers" in graph.es[0].attributes():
+        graph.es[e_count:]["qualifiers"] = qualifiers_info
+
+    # Return the number of cleaved edges
+    return len(cleaved_idcs)
+
+
+def _digest_via_glu_c(graph):
+    """
+    Digestion via Glu-C.
+
+    Each edge from a node with the aminoacid D or E as source gets cleaved (marked as TRUE)
+    except when a P is followed (-> set as target).
+
+    Additionally two new edges are added:
+    1: One edge from __start__ to the next nodes target (Beginning of a peptide)
+    2: One edge from D or E to __end__ and (Ending of a peptide)
+
+    NOTE: Multiple edges can go in or out from K and R and are therefore also considered.
+    Also, 'infinitly' many miscleavages are represented!
+    """
+
+    # Get start and end node
+    [__start_node__] = graph.vs.select(aminoacid="__start__")
+    [__end_node__] = graph.vs.select(aminoacid="__end__")
+
+    # Get all aminoacid edges where source is K or R
+    d_s = graph.vs.select(aminoacid="D")
+    e_s = graph.vs.select(aminoacid="E")
+    d_s_edges = [graph.es.select(_source=d) for d in d_s]
+    e_s_edges = [graph.es.select(_source=e) for e in e_s]
+
+    # Filter out edges, which have P as target
+    d_s_edges_remaining = [
+        y for x in d_s_edges for y in x
+        if graph.vs[y.target]["aminoacid"] != "P" and graph.vs[y.target]["aminoacid"] != "__end__"
+    ]
+    e_s_edges_remaining = [
+        y for x in e_s_edges for y in x
+        if graph.vs[y.target]["aminoacid"] != "P" and graph.vs[y.target]["aminoacid"] != "__end__"
+    ]
+
+    # Mark edges as cleaved
+    cleaved_idcs = [x.index for x in d_s_edges_remaining + e_s_edges_remaining]
+    graph.es[cleaved_idcs]["cleaved"] = True
+
+    # Digest the graph into smaller parts
+    # Explicitly we add ->
+    gluc_in = [
+        (__start_node__.index, e.target) for e in d_s_edges_remaining + e_s_edges_remaining
+    ]  # edges for Nodes which should have an edge to __start__
+    gluc_out = [
+        (e.source, __end_node__.index) for e in d_s_edges_remaining + e_s_edges_remaining
+    ]  # edges for Nodes which should have an edge to __end__
+    if "qualifiers" in graph.es[0].attributes():
+        qualifiers_info = [
+            k["qualifiers"] for k in d_s_edges_remaining + e_s_edges_remaining
+        ] + [None]*len(cleaved_idcs)
+
+    # Add the newly created edges to the graph
+    e_count = graph.ecount()
+    graph.add_edges(gluc_in + gluc_out)
+    if "qualifiers" in graph.es[0].attributes():
+        graph.es[e_count:]["qualifiers"] = qualifiers_info
 
     # Return the number of cleaved edges
     return len(cleaved_idcs)
 
 
 def _digest_via_full(graph):
+    # TODO DL add qualfiers!!
     """
     Digestion via Full. Here we digest at every possible and available edge in the graph.
 
@@ -107,49 +163,35 @@ def _digest_via_full(graph):
     [__start_node__] = graph.vs.select(aminoacid="__start__")
     [__end_node__] = graph.vs.select(aminoacid="__end__")
 
-    # Get all Nodes which should have an IN edge from start
-    start_in = graph.vs.indices
-    # Remove all nodes which already have an edge (and are start and end itself)
-    start_in.remove(__start_node__.index)
-    start_in.remove(__end_node__.index)
-    for i in graph.neighbors(__start_node__, mode="OUT"):
-        try:
-            start_in.remove(i)
-        except Exception:
-            print(
-                "WARNING: Graph has parallel edges, which may be due to the input file. "
-                "Please check that features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
-            )
+    # Prune start and end
+    all_edges = list(graph.es[:])
+    all_edges_wo_start = [x for x in all_edges if x.source != __start_node__.index]
+    all_edges_wo_start_end = [x for x in all_edges_wo_start if x.target != __end_node__.index]
 
-    # Do the same for end to get all nodes which need OUT edges
-    end_out = graph.vs.indices
-    # As above, remove all nodes to end
-    end_out.remove(__start_node__.index)
-    end_out.remove(__end_node__.index)
-    for i in graph.neighbors(__end_node__, mode="IN"):
-        try:
-            end_out.remove(i)
-        except Exception:
-            print(
-                "WARNING: Graph has parallel edges, which may be due to the input file. "
-                "Please check that features are not repeated! (Entry: {})".format(graph.vs[0]["accession"])
-            )
-
-    # Get all edges, which should be cleaved and mark them
-    cleaved_edges = [
-        x.index
-        for x in graph.es[:]
-        if x.source != __start_node__.index and
-        x.target != __end_node__.index
-    ]
-    graph.es[cleaved_edges]["cleaved"] = True
+    # Mark cleaved edges
+    graph.es[[x.index for x in all_edges_wo_start_end]]["cleaved"] = True
 
     # Generate the edges, which should be added:
-    start_in_edges = [(__start_node__.index, x) for x in start_in]
-    end_out_edges = [(x, __end_node__.index) for x in end_out]
+    start_in_edges = [(__start_node__.index, x.target) for x in all_edges_wo_start_end]
+    end_out_edges = [(x.source, __end_node__.index) for x in all_edges_wo_start_end]
+    if "qualifiers" in graph.es[0].attributes():
+        qualifiers = [x["qualifiers"] for x in all_edges_wo_start_end] + [None] * len(all_edges_wo_start_end)
 
     # Add the edges to the graph
+    # Add the newly created edges to the graph
+    e_count = graph.ecount()
     graph.add_edges(start_in_edges + end_out_edges)
+    if "qualifiers" in graph.es[0].attributes():
+        graph.es[e_count:]["qualifiers"] = qualifiers
 
     # Return the number of cleaved edges
-    return len(cleaved_edges)
+    return len(all_edges_wo_start_end)
+
+
+DIGESTION_MAP = dict(
+    skip=_digest_via_skip,
+    trypsin=_digest_via_trypsin,
+    gluc=_digest_via_glu_c,
+    full=_digest_via_full
+    # Add more Enzymes if needed here!
+)
