@@ -81,6 +81,18 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-cnph"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
+    def test_statistics_var(self):
+        args = protgraph.parse_args(["-cnpvar"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_statistics_mut(self):
+        args = protgraph.parse_args(["-cnpmut"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_statistics_con(self):
+        args = protgraph.parse_args(["-cnpcon"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
     def test_export_dot(self):
         args = protgraph.parse_args(["-edot"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)

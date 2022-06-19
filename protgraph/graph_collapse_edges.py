@@ -63,7 +63,7 @@ def collapse_parallel_edges(graph):
                     cleaved = s_cleaved.pop()
 
                     # Set qualfiers information of collapsed edge
-                    collapsed_qualifiers = [x["qualifiers"] for x in edge_list if x["qualifiers"]]
+                    collapsed_qualifiers = [x["qualifiers"] for x in edge_list]
                     if collapsed_qualifiers:
                         # Sometimes we may need to compare and summarize
                         # qualifiers. It can happen that qualfiers
@@ -92,7 +92,7 @@ def _collapse_qualifier_information(qualifiers_list):
     Returns either the qualifier itself (if only one remains)
     or an Or-Object.
 
-    NOTE: the qualfier_list, MUST not contain Nones (--> untested)
+    NOTE: the qualfier_list, MUST be at least of lenght 2!
     """
     include_qualifiers = []
     already_added = [False]*len(qualifiers_list)
@@ -106,6 +106,13 @@ def _collapse_qualifier_information(qualifiers_list):
             # Skip entry if we already added it
             if already_added[j]:
                 continue
+            if qualifiers_list[i] is None or qualifiers_list[j] is None:
+                if qualifiers_list[i] == qualifiers_list[j]:
+                    already_added[j] = True
+                    if not already_added[i]:
+                        include_qualifiers.append(qualifiers_list[i])
+                        already_added[i] = True
+                continue
 
             if len(qualifiers_list[i]) == len(qualifiers_list[j]) and \
                 all([
@@ -117,6 +124,10 @@ def _collapse_qualifier_information(qualifiers_list):
                 if not already_added[i]:
                     include_qualifiers.append(qualifiers_list[i])
                     already_added[i] = True
+
+    for x, y in zip(qualifiers_list, already_added):
+        if not y:
+            include_qualifiers.append(x)
 
     if len(include_qualifiers) == 1:
         return include_qualifiers[0]
