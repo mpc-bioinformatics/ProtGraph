@@ -54,8 +54,6 @@ def _execute_generic_feature(graph, generic_feature, beginning):
 
 def _get_vertices_before_after(graph, generic_feature):
     """ TODO DESC """
-    [__start_node__] = graph.vs.select(aminoacid="__start__")
-    [__stop_node__] = graph.vs.select(aminoacid="__end__")
     # Get start and end position first
     # NOTE: Shifted by 1 due to the __start__ node beeing at 0
     aa_before = generic_feature.location.start + 1

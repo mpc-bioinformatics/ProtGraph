@@ -1,8 +1,8 @@
+import io
 from collections import defaultdict
 
-from Bio import SwissProt
-import io
 import igraph
+from Bio import SwissProt
 
 from protgraph.aa_masses_annotation import annotate_weights
 from protgraph.aa_replacer import replace_aa
@@ -101,7 +101,7 @@ def _include_ft_information(entry, graph, ft_dict, entry_dict):
 
     # Execute the other features tables, per feature
     for (feature, method, entry_dict_key) in FT_SINGLE_EXECUTION:
-            entry_dict[entry_dict_key] = _include_spefic_ft(graph, feature, method, sorted_features, ft_dict)
+        entry_dict[entry_dict_key] = _include_spefic_ft(graph, feature, method, sorted_features, ft_dict)
 
 
 def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id, **kwargs):

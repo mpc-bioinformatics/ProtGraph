@@ -1,17 +1,12 @@
-import csv
-
-import io
 import mmap
 
-from Bio import SwissProt
 
 def rows(f, chunksize=4096):
-    """ 
-    Split entry and add as bytearray into the queue 
+    """
+    Split entry and add as bytearray into the queue
     """
     curr_row = bytearray()
     sep_array = bytearray(b"\n//\n")
-    beg_array = bytearray(b"ID")
 
     # Alternative, which only uses read/find and tell
     # This is slower but reads the file faster
@@ -34,11 +29,15 @@ def rows(f, chunksize=4096):
             yield i[0] + sep_array
             curr_row = i[1]
 
+    # Special case, if we have a malformed entry (missing new line at very end of file!)
+    if len(curr_row) != 0 and curr_row.endswith(b"\n//"):
+        yield curr_row
+
 
 def read_embl(path_to_embls: list, queue):
     """ Reads entries from a list of existing embl files """
     for input_f in path_to_embls:
         with open(input_f, "rb") as in_file:
             with mmap.mmap(in_file.fileno(), 0, access=mmap.ACCESS_READ) as mf:
-                for r in rows(mf): 
+                for r in rows(mf):
                     queue.put(r)

@@ -558,7 +558,7 @@ def add_sqlite_peptide_export(group):
     # TODO
     group.add_argument(
         "--export_peptide_sqlite", "-epepsqlite", default=False, action="store_true",
-        help="Set this flag to export peptides (specifically paths) to a postgresql server."
+        help="Set this flag to export peptides (specifically paths) to a sqlite server."
         "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
         " Make sure the database in which the data should be saved also exists. If problems occur, try "
         "to delete the generated tables and retry again."
@@ -652,7 +652,7 @@ def add_trie_peptide_export(group):
 def add_citus_peptide_export(group):
     group.add_argument(
         "--export_peptide_citus", "-epepcit", default=False, action="store_true",
-        help="Set this flag to export peptides (specifically paths) to a postgresql server."
+        help="Set this flag to export peptides (specifically paths) to a postgresql-citus server."
         "NOTE: This will try to create the tables 'accessions' and 'peptides' on a specified database."
         " Make sure the database in which the data should be saved also exists. If problems occur, try "
         "to delete the generated tables and retry again."

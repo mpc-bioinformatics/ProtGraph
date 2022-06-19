@@ -1,5 +1,7 @@
 from collections import defaultdict
 
+from protgraph.unexpected_exception import UnexpectedException
+
 
 class Or(list):
     """
@@ -48,25 +50,30 @@ def collapse_parallel_edges(graph):
             remove_dup_edges = []
             for edge_list in dups.values():
                 if len(edge_list) > 1:
+                    # Set cleavage information of collapsed edge
                     s_cleaved = set(x["cleaved"] for x in edge_list)
                     if len(s_cleaved) != 1:
-                        # TODO custom exception, this should not happen!
-                        # track information like key, which node/edge especially
-                        # retrieve the accession explicitly here too for debugging!
-                        raise Exception("Multiple entries in set!")
-
-                    # Get and set all attributes in edges on the first edge
+                        # This should not happen!
+                        raise UnexpectedException(
+                            accession=graph.vs[0]["accession"],
+                            position=graph.vs[edge_list[0].source]["position"],
+                            message="Different cleavage information in edges, which would be collapsed found.",
+                            additional_info=str(edge_list)
+                        )
                     cleaved = s_cleaved.pop()
+
+                    # Set qualfiers information of collapsed edge
                     collapsed_qualifiers = [x["qualifiers"] for x in edge_list if x["qualifiers"]]
                     if collapsed_qualifiers:
-                        # TODO DL we need a compate function, since most features here are the same.
-                        # We export information like: "Or[VAR_012345|VAE012345]" which can be simplified to: "VAR_012345"
-                        # SeqFeature implements an __eq__ function (FeatureTable inherits from it)
-                        # where it compares type, loacation and qualifiers
-                        qualifiers = [Or(collapsed_qualifiers)]
+                        # Sometimes we may need to compare and summarize
+                        # qualifiers. It can happen that qualfiers
+                        # like: "Or[VAR_012345|VAR_012345]" are generated,
+                        # which we would want to simplify to: "VAR_012345"
+                        qualifiers = _collapse_qualifier_information(collapsed_qualifiers)
                     else:
                         qualifiers = None
 
+                    # Set collapsed edge and remove other edges from graph
                     e_to_keep = edge_list[0].index
                     graph.es[e_to_keep]["cleaved"] = cleaved
                     graph.es[e_to_keep]["qualifiers"] = qualifiers
@@ -76,3 +83,42 @@ def collapse_parallel_edges(graph):
 
             # We finally remove all edges at once for the current node we looked into
             graph.delete_edges(remove_dup_edges)
+
+
+def _collapse_qualifier_information(qualifiers_list):
+    """
+    Collapses qualifier information by iterating twice over
+    the list and saving only one of the duplicated qualifiers.
+    Returns either the qualifier itself (if only one remains)
+    or an Or-Object.
+
+    NOTE: the qualfier_list, MUST not contain Nones (--> untested)
+    """
+    include_qualifiers = []
+    already_added = [False]*len(qualifiers_list)
+
+    for i in range(len(qualifiers_list)-1):
+        # Skip entry if we already added it
+        if already_added[i]:
+            continue
+
+        for j in range(i+1, len(qualifiers_list)):
+            # Skip entry if we already added it
+            if already_added[j]:
+                continue
+
+            if len(qualifiers_list[i]) == len(qualifiers_list[j]) and \
+                all([
+                    True if x == y else None
+                    for x, y in zip(qualifiers_list[i], qualifiers_list[j])
+                    ]):
+
+                already_added[j] = True
+                if not already_added[i]:
+                    include_qualifiers.append(qualifiers_list[i])
+                    already_added[i] = True
+
+    if len(include_qualifiers) == 1:
+        return include_qualifiers[0]
+    else:
+        return [Or(include_qualifiers)]

@@ -67,7 +67,7 @@ def _digest_via_trypsin(graph):
 
     # Digest the graph into smaller parts
     # Explicitly we add ->
-    trypsin_in = [ # BUG missing qualfier infos on nodes from start to node!!!!
+    trypsin_in = [
         (__start_node__.index, k.target) for k in k_s_edges_remaining + r_s_edges_remaining
     ]  # edges for Nodes which should have an edge to __start__
     trypsin_out = [
@@ -78,18 +78,14 @@ def _digest_via_trypsin(graph):
             k["qualifiers"] for k in k_s_edges_remaining + r_s_edges_remaining
         ] + [None]*len(cleaved_idcs)
 
-
-
     # Add the newly created edges to the graph
     e_count = graph.ecount()
     graph.add_edges(trypsin_in + trypsin_out)
     if "qualifiers" in graph.es[0].attributes():
         graph.es[e_count:]["qualifiers"] = qualifiers_info
 
-
     # Return the number of cleaved edges
     return len(cleaved_idcs)
-
 
 
 def _digest_via_glu_c(graph):
@@ -144,7 +140,6 @@ def _digest_via_glu_c(graph):
             k["qualifiers"] for k in d_s_edges_remaining + e_s_edges_remaining
         ] + [None]*len(cleaved_idcs)
 
-
     # Add the newly created edges to the graph
     e_count = graph.ecount()
     graph.add_edges(gluc_in + gluc_out)
@@ -153,6 +148,7 @@ def _digest_via_glu_c(graph):
 
     # Return the number of cleaved edges
     return len(cleaved_idcs)
+
 
 def _digest_via_full(graph):
     # TODO DL add qualfiers!!
@@ -179,12 +175,12 @@ def _digest_via_full(graph):
     start_in_edges = [(__start_node__.index, x.target) for x in all_edges_wo_start_end]
     end_out_edges = [(x.source, __end_node__.index) for x in all_edges_wo_start_end]
     if "qualifiers" in graph.es[0].attributes():
-        qualifiers = [x["qualifiers"] for x in all_edges_wo_start_end] + [None]* len(all_edges_wo_start_end)
+        qualifiers = [x["qualifiers"] for x in all_edges_wo_start_end] + [None] * len(all_edges_wo_start_end)
 
     # Add the edges to the graph
     # Add the newly created edges to the graph
     e_count = graph.ecount()
-    graph.add_edges(start_in_edges + end_out_edges) # TODO DL edges cannot be added? We are doing something wrong!
+    graph.add_edges(start_in_edges + end_out_edges)
     if "qualifiers" in graph.es[0].attributes():
         graph.es[e_count:]["qualifiers"] = qualifiers
 
