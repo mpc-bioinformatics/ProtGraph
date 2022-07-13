@@ -21,6 +21,46 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args([] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
+    def test_fm(self):
+        args = protgraph.parse_args(["-fm", "C:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_fm_none(self):
+        args = protgraph.parse_args(["-ft", "none", "-fm", "c:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_fm_nterm(self):
+        args = protgraph.parse_args(["-fm", "ntErm:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_fm_none_cterm(self):
+        args = protgraph.parse_args(["-ft", "none", "-fm", "CtERM:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm_cterm(self):
+        args = protgraph.parse_args(["-vm", "ctErm:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm_none_nterm(self):
+        args = protgraph.parse_args(["-ft", "none", "-vm", "ntERM:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm(self):
+        args = protgraph.parse_args(["-vm", "C:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm_none(self):
+        args = protgraph.parse_args(["-ft", "none", "-vm", "c:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm_nterm(self):
+        args = protgraph.parse_args(["-vm", "ntErm:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm_none_cterm(self):
+        args = protgraph.parse_args(["-ft", "none", "-vm", "CtERM:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
     def test_none(self):
         args = protgraph.parse_args(["-ft", "NoNE"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
