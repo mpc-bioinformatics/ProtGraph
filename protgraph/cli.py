@@ -138,7 +138,7 @@ def add_graph_generation(group):
         s, t = input.split(":", 1)
 
         s = s.strip().upper()
-        if not s.isalpha() or len(s) != 1:
+        if not (s.isalpha() and (len(s) == 1 or s == "CTERM" or s == "NTERM")):
             raise ArgumentTypeError(
                 "The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s)
             )
@@ -156,14 +156,16 @@ def add_graph_generation(group):
         help="Apply a fixed modification on a special aminoacid."
         " You can apply multiple fix modifications BUT only one modification per aminoacid is currently allowed."
         " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a"
-        " fixed oxidation of M. Note: modifications on the same aminoacid are superseeded"
+        " fixed oxidation of M. Note: modifications on the same aminoacid are superseeded."
+        " For the N- and C-Terminus use \"nterm\" or \"cterm\""
     )
     group.add_argument(
         "--variable_mod", "-vm", type=_parse_mod, action="append",
         help="Apply a variable modification on a special aminoacid."
         " You can apply multiple variable modifications BUT only one modification per aminoacid is currently allowed."
         " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a fixed oxidation"
-        " of M. Note: modifications on the same aminoacid are superseeded (superseeding fixed modifications"
+        " of M. Note: modifications on the same aminoacid are superseeded."
+        " For the N- and C-Terminus use \"nterm\" or \"cterm\""
     )
 
     # Flag to check if generated graphs are correctly generated
