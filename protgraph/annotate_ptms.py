@@ -72,7 +72,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
             new_edge = graph_entry.add_edge(new_start.index, start_node.index)
             new_edge["qualifiers"] = [
                 FeatureTable(
-                    location=FeatureLocation(0, 0), type="FIXMOD", strand=None, id=None,
+                    location=FeatureLocation(0, 1), type="FIXMOD", strand=None, id=None,
                     qualifiers=dict(note="{}:{}".format(aa, delta))
                 )
             ]
@@ -97,14 +97,14 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
                 if "qualifiers" not in in_edge.attributes() or in_edge["qualifiers"] is None:
                     in_edge["qualifiers"] = ([
                         FeatureTable(
-                            location=FeatureLocation(spos, epos), type="FIXMOD", strand=None, id=None,
+                            location=FeatureLocation(end_node["position"], end_node["position"]+1), type="FIXMOD", strand=None, id=None,
                             qualifiers=dict(note="{}:{}".format(aa, delta))
                         )
                     ])
                 else:
                     in_edge["qualifiers"].append(
                         FeatureTable(
-                            location=FeatureLocation(spos, epos), type="FIXMOD", strand=None, id=None,
+                            location=FeatureLocation(end_node["position"], end_node["position"]+1), type="FIXMOD", strand=None, id=None,
                             qualifiers=dict(note="{}:{}".format(aa, delta))
                         )
                     )
@@ -206,7 +206,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
             edges_to_add.append((new_start_node.index, cloned_start_node.index))
             qualifier_info.extend([ 
                 None,
-                [FeatureTable(location=FeatureLocation(0, 0), type="VARMOD", strand=None, id=None,
+                [FeatureTable(location=FeatureLocation(0, 1), type="VARMOD", strand=None, id=None,
                     qualifiers=dict(note="{}:{}".format(aa, delta)))]
             ])
             if "cleaved" in graph_entry.es[0].attributes():
@@ -243,11 +243,11 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
             for e in end_node.in_edges():
                 edges_to_add.append((e.source, cloned_end_node.index))
                 if "qualifiers" not in e.attributes() or e["qualifiers"] is None:
-                    qualifier_info.append([FeatureTable(location=FeatureLocation(end_node["position"], end_node["position"]), type="VARMOD", strand=None, id=None,
+                    qualifier_info.append([FeatureTable(location=FeatureLocation(end_node["position"], end_node["position"]+1), type="VARMOD", strand=None, id=None,
                     qualifiers=dict(note="{}:{}".format(aa, delta)))])
                 else:
                     qualifier_info.append(e["qualifiers"].copy())
-                    qualifier_info[-1].append(FeatureTable(location=FeatureLocation(end_node["position"], end_node["position"]), type="VARMOD", strand=None, id=None,
+                    qualifier_info[-1].append(FeatureTable(location=FeatureLocation(end_node["position"], end_node["position"]+1), type="VARMOD", strand=None, id=None,
                     qualifiers=dict(note="{}:{}".format(aa, delta))))
                 if "cleaved" in graph_entry.es[0].attributes():
                     cleaved_info.append(e["cleaved"])
