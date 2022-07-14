@@ -164,7 +164,8 @@ def add_graph_generation(group):
         help="Apply a variable modification on a special aminoacid."
         " You can apply multiple variable modifications BUT only one modification per aminoacid is currently allowed."
         " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a fixed oxidation"
-        " of M. Note: modifications on the same aminoacid are superseeded. For the N- and C-Terminus use \"nterm\" or \"cterm\""
+        " of M. Note: modifications on the same aminoacid are superseeded."
+        " For the N- and C-Terminus use \"nterm\" or \"cterm\""
     )
 
     # Flag to check if generated graphs are correctly generated
