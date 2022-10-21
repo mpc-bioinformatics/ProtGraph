@@ -117,6 +117,10 @@ class PepFasta(APeptideExporter):
                 str_qualifiers.append(
                     "PEPTIDE[" + self._get_location(f) + "]"
                 )
+            elif f.type == "CHAIN":
+                str_qualifiers.append(
+                    "CHAIN[" + self._get_location(f) + "," + f.id + "]"
+                )
             elif f.type == "FIXMOD":
                 str_qualifiers.append(
                     "FIXMOD[" + self._get_location(f) + "," + f.qualifiers["note"] + "]"

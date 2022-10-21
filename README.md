@@ -6,6 +6,8 @@
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/protgraph/README.html)
 ![Conda](https://img.shields.io/conda/dn/bioconda/protgraph?label=BioConda%20-%20Downloads)
 
+[![DOI](https://zenodo.org/badge/326660542.svg)](https://zenodo.org/badge/latestdoi/326660542)
+
 ## Summary
 
 ProtGraph in short is a python-package, which allows to convert protein-entries from the [UniProtKB](https://www.uniprot.org/) to so-called protein-graphs. We use the [SP-EMBL-Entries](https://web.expasy.org/docs/userman.html), provided by UniProtKB via `*.txt` or `*.dat`-files, and parse the available feature-information. In contrast to a FASTA-file-entry of a protein, a SP-EMBL-file-entry is
@@ -45,6 +47,14 @@ You can use `[full]` if you want to install ProtGraph with all its dependencies.
 #### Troubleshooting
 
 ProtGraph has many dependencies which are mostly due to the export functionalities. For the dependency `psycopg`, it may be necessary to install PostgreSQL on your operating system, so that the wheel can be built. It should be sufficient to install it as follows `sudo pacman -S postgres` (adapt this for `apt` and alike).
+
+---
+
+**NOTE:** UniProt updated the SP-EMBL-Format (August 3. 2022) which is not compatible anymore with the biopython version up to 1.79. If you encounter errors, please try this version, which can be installed with:
+
+```shell
+pip install git+https://github.com/biopython/biopython.git@947868c487a12799d51173c5f651a44ecb3fb6fa
+```
 
 ---
 
