@@ -63,6 +63,46 @@ As seen in the image, ProtGraph, merges some nodes into a single node (e.g. `EIN
 |----------------|---|---|---|---|---|---|---|---|
 | #Peptides      | 3 | 5 | 8 | 8 | 6 | 4 | 8 | 4 |
 
+### Exporting Protein-Graphs to various graph-file-formats
+
+While executing ProtGraph, generated graphs are not saved, which is the default behaviour. We directly exclude the generated protein-graphs. To export each protein-graph into a file, simply set the flags `-edot`, `-egraphml` and/or `-egml`, which will create the corresponding dot, GraphML or GML files. Other tools, like Gephi, could then visualize this graph. With the flag `-epickle` it is also possible to generate a binary pickle file of a protein-graph (which can be used by other python programs). This is illustrated on the example protein `QXXXXX`:
+
+```shell
+$ protgraph -epickle examples/QXXXXX.txt 
+1proteins [00:02,  2.05s/proteins]
+```
+
+To load the protein-graph back into python, it is enough to do the following:
+
+```python
+In [1]: import pickle
+
+In [2]: with open("exported_graphs/QXXXXX.pickle", "rb") as in_file:
+   ...:     qxxxxx = pickle.load(in_file)
+
+In [3]: qxxxxx
+Out[3]: <igraph.Graph at 0x7f98b848e6b0>
+
+In [4]: qxxxxx.vcount()
+Out[4]: 10
+
+In [5]: qxxxxx.ecount()
+Out[5]: 24
+
+In [6]: list(qxxxxx.vs[:])
+Out[6]: 
+[igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 0, {'aminoacid': '__start__', 'position': 0, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 1, {'aminoacid': 'M', 'position': 1, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 2, {'aminoacid': 'P', 'position': 2, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 3, {'aminoacid': 'R', 'position': 3, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 4, {'aminoacid': 'O', 'position': 4, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 5, {'aminoacid': 'T', 'position': 5, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 6, {'aminoacid': '__end__', 'position': 9, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 7, {'aminoacid': 'L', 'position': None, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 8, {'aminoacid': 'K', 'position': None, 'accession': 'QXXXXX'}),
+ igraph.Vertex(<igraph.Graph object at 0x7f98b848e6b0>, 9, {'aminoacid': 'EIN', 'position': 6, 'accession': 'QXXXXX'})]
+```
+
 ### Retrieving Statistics over the tryptic search space of a Species (E.Coli)
 
 In the example-folder you can find an already download SP-EMBL-entries of Escherichia coli (strain K12). Generating protein-graphs and a basic statistics-file over all entries can be calculated in seconds:
@@ -166,8 +206,6 @@ Sum of each entry
 
 It can be observed that the number of peptides for E.Coli (tryptically digested) increases, since it now consideres all possibilities of the substitutes in a sequence. The aminoacid-replacements (`-raa`) can also be chained and works for all aminoacids.
 
-
-
 ### Generation of a E.Coli-FASTA-databases, containing only specific information
 
 There are other formats like spectral libraries and alike but we first focused on the FASTA-format, since it is broadly used. ProtGraph traverses the proteins-graphs in a depth-search-manner and limits can be specified globally over a set of SP-EMBL-entries.
@@ -222,7 +260,7 @@ $ cat e_coli_signal_propep_pep.fasta | grep "^>" | wc -l
 6660482
 ```
 
-This FASTA-file is significantly larger (1.7 GB, containing 6660482 peptides) but contains all resulting peptides using the selected features while considering up to infinite many miscleavages. The output shows that the smallest peptides (like `K`) are also considered. Additionally, one entry is showcased resulting from SIGNAL-peptide-feature. Since we considered a FASTA without any limitation, we now limit the minimum and maximum petide length to 6-60 and allow up to 2 miscleavages:
+This FASTA-file is significantly larger (1.7 GB, containing ~6.6 million peptides) but contains all resulting peptides using the selected features while considering up to infinite many miscleavages. The output shows that the smallest peptides (like `K`) are also considered. Additionally, one entry is showcased resulting from SIGNAL-peptide-feature. Since we considered a FASTA without any limitation, we now limit the minimum and maximum petide length to 6-60 and allow up to 2 miscleavages:
 
 ```shell
 $ protgraph -nm -ft SIGNAL -ft PROPEP -ft PEPTIDE -d trypsin --pep_miscleavages 2 --pep_min_pep_length 6 --pep_hops 60 -epepfasta --pep_fasta_out e_coli_with_selected_features_limited.fasta examples/e_coli.dat 
@@ -244,7 +282,7 @@ $ cat e_coli_with_selected_features_limited.fasta| grep "^>" | wc -l
 648551
 ```
 
-We can see that the number peptides within this FASTA is significantly reduced (to ~650 000 entries). **NOTE:** for setting an upper length-limit of peptides we need to set `-nm`. In case of not setting this parameter, longer peptides may be exported. Finally, since the FASTA-file still contains for some entries can have same sequences, we can concatenate these by using an different (more sophisticated) FASTA-exporter:
+We can see that the number peptides within this FASTA is significantly reduced (to ~650 000 entries). **NOTE:** for setting an upper length-limit of peptides we need to set `-nm`. In case of not setting this parameter, longer peptides may be exported. Finally, since the FASTA-file still contains for some entries same sequences, we can concatenate these by using an different (more sophisticated) FASTA-exporter:
 
 ```shell
 $ protgraph -nm -ft SIGNAL -ft PROPEP -ft PEPTIDE -d trypsin --pep_miscleavages 2 --pep_min_pep_length 6 --pep_hops 60 -epepsqlite --pep_sqlite_database e_coli_database.db examples/e_coli.dat 
@@ -269,94 +307,46 @@ $ cat e_coli_compact.fasta | grep "^>" | wc -l
 404212
 ```
 
-Instead of directly generating a FASTA-file we first create a database, summarizing same sequences and headers. As a post-processing step, the database-entries are exported into FASTA. The generated FASTA has unique sequence as entries and offers some additionaly insights. From the first entries we see peptides shared by exactly 2 proteins. Looking at the difference between the compact and non-compact FASTA, we see that ~244 000 entries could be summarized into already included entries in the FASTA. This could be then later used for identification.
+Instead of directly generating a FASTA-file we first create a database, summarizing same sequences and headers. As a post-processing step, the database-entries are exported into FASTA. The generated FASTA has unique sequence as entries and offers some additionaly insights. From the first entries we see peptides shared by exactly 2 proteins. Looking at the difference between the compact and non-compact FASTA, we see that ~244 000 entries could be summarized into already included entries in the FASTA. This generated FASTA-file can be used for identification.
 
-**NOTE:** It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) before exporting peptides/proteins to have an overview of how many peptides/proteins are currently represented by all protein-graph and if it is feasible to generate a FASTA-file.
+**NOTE:** Protein-Graphs can contain large amounts of peptides/proteins. Do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) WITHOUT the export functionality first and examine the statistics output if it is feasible to generate a FASTA-file. Without a dry run it may happen that a protein like P04637 (P53 Human) with all possible peptides and variants is exported, which will very likely take up all your disk space.
 
-## ProtGraph Exporters
+### Setting up ProtGraph
 
-While executing ProtGraph, generated graphs are not saved. This is also true for peptides or proteins, which are represented by the graphs.
-
-This is the default behaviour of `protgraph`. It excludes the generated graphs/proteins/peptides, since those can explode in size and the disk space on machines may also be limited. This is illustrated in the above examples.
-
-However, those exporting functionalities can be used. Those differ in two categories: `-e*` for graph exports and `-epep*` for peptide/protein exports. For the peptide/protein exports limitations can be set on the graph-traversal itself.
-
-**NOTE:** Graphs can contain unmanagable amounts of peptides/proteins. Do a dry run WITHOUT the export functionality first and examine the statistics output. Each peptide/protein exporter has multiple parameters to further limit the number of results.
-Without a dry run it may happen that a protein like P04637 (P53 Human) with all possible peptides and variants is exported, which will very likely take up all disk space.
-
-It is planned to add further export functionalities if needed.
-
-### File Exports
-
-To export each protein graph into a file, simply set the flags `-edot`, `-egraphml` and/or `-egml`, which will create the corresponding dot, GraphML or GML files into a output folder. With the flag `-epickle` it is also possible to generate a binary pickle file of the graph (which can be used by other python programs with `igraph`).
-If processing many proteins (over 1 000 000) it is recommended to set the flag `-edirs` to save the graphs into multiple folders, since the underlying filesystem may be overwhelmed with too many files in one folder.
-
-Exporting to GraphML is recommended since this is the only export method able to serialize all properties in a file which may be set in a graph. However, keep in mind that this export needs the most disk space out of the other graph exporters.
-
-There is also the possibility to directly export graphs into a `fasta` file. This can be achieved via: `-epepfasta`.
-
-### Database Exporters
-
-ProtGraph offers multiple database-/storage-exporters. It is possible to export graphs into PostgreSQL/MySQL/RedisGraph and Gremlin (experimental). For PostgreSQL as well as MySQL two tables (`nodes`, `edges`) are generated and corresponding entries for each graph are added.
-
-The export to RedisGraph, generates a graph which can be then accessed by other tools. The experimental export to Gremlin is in a working state, but is not further developed. It works with JanusGraph as well as with TinkerPop (Gremlin Server).
-
-Additionally peptides/proteins can be exported via PostgreSQL as well as with MySQL. Both contain the option to skip duplicated entries, which can reduce the size of those databases.
-
-For more information of exporters and other functionalities of ProtGraph, execute: `protgraph --help`.
-
-
-
-
-## Setting up ProtGraph
-
-You can download Protgraph directly from [pypi](https://pypi.org/project/protgraph).
-
-Simply execute: `pip install protgraph`  or `pip install --user protgraph`
-
-It is also avialable in [bioconda](https://bioconda.github.io/). The installation instruction can be found here: [protgraph](https://anaconda.org/bioconda/protgraph)
-
-### Installing via pip from source (for usage and development)
-
-First clone this project and enter its directory via:
+You can download Protgraph directly from [pypi](https://pypi.org/project/protgraph). It is also avialable in [bioconda](https://bioconda.github.io/). The installation instruction can be found [here](https://anaconda.org/bioconda/protgraph). ProtGraph is also installable directly from this repository and from pip:
 
 ```shell
+pip install protgraph
+
+# OR
+
+conda install -c bioconda protgraph 
+
+# OR
+
 git clone git@github.com:mpc-bioinformatics/ProtGraph.git
 cd ProtGraph/
+pip install .
+
+# OR 
+
+pip install git+https://github.com/mpc-bioinformatics/ProtGraph.git
 ```
 
-Depending on how you want to use this project follow either the usage instructions or the development and tests instructions.
-
-#### Installing for Usage
-
-If you only want to use ProtGraph from the command line, it is sufficient to simply execute: `pip install --user .`. Alternatively you can execute `python setup.py install`.
-
-The "binary" `protgraph` should be available in your command line after it finished. You can now convert UniProt-entries into graphs!
-
-#### Installing for Development and Test
-
-To set up ProtGraph make sure you have `pipenv` and `pyenv` installed. (via `pacman` `apt` and alike)
-
-First install needed dependencies with:
-> pipenv install && pipenv install -d
-
-Afterwards execute the following to install the module ProtGraph inside the environment:
-> pipenv run pip install -e .
-
-If both commands finished succesfully, activate the environment via:
-> pipenv shell
-
-You should be able to run `protgraph` now. Via the flag `-e` the code from the projects directory is used, so you can edit the files directly and test the changes via your debugger of choice or via the command `protgraph`.
-
-Tests can be executed as follows: Make sure you are at the root folder of this project. Then execute `pytest .` to run the tests for ProtGraph.
+You can use `[full]` if you want to install protgraph with all its depencies. To see an overview of possible parameters and options use: `protgraph --help`. The `help`-output contains brief descriptions for each flag. Also check out all other available commands under `protgraph_`.
 
 #### Troubleshooting
 
 ProtGraph has many dependencies which are mostly due to the export functionalities. For the dependency `psycopg`, it may be neccessary to install PostgreSQL on your operating system, so that the wheel can be built. It should be sufficient to install it as follows `sudo pacman -S postgres` (adapt this for `apt` and alike).
 
+---
+
+For the sqlite-databases, we use the dependency `apsw` from [package](https://github.com/rogerbinns/apsw). It can be installed via:
+
+```shell
+pip install git+https://github.com/rogerbinns/apsw.git
+```
+
+---
+
 If the command `protgraph` cannot be found, make sure that you have included the python executables folder in your environment variable `PATH`. (If pip was executed with the flag `--user`, then the binaries should be available in the folder: `~/.local/bin`)
-
-
-## Usage
-
-To see an overview of possible parameters and options use: `protgraph --help`. The `help`-output contains brief descriptions for each flag.
