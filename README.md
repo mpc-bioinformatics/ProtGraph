@@ -50,6 +50,14 @@ ProtGraph has many dependencies which are mostly due to the export functionaliti
 
 ---
 
+**NOTE:** UniProt updated the SP-EMBL-Format (August 3. 2022) which is not compatible anymore with the biopython version up to 1.79. If you encounter errors, please try this version, which can be installed with:
+
+```shell
+pip install git+https://github.com/biopython/biopython.git@947868c487a12799d51173c5f651a44ecb3fb6fa
+```
+
+---
+
 For the SQLite-databases, we use the dependency `apsw` from [package](https://github.com/rogerbinns/apsw). It can be installed via:
 
 ```shell
