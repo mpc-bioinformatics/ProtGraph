@@ -50,33 +50,38 @@ def collapse_parallel_edges(graph):
             remove_dup_edges = []
             for edge_list in dups.values():
                 if len(edge_list) > 1:
-                    # Set cleavage information of collapsed edge
-                    s_cleaved = set(x["cleaved"] for x in edge_list)
-                    if len(s_cleaved) != 1:
-                        # This should not happen!
-                        raise UnexpectedException(
-                            accession=graph.vs[0]["accession"],
-                            position=graph.vs[edge_list[0].source]["position"],
-                            message="Different cleavage information in edges, which would be collapsed found.",
-                            additional_info=str(edge_list)
-                        )
-                    cleaved = s_cleaved.pop()
 
-                    # Set qualfiers information of collapsed edge
-                    collapsed_qualifiers = [x["qualifiers"] for x in edge_list]
-                    if collapsed_qualifiers:
-                        # Sometimes we may need to compare and summarize
-                        # qualifiers. It can happen that qualfiers
-                        # like: "Or[VAR_012345|VAR_012345]" are generated,
-                        # which we would want to simplify to: "VAR_012345"
-                        qualifiers = _collapse_qualifier_information(collapsed_qualifiers)
-                    else:
-                        qualifiers = None
+                    if "cleaved" in graph.es[0].attributes():
+                        # Set cleavage information of collapsed edge
+                        s_cleaved = set(x["cleaved"] for x in edge_list)
+                        if len(s_cleaved) != 1:
+                            # This should not happen!
+                            raise UnexpectedException(
+                                accession=graph.vs[0]["accession"],
+                                position=graph.vs[edge_list[0].source]["position"],
+                                message="Different cleavage information in edges, which would be collapsed found.",
+                                additional_info=str(edge_list)
+                            )
+                        cleaved = s_cleaved.pop()
+
+                    if "qualifiers" in graph.es[0].attributes():
+                        # Set qualfiers information of collapsed edge
+                        collapsed_qualifiers = [x["qualifiers"] for x in edge_list]
+                        if collapsed_qualifiers:
+                            # Sometimes we may need to compare and summarize
+                            # qualifiers. It can happen that qualfiers
+                            # like: "Or[VAR_012345|VAR_012345]" are generated,
+                            # which we would want to simplify to: "VAR_012345"
+                            qualifiers = _collapse_qualifier_information(collapsed_qualifiers)
+                        else:
+                            qualifiers = None
 
                     # Set collapsed edge and remove other edges from graph
                     e_to_keep = edge_list[0].index
-                    graph.es[e_to_keep]["cleaved"] = cleaved
-                    graph.es[e_to_keep]["qualifiers"] = qualifiers
+                    if "cleaved" in graph.es[0].attributes():
+                        graph.es[e_to_keep]["cleaved"] = cleaved
+                    if "qualifiers" in graph.es[0].attributes():
+                        graph.es[e_to_keep]["qualifiers"] = qualifiers
 
                     # Add remaining edges to remove list
                     remove_dup_edges.extend([x.index for x in edge_list[1:]])
