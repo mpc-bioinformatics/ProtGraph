@@ -10,13 +10,13 @@
 
 ProtGraph in short is a python-package, which allows to convert protein-entries from the [UniProtKB](https://www.uniprot.org/) to so-called protein-graphs. We use the [SP-EMBL-Entries](https://web.expasy.org/docs/userman.html), provided by UniProtKB via `*.txt` or `*.dat`-files, and parse the available feature-information. In contrast to a FASTA-file-entry of a protein, a SP-EMBL-file-entry is more detailed. SP-EMBL-files not only contain the canonical sequence, but also contain isoform-sequences, specifically cleaved peptides, like SIGNAL-peptides, PROPEPtides (or simply: PEPTIDEs, e.g. ABeta 40/42), variationally altered aminoacid-sequences (VARIANTs, mutations or sequence-CONFLICTs) and even more. The SP-EMBL-files are parsed, using [BioPython](https://biopython.org/), and corresponding protein-graphs, containing the additional feature-information are generated with [igraph](https://igraph.org/python/). The resulting graphs contain all possibly resulting protein-sequences from the canonical as well as from the feature-information and can also be further processed (e.g. digestion, to contain peptides).
 
-So, what can we do with ProtGraph? First, the protein-graphs can be saved by ProtGraph in various formats. These can be then opened via python/R/C++/... or any other tool (e.g. Gephi) and algorithms, statistics, visualizations, etc... can be applied. ProtGraph then acts solely as a converter of protein-entries to a graph-structure. Second, while generating protein-graphs, a statistics-file is generated, containing various on-the-fly retrievable information about the protein-graph. We can calculate the number of nodes/edges/features within a protein-graph, the number of protein-/peptide-sequences contained and even binned by specific attributes. These can give a quick overview e.g. of the tryptic search space while considering all feature-information of the provided E.Coli-Proteome (containing in total XX peptides). Lastly, the protein-graphs per se are not usefull, especially in identification. Therefore, we extended ProtGraph to optionally convert protein-graph into FASTA-entries, to be used for identification, to enable searches of feature-induced-peptides.
+So, what can we do with ProtGraph? First, the protein-graphs can be saved by ProtGraph in various formats. These can be then opened via python/R/C++/... or any other tool (e.g. Gephi) and algorithms, statistics, visualizations, etc... can be applied. ProtGraph then acts solely as a converter of protein-entries to a graph-structure. Second, while generating protein-graphs, a statistics-file is generated, containing various on-the-fly retrievable information about the protein-graph. We can calculate the number of nodes/edges/features within a protein-graph, the number of protein-/peptide-sequences contained and even binned by specific attributes. These can give a quick overview e.g. of the tryptic search space while considering all feature-information of the provided species-proteome. Lastly, the protein-graphs per se are not usefull, especially in identification. Therefore, we extended ProtGraph to optionally convert protein-graph into FASTA-entries, to be used for identification and to enable searches of feature-induced-peptides.
 
-Curious what we do with ProtGraph and its output? Visit materials_and_posters for an explanation of the protein-graph-generation and further materials. Further below in the README.md, additional examples are provided.
+Curious what we do with ProtGraph and its output? Check out `materials_and_posters` for an explanation of the protein-graph-generation and further materials. Below in the README.md, additional examples are provided.
 
 ### Generating and retrieving Statistics from a SP-EMBL-Example-Entry
 
-Assume we have downloaded the SP-EMBL-Entry from the protein with the accession QXXXXX in (`QXXXXX.txt`). A look into this text file show the following:
+Assume we have downloaded the SP-EMBL-Entry from the protein with the accession QXXXXX in (`QXXXXX.txt`). A look into this text file shows the following:
 
 ```shell
 $ cat examples/QXXXXX.txt
@@ -50,26 +50,22 @@ We can see that this entry contains the canonical sequence (described in section
 
 If we execute `protgraph examples/QXXXXX.txt`, we will generate a protein-graph which would look, if drawn manually, like the following:
 ![Example Graph](https://raw.githubusercontent.com/mpc-bioinformatics/ProtGraph/master/resources/example_graph.png)
-The visualization shows, that the information from the section `FT` and `SQ` was added. The chain in the middle describes the canonical sequence. Additional nodes are added illustrating aminoacid-subsitutions of the VARIANTs and additional edges have been added to mimic a SIGNAL-peptide. ProtGraph additionally adds a  `s`tart node and a `e`nd node (internally denoted by: `__start__` and `__end__`). Furthermore, the graph has been digested by Trypsin (which is the default for each protein-graph).
+The visualization shows, that the information from the section `FT` and `SQ` was added. The chain in the middle describes the canonical sequence. Additional nodes are added illustrating aminoacid-subsitutions of the VARIANTs and additional edges have been added to mimic a SIGNAL-peptide. ProtGraph additionally adds a  `s`tart node and a `e`nd node (internally denoted by: `__start__` and `__end__`) and digested it by Trypsin (which is the default for each protein-graph).
 
 All graphs generated by ProtGraph are so called directed and acyclic. These properties allow us to calulcate interesting statistics about this protein:
 
-E.G.: Executing `protgraph -cnp ecamples/QXXXXX.txt` adds the number of possible (non-repeating) paths between the start- and end-node into the statistics-output. We retrieve that there are 46 possible paths or in other words peptides in this graph. 
+E.G.: Executing `protgraph -cnp ecamples/QXXXXX.txt` adds the number of possible (non-repeating) paths between the start- and end-node into the statistics-output. We retrieve that there are 46 possible paths or in other words peptides in this graph.
 
-E.G.: Executing `protgraph -cnpm ecamples/QXXXXX.txt` would include the number of possible paths binned by miscleavages into the statistics-output. This protein-graph contains 23 peptides with no miscleavages, 19 peptides with exactly 1 miscleavage and 4 peptides with exactly 2 miscleavages. 
+E.G.: Executing `protgraph -cnpm ecamples/QXXXXX.txt` would include the number of possible paths binned by miscleavages into the statistics-output. This protein-graph contains 23 peptides with no miscleavages, 19 peptides with exactly 1 miscleavage and 4 peptides with exactly 2 miscleavages.
 
-As seen in the image, ProtGraph, merges some nodes into a single node (e.g. `EIN`). We can prevent this behaviour with the `--no-merge`-flag. Combinig this flag with another, we can bin the number of paths by the path-length itself with `protgraph -nm -cnph ecamples/QXXXXX.txt`. The statistics-output would contain the total number of individual peptide-lengths within this protein-graph: 
-
+As seen in the image, ProtGraph, merges some nodes into a single node (e.g. `EIN`). We can prevent this behaviour with the `--no-merge`-flag. Combinig this flag with another, we can bin the number of paths by the path-length itself with `protgraph -nm -cnph ecamples/QXXXXX.txt`. The statistics-output would contain the total number of individual peptide-lengths within this protein-graph:
 | Peptide Length | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |----------------|---|---|---|---|---|---|---|---|
 | #Peptides      | 3 | 5 | 8 | 8 | 6 | 4 | 8 | 4 |
 
-
-
-
 ### Retrieving Statistics over the tryptic search space of a Species (E.Coli)
 
-In the example-folder you can find an already download SP-EMBL-entries of Escherichia coli (strain K12). Generating protein-graphs and a basic statistics-file over all entries can be calculated in second:
+In the example-folder you can find an already download SP-EMBL-entries of Escherichia coli (strain K12). Generating protein-graphs and a basic statistics-file over all entries can be calculated in seconds:
 
 ```shell
 $ protgraph examples/e_coli.dat 
@@ -117,11 +113,10 @@ Sum of each entry
    8:             30653
    9:             30127
   10:             30780
-
 ...
 ```
-From the output, it can be seen that already the proteins in E.Coli can yield `14842148316403611` peptides, if including all feature-information. The other ouputs show, that we can bin those peptides by the number of misscleavage (exactly 24884044 peptides with 0 misscleavages, etc...) and by the peptide length (exactl 31252 peptides with 2 aminoacids, etc...)
 
+From the output, it can be seen that already the proteins in E.Coli can yield `14842148316403611` peptides, if including all feature-information. The other ouputs show, that we can bin those peptides by the number of misscleavage (e.g. exactly 24884044 peptides with 0 misscleavages) and by the peptide length (e.g. exactly 31252 peptides with 2 aminoacids).
 
 ### Replacing Aminoacids (J->I,L)
 
@@ -148,76 +143,135 @@ Sum of each entry
 0:  14842148316403617
 ...
 
-$ protgraph -cnp -raa "Z->Q,E" examples/e_coli.dat
+protgraph -cnp -raa "Z->Q,E" examples/e_coli.dat
+9434proteins [00:06, 1560.85proteins/s]
 $ protgraph_print_sums -cidx 12 protein_graph_statistics.csv 
+9433rows [00:00, 197856.01rows/s]
+Results from column 'num_paths':
+
+Sum of each entry
+0:  14842148316373256
+...
 
 $ protgraph -cnp -raa "X->A,C,D,E,F,G,H,I,K,L,M,N,O,P,Q,R,S,T,U,V,W,Y" examples/e_coli.dat
+9434proteins [00:06, 1560.41proteins/s]
 $ protgraph_print_sums -cidx 12 protein_graph_statistics.csv 
+9433rows [00:00, 199515.24rows/s]
+Results from column 'num_paths':
+
+Sum of each entry
+0:  14842148528266967
+...
+```
+
+It can be observed that the number of peptides for E.Coli (tryptically digested) increases, since it now consideres all possibilities of the substitutes in a sequence. The aminoacid-replacements (`-raa`) can also be chained and works for all aminoacids.
+
+
+
+### Generation of a E.Coli-FASTA-databases, containing only specific information
+
+There are other formats like spectral libraries and alike but we first focused on the FASTA-format, since it is broadly used. ProtGraph traverses the proteins-graphs in a depth-search-manner and limits can be specified globally over a set of SP-EMBL-entries.
+
+First, we generate a FASTA-file from the SP-EMBL-entries of E.Coli. It should only contain the canonical sequence (so no feature-information applied on the protein-graphs) and should be undigested:
+
+```shell
+$ protgraph -ft NONE -d skip -epepfasta --pep_fasta_out e_coli.fasta examples/e_coli.dat 
+9434proteins [00:05, 1869.91proteins/s]
+
+$ head e_coli.fasta 
+>pg|ID_9|P13445(1:330,mssclvg:-1)
+MSQNTLKVHDLNEDAEFDENGVEVFDEKALVEQEPSDNDLAEEELLSQGATQRVLDATQL
+YLGEIGYSPLLTAEEEVYFARRALRGDVASRRRMIESNLRLVVKIARRYGNRGLALLDLI
+EEGNLGLIRAVEKFDPERGFRFSTYATWWIRQTIERAIMNQTRTIRLPIHIVKELNVYLR
+TARELSHKLDHEPSAEEIAEQLDKPVDDVSRMLRLNERITSVDTPLGGDSEKALLDILAD
+EKENGPEDTTQDDDMKQSIVKWLFELNAKQREVLARRFGLLGYEAATLEDVGREIGLTRE
+RVRQIQVEGLRRLREILQTQGLNIEALFRE
+>pg|ID_3|P0A840(1:253,mssclvg:-1)
+MRILLSNDDGVHAPGIQTLAKALREFADVQVVAPDRNRSGASNSLTLESSLRTFTFENGD
+IAVQMGTPTDCVYLGVNALMRPRPDIVVSGINAGPNLGDDVIYSGTVAAAMEGRHLGFPA
+
+$ cat e_coli.fasta | grep "^>" | wc -l
+9434
 
 ```
 
-Due to the protein-graph-structure all faskdjflaskdjfaösl 
+**NOTE:** The generated FASTA-files using `-epepfasta` can have same sequences for multiple entries!
 
-TODO
+The FASTA-file contains the same number of entries as in the SP-EMBL-file. It can be noticed, that the header-format was reformatted to contain all the information along the path. `pg` stands for ProtGraph, the `ID_XXX`-describes an unique identifier for this FASTA-entry followed by the information along the path. In this case, it tells us the whole sequence of a Protein and that it had no miscleavages (which is true, since the protein-graph was not digested). Next, it would be interesting to export a digested FASTA-file (peptide-FASTA), containing SIGNAL-, PEPTIDE- and PROPEP-information:
 
-It can be seen how many more peptides are added
+```shell
+$ protgraph -ft SIGNAL -ft PROPEP -ft PEPTIDE -d trypsin -epepfasta --pep_fasta_out e_coli_signal_propep_pep.fasta examples/e_coli.dat 
+9434proteins [00:29, 324.64proteins/s]
 
-### Example calls
+$ head e_coli_signal_propep_pep.fasta 
+>pg|ID_0|P23857(4:4,mssclvg:0)
+K
+>pg|ID_11|P23857(4:104,mssclvg:12)
+KGLLALALVFSLPVFAAEHWIDVRVPEQYQQEHVQGAINIPLKEVKERIATAVPDKNDTV
+KVYCNAGRQSGQAKEILSEMGYTHVENAGGLKDIAMPKVKG
+>pg|ID_22|P23857(4:103,mssclvg:11)
+KGLLALALVFSLPVFAAEHWIDVRVPEQYQQEHVQGAINIPLKEVKERIATAVPDKNDTV
+KVYCNAGRQSGQAKEILSEMGYTHVENAGGLKDIAMPKVK
+>pg|ID_33|P23857(4:101,mssclvg:10)
+KGLLALALVFSLPVFAAEHWIDVRVPEQYQQEHVQGAINIPLKEVKERIATAVPDKNDTV
 
+$ cat e_coli_signal_propep_pep.fasta | grep "SIGNAL" | head -n 1
+>pg|ID_143|P23857(4:19,mssclvg:1,SIGNAL[1:19])
 
-Substitutions examples:
+$ cat e_coli_signal_propep_pep.fasta | grep "^>" | wc -l
+6660482
+```
 
-Protgraph is able to substitute amino acids if needed. E.G. it could be interesting to have the amino acids `I` and `L` instead of `J`.
-Substitution can be done with the argument `--replace_aa` (in short `-raa`):
-> protgraph -n -raa "J->I,L" examples/e_coli.dat
+This FASTA-file is significantly larger (1.7 GB, containing 6660482 peptides) but contains all resulting peptides using the selected features while considering up to infinite many miscleavages. The output shows that the smallest peptides (like `K`) are also considered. Additionally, one entry is showcased resulting from SIGNAL-peptide-feature. Since we considered a FASTA without any limitation, we now limit the minimum and maximum petide length to 6-60 and allow up to 2 miscleavages:
 
-Protgraph is not limited to only substitute `J`. These substitutions are configurable by the user as long as these conform to the following format: `X->A[,B]*`. Multiple substitutions can be provided:
-> protgraph -n -raa "J->I,L" -raa "I -> L" examples/e_coli.dat
+```shell
+$ protgraph -nm -ft SIGNAL -ft PROPEP -ft PEPTIDE -d trypsin --pep_miscleavages 2 --pep_min_pep_length 6 --pep_hops 60 -epepfasta --pep_fasta_out e_coli_with_selected_features_limited.fasta examples/e_coli.dat 
+9434proteins [00:14, 671.77proteins/s] 
 
-Note: Substitutions are executed one after another which leads in this example to effectively substitues `J->L` and `I->L`.
+$ head e_coli_with_selected_features_limited.fasta
+>pg|ID_8|P0A840(1:24,mssclvg:2)
+MRILLSNDDGVHAPGIQTLAKALR
+>pg|ID_19|P0A840(1:21,mssclvg:1)
+MRILLSNDDGVHAPGIQTLAK
+>pg|ID_30|P0A840(22:38,mssclvg:2)
+ALREFADVQVVAPDRNR
+>pg|ID_41|P0A840(22:36,mssclvg:1)
+ALREFADVQVVAPDR
+>pg|ID_52|P0A840(130:151,mssclvg:2)
+HYDTAAAVTCSILRALCKEPLR
 
-In the following all common substitutions are listed
-> protgraph -n -raa "B->D,N" examples/e_coli.dat
->
-> protgraph -n -raa "J->I,L" examples/e_coli.dat
->
-> protgraph -n -raa "Z->Q,E" examples/e_coli.dat
->
-> protgraph -n -raa "X->A,C,D,E,F,G,H,I,K,L,M,N,O,P,Q,R,S,T,U,V,W,Y" examples/e_coli.dat
+$ cat e_coli_with_selected_features_limited.fasta| grep "^>" | wc -l
+648551
+```
 
----
+We can see that the number peptides within this FASTA is significantly reduced (to ~650 000 entries). **NOTE:** for setting an upper length-limit of peptides we need to set `-nm`. In case of not setting this parameter, longer peptides may be exported. Finally, since the FASTA-file still contains for some entries can have same sequences, we can concatenate these by using an different (more sophisticated) FASTA-exporter:
 
-Fasta export examples:
+```shell
+$ protgraph -nm -ft SIGNAL -ft PROPEP -ft PEPTIDE -d trypsin --pep_miscleavages 2 --pep_min_pep_length 6 --pep_hops 60 -epepsqlite --pep_sqlite_database e_coli_database.db examples/e_coli.dat 
+9434proteins [00:16, 587.41proteins/s] 
 
-Protgraph can be used to get all possible peptides from isoforms and canonoical for `e_coli.dat` into a fasta file:
-> protgraph -n 9434 -ft NONE -epepfasta examples/e_coli.dat
+$ protgraph_pepsqlite_to_fasta -o e_coli_compact.fasta e_coli_database.db 
+100%|███████████████| 404212/404212 [00:00<00:00, 511718.70entries/s]
 
-Instead of only containing peptides, ProtGraph can get all possible proteins with isoforms and canonoical for `e_coli.dat` into a fasta file:
-> protgraph -n 9434 -ft VAR_SEQ -d skip -epepfasta examples/e_coli.dat
+$ head e_coli_compact.fasta
+>pg|ID_0|P0A840(1:24,mssclvg:2),A0A4S5AWU9(1:24,mssclvg:2)
+MRILLSNDDGVHAPGIQTLAKALR
+>pg|ID_1|P0A840(1:21,mssclvg:1),A0A4S5AWU9(1:21,mssclvg:1)
+MRILLSNDDGVHAPGIQTLAK
+>pg|ID_2|P0A840(22:38,mssclvg:2),A0A4S5AWU9(22:38,mssclvg:2)
+ALREFADVQVVAPDRNR
+>pg|ID_3|P0A840(22:36,mssclvg:1),A0A4S5AWU9(22:36,mssclvg:1)
+ALREFADVQVVAPDR
+>pg|ID_4|P0A840(130:151,mssclvg:2),A0A4S5AWU9(130:151,mssclvg:2)
+HYDTAAAVTCSILRALCKEPLR
 
-It could also be interesing to get a fasta file of proteins with all variants, isoforms, cleaved or not cleaved signal peptide/initiator methionine:
-> protgraph -n 9434 -ft VARIANT -ft VAR_SEQ -ft SIGNAL -ft INIT_MET -d skip -epepfasta examples/e_coli.dat
+$ cat e_coli_compact.fasta | grep "^>" | wc -l
+404212
+```
 
-(This generates a 5.2G Fasta file!)
+Instead of directly generating a FASTA-file we first create a database, summarizing same sequences and headers. As a post-processing step, the database-entries are exported into FASTA. The generated FASTA has unique sequence as entries and offers some additionaly insights. From the first entries we see peptides shared by exactly 2 proteins. Looking at the difference between the compact and non-compact FASTA, we see that ~244 000 entries could be summarized into already included entries in the FASTA. This could be then later used for identification.
 
-It could also be interesing to get a fasta file of proteins with all available features ProtGraph can parse:
-> protgraph -n 9434 -ft ALL -d skip -epepfasta examples/e_coli.dat
-
-or
-
-> protgraph -n 9434 -d skip -epepfasta examples/e_coli.dat
-
-Maybe it is neccessary to retrieve all possible peptide combinations of arbitrary cut peptides in proteins. This can be achieved via `-d full`. However, this would take a lot of time and a lot of disk space for the whole dataset (even for `e_coli.dat`). Instead we extract all possible peptides which do not have more than `100` aminoacids:
-> protgraph -n 9434 -ft NONE -d full -epepfasta --pep_fasta_hops 100 examples/e_coli.dat
-
-(This generates a 20G Fasta file with 244 985 079 peptides!)
-
-Here the example with all possible peptide combinations for `e_coli.dat` to illustrate how quickly it can explode:
-> protgraph -n 9434 -ft NONE -d full -epepfasta - examples/e_coli.dat
-
-(This generates a 219G Fasta file with 694 844 270 peptides!)
-
-It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) before exporting peptides/proteins to have an overview of how many peptides/proteins are currently represented by all graphs and if it is feasible to generate a Fasta file.
+**NOTE:** It is advisable to do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) before exporting peptides/proteins to have an overview of how many peptides/proteins are currently represented by all protein-graph and if it is feasible to generate a FASTA-file.
 
 ## ProtGraph Exporters
 
