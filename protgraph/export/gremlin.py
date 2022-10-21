@@ -70,7 +70,7 @@ class Gremlin(AExporter):
         if key == "qualifiers":
             # Special case, do a json dump to string
             return self._set_properties(rg, prot_graph_attrs).property(key, "")
-        if(key == "avrg_weight" or key == "mono_weight" or key == "avrg_weight_to_end" or key == "mono_weight_to_end"):
+        if (key == "avrg_weight" or key == "mono_weight" or key == "avrg_weight_to_end" or key == "mono_weight_to_end"):
             # Special case for weights
             if type(value) == int:
                 return self._set_properties(rg, prot_graph_attrs).property(key, LongType(value))

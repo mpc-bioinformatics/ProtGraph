@@ -51,7 +51,7 @@ def collapse_parallel_edges(graph):
             for edge_list in dups.values():
                 if len(edge_list) > 1:
 
-                    if "cleaved" in graph.es[0].attributes(): 
+                    if "cleaved" in graph.es[0].attributes():
                         # Set cleavage information of collapsed edge
                         s_cleaved = set(x["cleaved"] for x in edge_list)
                         if len(s_cleaved) != 1:
@@ -64,7 +64,7 @@ def collapse_parallel_edges(graph):
                             )
                         cleaved = s_cleaved.pop()
 
-                    if "qualifiers" in graph.es[0].attributes(): 
+                    if "qualifiers" in graph.es[0].attributes():
                         # Set qualfiers information of collapsed edge
                         collapsed_qualifiers = [x["qualifiers"] for x in edge_list]
                         if collapsed_qualifiers:
@@ -78,9 +78,9 @@ def collapse_parallel_edges(graph):
 
                     # Set collapsed edge and remove other edges from graph
                     e_to_keep = edge_list[0].index
-                    if "cleaved" in graph.es[0].attributes(): 
+                    if "cleaved" in graph.es[0].attributes():
                         graph.es[e_to_keep]["cleaved"] = cleaved
-                    if "qualifiers" in graph.es[0].attributes(): 
+                    if "qualifiers" in graph.es[0].attributes():
                         graph.es[e_to_keep]["qualifiers"] = qualifiers
 
                     # Add remaining edges to remove list
