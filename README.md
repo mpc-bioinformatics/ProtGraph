@@ -6,6 +6,8 @@
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/protgraph/README.html)
 ![Conda](https://img.shields.io/conda/dn/bioconda/protgraph?label=BioConda%20-%20Downloads)
 
+[![DOI](https://zenodo.org/badge/326660542.svg)](https://zenodo.org/badge/latestdoi/326660542)
+
 ## Summary
 
 ProtGraph in short is a python-package, which allows to convert protein-entries from the [UniProtKB](https://www.uniprot.org/) to so-called protein-graphs. We use the [SP-EMBL-Entries](https://web.expasy.org/docs/userman.html), provided by UniProtKB via `*.txt` or `*.dat`-files, and parse the available feature-information. In contrast to a FASTA-file-entry of a protein, a SP-EMBL-file-entry is
