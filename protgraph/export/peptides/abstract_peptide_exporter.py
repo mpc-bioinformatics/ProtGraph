@@ -75,6 +75,7 @@ class APeptideExporter(AExporter):
         # Iterate over all peptides
         for path in self._get_peps(prot_graph, __start_node__, __stop_node__):
 
+
             # Get the actual peptide (concatenated aminoacids)
             aas = "".join(prot_graph.vs[path[1:-1]]["aminoacid"])
 
@@ -103,11 +104,11 @@ class APeptideExporter(AExporter):
             if "mono_weight" in prot_graph.vs[0].attributes():
                 if self.min_weight > 0:
                     w = sum(prot_graph.vs[path]["mono_weight"])
-                    if self.min_weight <= w:
+                    if self.min_weight > w:
                         continue
                 if self.max_weight > 0:
                     w = sum(prot_graph.vs[path]["mono_weight"])
-                    if w <= self.max_weight:
+                    if w > self.max_weight:
                         continue
 
             # Append information to list
