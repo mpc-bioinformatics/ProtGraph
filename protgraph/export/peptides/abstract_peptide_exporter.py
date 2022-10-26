@@ -103,11 +103,11 @@ class APeptideExporter(AExporter):
             if "mono_weight" in prot_graph.vs[0].attributes():
                 if self.min_weight > 0:
                     w = sum(prot_graph.vs[path]["mono_weight"])
-                    if self.min_weight > w:
+                    if self.min_weight <= w:
                         continue
                 if self.max_weight > 0:
                     w = sum(prot_graph.vs[path]["mono_weight"])
-                    if self.max_weight < w:
+                    if w <= self.max_weight:
                         continue
 
             # Append information to list
