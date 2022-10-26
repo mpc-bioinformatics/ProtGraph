@@ -18,6 +18,7 @@ def execute_peptide(graph, peptide_feature):
     # E.G.: P85078 or P37046 (there are in total a few thousands probably)
     execute_generic_cleaved_peptide(graph, peptide_feature)
 
+
 def execute_chain(graph, chain_feature):
     """ Wrapper function to execute chain_features"""
     # TODO
