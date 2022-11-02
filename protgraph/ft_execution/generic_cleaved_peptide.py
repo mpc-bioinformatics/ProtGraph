@@ -19,6 +19,12 @@ def execute_peptide(graph, peptide_feature):
     execute_generic_cleaved_peptide(graph, peptide_feature)
 
 
+def execute_chain(graph, chain_feature):
+    """ Wrapper function to execute chain_features"""
+    # TODO
+    execute_generic_cleaved_peptide(graph, chain_feature)
+
+
 def execute_generic_cleaved_peptide(graph, generic_cleaved_feature):
     """
     This function adds ONLY edges to cleave the propeptide.

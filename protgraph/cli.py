@@ -44,7 +44,7 @@ def add_main_args(parser):
         "accession", "gene_id",
         # Num of Fts
         "num_var_seq", "num_init_met", "num_signal", "num_variant", "num_mutagen",
-        "num_conflict", "num_peptide", "num_propep", "num_nodes", "num_edges",
+        "num_conflict", "num_peptide", "num_propep", "num_chain", "num_nodes", "num_edges",
         # Statistics
         "num_paths", "list_paths_miscleavages", "list_paths_hops",
         "list_paths_variant", "list_paths_mutagen", "list_paths_conflict",
@@ -81,9 +81,10 @@ def add_main_args(parser):
 
 
 def add_graph_generation(group):
-
     # Available features
-    avail_fts = ["ALL", "NONE", "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT", "PEPTIDE", "PROPEP"]
+    avail_fts = [
+        "ALL", "NONE", "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT", "PEPTIDE", "PROPEP", "CHAIN"
+    ]
     group.add_argument(
         "--feature_table", "-ft", choices=avail_fts, type=str.upper, action="append",
         help="Set the features which should be added to the graph. Those feature_tables correspond to"

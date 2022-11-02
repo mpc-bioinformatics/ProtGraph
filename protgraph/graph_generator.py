@@ -11,7 +11,8 @@ from protgraph.digestion import digest
 from protgraph.export.exporters import Exporters
 from protgraph.ft_execution.generic import (execute_conflict, execute_mutagen,
                                             execute_variant)
-from protgraph.ft_execution.generic_cleaved_peptide import (execute_peptide,
+from protgraph.ft_execution.generic_cleaved_peptide import (execute_chain,
+                                                            execute_peptide,
                                                             execute_propeptide)
 from protgraph.ft_execution.init_met import execute_init_met
 from protgraph.ft_execution.signal import execute_signal
@@ -74,6 +75,7 @@ FT_SINGLE_EXECUTION = [
     ("SIGNAL", execute_signal, "num_signal"),
     ("PROPEP", execute_propeptide, "num_propep"),
     ("PEPTIDE", execute_peptide, "num_peptide"),
+    ("CHAIN", execute_chain, "num_chain"),
     ("VARIANT", execute_variant, "num_variant"),
     ("MUTAGEN", execute_mutagen, "num_mutagen"),
     ("CONFLICT", execute_conflict, "num_conflict"),
@@ -116,7 +118,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
     ft_dict = dict()
     if kwargs["feature_table"] is None or len(kwargs["feature_table"]) == 0 or "ALL" in kwargs["feature_table"]:
         ft_dict = dict(
-            PEPTIDE=True, PROPEP=True, VARIANT=True,
+            PEPTIDE=True, PROPEP=True, VARIANT=True, CHAIN=True,
             VAR_SEQ=True, SIGNAL=True, INIT_MET=True, MUTAGEN=True, CONFLICT=True
         )
     else:
