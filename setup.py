@@ -49,7 +49,8 @@ setup(
         'protgraph_replace_fasta_header = protgraph.scripts.replace_fasta_header:main',
         'protgraph_generate_fasta_decoys = protgraph.scripts.generate_fasta_decoys:main',
         'protgraph_compact_fasta = protgraph.scripts.compact_fasta:main',
-        'protgraph_print_sums = protgraph.scripts.print_sums:main'
+        'protgraph_print_sums = protgraph.scripts.print_sums:main',
+        'protgraph_convert_fasta_to_sp_embl_txt = protgraph.scripts.convert_fasta_to_sp_embl_txt:main'
     ]),
     packages=find_packages(),
     include_package_data=True,
