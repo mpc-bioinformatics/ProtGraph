@@ -226,9 +226,9 @@ def main():
     # Set in and output
     in_fasta = os.path.abspath(args.fasta_file[0])
     out_txt = os.path.abspath(args.output)
-    feature_mapping = os.path.abspath(args.feature_tables)
+    feature_mapping = args.feature_tables
     if feature_mapping:
-        feature_mapping = _create_feature_dict(feature_mapping)
+        feature_mapping = _create_feature_dict(os.path.abspath(feature_mapping))
 
     with open(in_fasta, "r") as in_file, open(out_txt, "w") as out_file:
         for sequence, pre, accession, description in tqdm.tqdm(get_next_fasta_entry(in_file), total=args.num_entries, unit="entries"):
