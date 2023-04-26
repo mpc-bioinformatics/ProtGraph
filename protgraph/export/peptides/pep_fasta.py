@@ -1,4 +1,5 @@
-from Bio.SwissProt import UnknownPosition
+from Bio.SeqFeature import UnknownPosition
+
 
 from protgraph.export.peptides.abstract_peptide_exporter import \
     APeptideExporter

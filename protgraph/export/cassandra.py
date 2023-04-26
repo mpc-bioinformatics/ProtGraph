@@ -1,7 +1,8 @@
 import json
 
 # import cassandra
-from Bio.SwissProt import FeatureLocation, FeatureTable
+from Bio.SwissProt import FeatureTable
+from Bio.SeqFeature import FeatureLocation
 # from cassandra.query import BatchStatement
 from cassandra import InvalidRequest
 from cassandra.cluster import Cluster
