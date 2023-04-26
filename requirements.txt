@@ -2,4 +2,4 @@ networkx>=2.8.7
 igraph==0.9.11
 texttable>=1.6.4
 tqdm>=4.64.1
-biopython
+biopython==1.81
