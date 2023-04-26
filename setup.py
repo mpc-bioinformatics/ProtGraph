@@ -11,7 +11,7 @@ with open("README.md", "r", encoding="utf-8") as long_desc:
 
 setup(
     name='protgraph',
-    version='0.3.7',
+    version='0.3.9',
     author="Dominik Lux",
     description="ProtGraph, a graph generator for proteins.",
     long_description=long_description,
