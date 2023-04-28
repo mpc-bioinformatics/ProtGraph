@@ -80,7 +80,8 @@ class APeptideExporter(AExporter):
             aas = "".join(prot_graph.vs[path[1:-1]]["aminoacid"])
 
             # Get the edge ids from a path
-            edge_ids = prot_graph.get_eids(path=path)
+            pairs = [(a, b) for a, b in zip(path, path[1:])]
+            edge_ids = prot_graph.get_eids(pairs=pairs)
 
             # Skip Peptides, which contain an X
             if self.skip_x and "X" in aas:
