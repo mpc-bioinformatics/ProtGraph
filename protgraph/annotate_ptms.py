@@ -1,5 +1,5 @@
-from Bio.SeqFeature import UnknownPosition
-from Bio.SwissProt import FeatureTable, FeatureLocation
+from Bio.SeqFeature import FeatureLocation, UnknownPosition
+from Bio.SwissProt import FeatureTable
 
 
 def annotate_ptms(graph_entry, var_mods: list, fix_mods: list, mass_factor: int):
