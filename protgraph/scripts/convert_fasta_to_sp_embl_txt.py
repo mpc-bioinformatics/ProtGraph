@@ -1,15 +1,14 @@
 import argparse
+import csv
 import os
 from datetime import date
+
 import tqdm
-import csv
 
 from protgraph.cli import check_if_file_exists
 
-
-
 SWISS_EMBL_SKELETON = \
-"""{ID_AC}
+    """{ID_AC}
 DT   {DAY}-{MONTH}-{YEAR}, integrated into UTA.
 DT   {DAY}-{MONTH}-{YEAR}, sequence version 1.
 DT   {DAY}-{MONTH}-{YEAR}, entry version 1.
@@ -37,10 +36,11 @@ def parse_args():
     """ Parse Arguments """
     parser = argparse.ArgumentParser(
         description="Small script to create a SP-EMBL-txt-Entries from FASTA-entries."
-        "This can be very useful for FASTA-database and -entries, which are NOT in UniProt but should be utilized by ProtGraph."
-        "Currently only a plain conversion from FASTA to SP-EMBL is provided. However this could be extended to include "
-        "further feature information to peptides (like variants) using a csv entry. "
-        "Note: The header should have 3 section '<pre>|<accession>|<description>', where the accession is unique for the whole FASTA-file."
+        "This can be very useful for FASTA-database and -entries, which are NOT in UniProt but should be utilized by "
+        "ProtGraph. Currently only a plain conversion from FASTA to SP-EMBL is provided. However this could be "
+        "extended to include further feature information to peptides (like variants) using a csv entry. Note: The "
+        "header should have 3 section '<pre>|<accession>|<description>', where the accession is unique for the whole "
+        "FASTA-file."
     )
 
     # Number of entries in fasta (for tqdm)
@@ -72,8 +72,8 @@ def parse_args():
 
 def get_next_fasta_entry(fasta) -> tuple:
     """ Generator, returning parsed FASTA-entries """
-    get_sequence = False # Flag to stop after the sequence was retrieved
-    sequence = ""
+    get_sequence = False  # Flag to stop after the sequence was retrieved
+    sequence, pre, accession, description = ""
     for line in fasta:
         # Iterate over each line of the FASTA-database
         if line.startswith(">"):
@@ -105,7 +105,7 @@ def _get_seq_string(sequence) -> str:
     """ Converts a string to SP-EMBL-txt """
     final_str = ""
     for seq in [sequence[i:i+60] for i in range(0, len(sequence), 60)]:
-        final_str += "     "  + " ".join(seq[i:i+10] for i in range(0, len(seq), 10)) + "\n"
+        final_str += "     " + " ".join(seq[i:i+10] for i in range(0, len(seq), 10)) + "\n"
 
     return final_str
 
@@ -113,7 +113,7 @@ def _get_seq_string(sequence) -> str:
 def _get_seq_header_string(sequence_len: int) -> str:
     """ Generates the sequence header for the sequence """
     return "SQ   SEQUENCE   {} AA;  {} MW;  {} CRC64;".format(
-        sequence_len, 
+        sequence_len,
         12345,  # Does not need to be set for ProtGraph
         "45D66B0D27B69FCD"  # Does not need to be set for ProtGraph
     )
@@ -133,8 +133,10 @@ def _get_id_ac_string(accession: str, gene: str, sequence_len: int) -> str:
 def _get_month(num) -> str:
     """ Get the 3 letter code of the month """
     return dict(
-        [ (1, "JAN"), (2, "FEB"), (3, "MAR"), (4, "APR"), (5, "MAY"), (6, "JUN"),
-        (7, "JUL"), (8, "AUG"), (9, "SEP"), (10, "OCT"), (11, "NOV"), (12, "DEC")]
+        [
+            (1, "JAN"), (2, "FEB"), (3, "MAR"), (4, "APR"), (5, "MAY"), (6, "JUN"),
+            (7, "JUL"), (8, "AUG"), (9, "SEP"), (10, "OCT"), (11, "NOV"), (12, "DEC")
+        ]
     )[num]
 
 
@@ -153,7 +155,7 @@ def _create_feature_dict(feature_table_file) -> dict:
         for line in csv_in:
             if line[accession_idx] not in feature_dict:
                 feature_dict[line[accession_idx]] = dict()
-            
+
             if line[1] not in feature_dict[line[accession_idx]]:
                 feature_dict[line[accession_idx]][line[type_idx]] = []
 
@@ -178,32 +180,31 @@ def _get_feature_tables_for_protein(feature_table, accession) -> str:
     for key in feature_table[accession].keys():
         if key == "VARIANT":
             for ft_var in feature_table[accession][key]:
-                if len(ft_var[0]) == 3: # CASE Replacement
-                    ft_str += (
-                        ('''\nFT   VARIANT         {position}\n''' + \
-                        '''FT                   /note="{from_aa} -> {to_aa} (in GEN_BY_PG; {desc})"\n''' + \
-                        '''FT                   /id="CUSTOM_{id}"''').format(
-                            position=ft_var[0][2], from_aa=ft_var[0][0], to_aa=ft_var[0][1],
-                            desc=ft_var[1], id=ft_var[2]
-                        )
-                    )
-                elif len(ft_var[0]) == 2: # CASE Replacement
+                if len(ft_var[0]) == 3:  # CASE Replacement
                     ft_str += (
                         ('''\nFT   VARIANT         {position}\n''' +
-                        '''FT                   /note="Missing (in GEN_BY_PG; {desc})"\n''' +
-                        '''FT                   /id="CUSTOM_{id}"''').format(
-                            position=ft_var[0][1],
-                            desc=ft_var[1], id=ft_var[2]
-                        )
+                            '''FT                   /note="{from_aa} -> {to_aa} (in GEN_BY_PG; {desc})"\n''' +
+                            '''FT                   /id="CUSTOM_{id}"''').format(
+                                position=ft_var[0][2], from_aa=ft_var[0][0], to_aa=ft_var[0][1],
+                                desc=ft_var[1], id=ft_var[2]
+                            )
                     )
-
+                elif len(ft_var[0]) == 2:  # CASE Replacement
+                    ft_str += (
+                        ('''\nFT   VARIANT         {position}\n''' +
+                            '''FT                   /note="Missing (in GEN_BY_PG; {desc})"\n''' +
+                            '''FT                   /id="CUSTOM_{id}"''').format(
+                                position=ft_var[0][1],
+                                desc=ft_var[1], id=ft_var[2]
+                            )
+                    )
 
     return ft_str
 
 
 def generate_sp_embl_enty(sequence, accession, opt_feature) -> str:
     """ Generates a valid SP-EMBL using sequence, accession and optional features. """
-    
+
     # TODO DL add optional Features for FT
     return SWISS_EMBL_SKELETON.format(
         ID_AC=_get_id_ac_string(accession, accession, len(sequence)),
@@ -231,8 +232,7 @@ def main():
         feature_mapping = _create_feature_dict(os.path.abspath(feature_mapping))
 
     with open(in_fasta, "r") as in_file, open(out_txt, "w") as out_file:
-        for sequence, pre, accession, description in tqdm.tqdm(get_next_fasta_entry(in_file), total=args.num_entries, unit="entries"):
+        for sequence, pre, accession, description in tqdm.tqdm(
+            get_next_fasta_entry(in_file), total=args.num_entries, unit="entries"
+        ):
             out_file.write(generate_sp_embl_enty(sequence, accession, feature_mapping))
-
-
-main()
