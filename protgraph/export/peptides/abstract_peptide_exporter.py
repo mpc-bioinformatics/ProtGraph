@@ -75,7 +75,6 @@ class APeptideExporter(AExporter):
         # Iterate over all peptides
         for path in self._get_peps(prot_graph, __start_node__, __stop_node__):
 
-
             # Get the actual peptide (concatenated aminoacids)
             aas = "".join(prot_graph.vs[path[1:-1]]["aminoacid"])
 

@@ -1,6 +1,5 @@
 from Bio.SeqFeature import UnknownPosition
 
-
 from protgraph.export.peptides.abstract_peptide_exporter import \
     APeptideExporter
 from protgraph.graph_collapse_edges import Or

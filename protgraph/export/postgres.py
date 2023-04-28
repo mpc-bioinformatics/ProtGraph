@@ -1,8 +1,8 @@
 import json
 
 import psycopg
-from Bio.SwissProt import FeatureTable
 from Bio.SeqFeature import FeatureLocation
+from Bio.SwissProt import FeatureTable
 
 from protgraph.export.abstract_exporter import AExporter
 from protgraph.graph_collapse_edges import Or
