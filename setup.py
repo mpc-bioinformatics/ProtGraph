@@ -25,7 +25,7 @@ setup(
         'License :: OSI Approved :: BSD License',
     ],
     license="BSD",
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     entry_points=dict(console_scripts=[
         'protgraph = protgraph.protgraph:main',
         'protgraph_pepsqlite_to_fasta = protgraph.scripts.pepsqlite_to_fasta:main [sqlite]',
