@@ -123,7 +123,7 @@ class PepSQLite(APeptideExporter):
                     peptide {B},
                     meta {B});""".format(B="BLOB" if self.use_blob else "TEXT"))
         except Exception as e:
-            print("Warning: Failed creating table 'peptides_meta' (Reason: {})".format(str(e)))
+            print("Warning: Failed creating table 'peptide_meta' (Reason: {})".format(str(e)))
         finally:
             # self.conn.commit()
             cur.close()
@@ -195,7 +195,7 @@ class PepSQLite(APeptideExporter):
             self._retry_query_many(
                 cur,
                 """
-                INSERT INTO peptides_meta (peptide, meta)
+                INSERT INTO peptide_meta (peptide, meta)
                 VALUES (?, ?);
                 """,
                 zip(compressed_peptides, compressed_metas)

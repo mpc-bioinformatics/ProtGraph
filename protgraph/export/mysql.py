@@ -1,7 +1,8 @@
 import json
 
 import mysql.connector
-from Bio.SwissProt import FeatureLocation, FeatureTable
+from Bio.SeqFeature import FeatureLocation
+from Bio.SwissProt import FeatureTable
 
 from protgraph.export.abstract_exporter import AExporter
 from protgraph.graph_collapse_edges import Or

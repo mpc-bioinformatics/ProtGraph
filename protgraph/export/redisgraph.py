@@ -1,5 +1,6 @@
 import redis
-from Bio.SwissProt import FeatureLocation, FeatureTable
+from Bio.SeqFeature import FeatureLocation
+from Bio.SwissProt import FeatureTable
 from redisgraph import Edge, Graph, Node
 
 from protgraph.export.abstract_exporter import AExporter
