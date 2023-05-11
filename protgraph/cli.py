@@ -229,6 +229,11 @@ def add_graph_generation(group):
         help="Set the factor for the masses inside the mass_dictionary. The default is set to 1 000 000 000, "
         "so that each mass can be converted into integers."
     )
+    group.add_argument(
+        "--multithreading_queue_size", "-mtqs", type=int, default=300000,
+        help="Set the size of the queues for the multithreading. Sizes above 30000 have previously caused problems "
+        "on MacOS. Default is set to 300000."
+    )
 
 
 def add_statistics(group):
