@@ -32,10 +32,12 @@ def prot_graph(**kwargs):
     if "files" not in kwargs or kwargs["files"] is None:
         raise TypeError("missing argument 'files'")
 
+    multithreading_queue_size = prot_graph_args["multithreading_queue_size"]
+
     # Set up queues
-    entry_queue = ctx.Queue(300000)
-    statistics_queue = ctx.Queue(300000)
-    common_out_file_queue = ctx.Queue(300000)
+    entry_queue = ctx.Queue(multithreading_queue_size)
+    statistics_queue = ctx.Queue(multithreading_queue_size)
+    common_out_file_queue = ctx.Queue(multithreading_queue_size)
 
     # Get the number of processes.
     number_of_procs = \
