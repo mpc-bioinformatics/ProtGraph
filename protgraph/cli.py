@@ -230,9 +230,8 @@ def add_graph_generation(group):
         "so that each mass can be converted into integers."
     )
     group.add_argument(
-        "--multithreading_queue_size", "-mtqs", type=int, default=300000,
-        help="Set the size of the queues for the multithreading. Sizes above 30000 have previously caused problems "
-        "on MacOS. Default is set to 300000."
+        "--queue_size", "-qs", type=int, default=30000,
+        help="Set the size of the queues, default is 30000"
     )
 
 
