@@ -231,7 +231,8 @@ def add_graph_generation(group):
     )
     group.add_argument(
         "--queue_size", "-qs", type=int, default=30000,
-        help="Set the size of the queues, default is 30000"
+        help="Set the size of the queues ('reading of entries'-, 'writing of entries'- and statistics-queue), "
+        "default is 30000"
     )
 
 
