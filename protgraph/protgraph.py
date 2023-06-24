@@ -32,9 +32,8 @@ def prot_graph(**kwargs):
     if "files" not in kwargs or kwargs["files"] is None:
         raise TypeError("missing argument 'files'")
 
-    queue_size = prot_graph_args["queue_size"]
-
     # Set up queues
+    queue_size = prot_graph_args["queue_size"]
     entry_queue = ctx.Queue(queue_size)
     statistics_queue = ctx.Queue(queue_size)
     common_out_file_queue = ctx.Queue(queue_size)
