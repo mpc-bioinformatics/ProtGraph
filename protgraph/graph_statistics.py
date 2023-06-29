@@ -95,7 +95,7 @@ def _count_feature_list(graph_entry, feature_type="VARIANT", or_count=min):
 
     def kernel(edge, s_list, edge_list):
         offset = _count_feature(edge["qualifiers"], feature_type, or_count)
-        # if variant then shift by offset!
+        # if feature then shift by offset!
         return _add_lists(s_list, [0]*offset + edge_list)
 
     return _dynamic_programming(graph_entry, kernel)

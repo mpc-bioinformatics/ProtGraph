@@ -9,6 +9,7 @@ class LargePCSR(AExporter):
 
     def start_up(self, **kwargs):
         self.pcsr_exporter = PCSR()
+        self.pcsr_exporter.start_up(**kwargs)
         self.pcsr_exporter.pdb_count = kwargs["export_large_pcsr_pdb_entries"]
         self.out_folder = kwargs["export_output_folder"]
         self.out_file = os.path.join(self.out_folder, "database.pcsr")

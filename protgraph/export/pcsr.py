@@ -16,6 +16,14 @@ class PCSR(GenericFileExporter):
 
     def start_up(self, **kwargs):
         self.pdb_count = kwargs["export_pcsr_pdb_entries"]
+
+        if kwargs["pcsr_feature_to_count"] is None: 
+            self.features_to_check = ["VARIANT"]
+        else:
+            self.features_to_check = []
+            for i in kwargs["pcsr_feature_to_count"]:
+                self.features_to_check.append(i)
+
         super(PCSR, self).start_up(**kwargs)
 
     def write_pcsr(self, pg, path):
@@ -79,7 +87,7 @@ class PCSR(GenericFileExporter):
         CL = ["t" if x else "f" for x in graph.es[TO_EDGES]["cleaved"]]  # Get List of Edges[Cleaved]
 
         if "qualifiers" in graph.es[0].attributes():
-            VC = [_count_feature(x, "VARIANT", min) for x in graph.es[TO_EDGES]["qualifiers"]]
+            VC = [sum([_count_feature(x, ftc, min) for ftc in self.features_to_check]) for x in graph.es[TO_EDGES]["qualifiers"]]
             QU = []  # Get List of Edges[Qualifiers] (simplified as in FASTA)
             for qualifier in graph.es[TO_EDGES]["qualifiers"]:
                 if qualifier is None or len(qualifier) == 0:
