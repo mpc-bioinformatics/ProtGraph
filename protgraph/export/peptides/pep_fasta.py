@@ -102,24 +102,24 @@ class PepFasta(APeptideExporter):
 
             elif f.type == "SIGNAL":
                 str_qualifiers.append(
-                    "SIGNAL[" + self._get_location(f) + "]"
+                    "SIGNAL[" + self._get_location(f) + self._get_pep_prop_chain_sig_id(f) + "]"
                 )
 
             elif f.type == "INIT_MET":
                 str_qualifiers.append(
-                    "INIT_MET[" + self._get_location(f) + "]"
+                    "INIT_MET[" + self._get_location(f) + self._get_pep_prop_chain_sig_id(f) + "]"
                 )
             elif f.type == "PROPEP":
                 str_qualifiers.append(
-                    "PROPEP[" + self._get_location(f) + "]"
+                    "PROPEP[" + self._get_location(f) + self._get_pep_prop_chain_sig_id(f) + "]"
                 )
             elif f.type == "PEPTIDE":
                 str_qualifiers.append(
-                    "PEPTIDE[" + self._get_location(f) + "]"
+                    "PEPTIDE[" + self._get_location(f) + self._get_pep_prop_chain_sig_id(f) + "]"
                 )
             elif f.type == "CHAIN":
                 str_qualifiers.append(
-                    "CHAIN[" + self._get_location(f) + "," + f.id + "]"
+                    "CHAIN[" + self._get_location(f) + self._get_pep_prop_chain_sig_id(f) + "]"
                 )
             elif f.type == "FIXMOD":
                 str_qualifiers.append(
@@ -145,6 +145,12 @@ class PepFasta(APeptideExporter):
         else:
             epos = str(feature.location.end)
         return spos + ":" + epos
+
+    def _get_pep_prop_chain_sig_id(self, feature):
+        if feature.id is not None:
+            return "," + feature.id
+        else:
+            return ""
 
     def _get_variant_mutagen_qualifier(self, feature, stop_codon="(", offset=1):
         """ Get x -> y or missing """
