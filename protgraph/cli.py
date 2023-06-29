@@ -374,7 +374,7 @@ def add_graph_exports(group):
         help="Set the number of pdb entries per node. Defaults to 10"
     )
     count_features = [
-        "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT", "PEPTIDE", "PROPEP", "CHAIN"
+        "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT", "PEPTIDE", "PROPEP", "CHAIN", "VARMOD", "FIXMOD"
     ]
     group.add_argument(
         "--pcsr_feature_to_count", "-pcsr_ftc", choices=count_features, type=str.upper, action="append",
