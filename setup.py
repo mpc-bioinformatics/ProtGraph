@@ -41,10 +41,10 @@ setup(
     extras_require={
         "postgres": ["psycopg>=3.0"],
         "mysql": ["mysql"],
-        "sqlite": ["apsw"],
+        "sqlite": ["apsw>=3.42.0.0"],
         "cassandra": ["cassandra-driver"],
         "gremlin": ["gremlinpython"],
         "redis": ["redis", "redisgraph"],
-        "full": ["mysql", "psycopg>=3.0", "apsw", "cassandra-driver", "redis", "redisgraph", "gremlinpython"],
+        "full": ["mysql", "psycopg>=3.0", "apsw>=3.42.0.0", "cassandra-driver", "redis", "redisgraph", "gremlinpython"],
     },
 )

@@ -197,7 +197,3 @@ def main():
 
         print("Writing final FASTA-entries...")
         index_written = write_dict(seq_identifier, outf, index_written)
-
-
-if __name__ == "__main__":
-    main()
