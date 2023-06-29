@@ -9,6 +9,7 @@ class LargeBinaryPCSR(AExporter):
 
     def start_up(self, **kwargs):
         self.bpcsr_exporter = BinaryPCSR()
+        self.bpcsr_exporter.start_up(**kwargs)
         self.bpcsr_exporter.pdb_count = kwargs["export_large_binary_pcsr_pdb_entries"]
         self.bpcsr_exporter.ctype_mapping = self.bpcsr_exporter._mapping()
         self.out_folder = kwargs["export_output_folder"]

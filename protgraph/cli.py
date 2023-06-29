@@ -373,6 +373,18 @@ def add_graph_exports(group):
         "--export_large_binary_pcsr_pdb_entries", "-elbpcsr_pdbs", type=int, default=10,
         help="Set the number of pdb entries per node. Defaults to 10"
     )
+    count_features = [
+        "INIT_MET", "VARIANT", "VAR_SEQ", "SIGNAL", "MUTAGEN", "CONFLICT", "PEPTIDE", "PROPEP", "CHAIN"
+    ]
+    group.add_argument(
+        "--pcsr_feature_to_count", "-pcsr_ftc", choices=count_features, type=str.upper, action="append",
+        help="Set the features which should be counted into the VC on a graph for all exportes in the pcsr. The values here correspond to"
+        " the actual FT name provided in SwissProt-EMBL. Default is set to use only 'VARIANT', since most"
+        " proteins are complicated due to many variants. Currently parsable features are: " + ", ".join(count_features) +
+        ". Use it as follows to only select specific ones: '-pcsr_ftc VARIANT -pcsr_ftc MUTAGEN' to count mutagens and variants"
+        " or '-pcsr_ftc PEPTIDE' to count only peptides in VC. This parameter can be used for later traversal to limit further"
+        " exploration on specific nodes. E.G.: Only Paths from s to e, with maximum x many features (which can be checked on VC in pcsr)"
+    )
 
 
 def add_redis_graph_export(group):
