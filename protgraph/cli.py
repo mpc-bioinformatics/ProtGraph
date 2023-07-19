@@ -139,7 +139,7 @@ def add_graph_generation(group):
         s, t = input.split(":", 1)
 
         s = s.strip().upper()
-        if not (s.isalpha() and (len(s) == 1 or s == "CTERM" or s == "NTERM")):
+        if not (s.isalpha() and (len(s) == 1 or s == "CPEPTERM" or s == "NPEPTERM" or s == "NPROTERM" or s == "CPROTERM")):
             raise ArgumentTypeError(
                 "The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s)
             )
