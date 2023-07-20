@@ -1,4 +1,5 @@
 from collections import defaultdict
+import itertools
 
 from Bio.SeqFeature import FeatureLocation, UnknownPosition
 from Bio.SwissProt import FeatureTable
@@ -73,7 +74,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
                     _append_feature_in_edge("qualifiers", in_edge, spos, epos, "FIXMOD", aa, delta)
 
     if "NPEPTERM" in fix_mods:
-        aa, deltas = fix_mods["NPEPTERM"]
+        deltas = fix_mods["NPEPTERM"]
         delta = deltas[0]
         # CASE N-TERMINAL:
         [start_node] = graph_entry.vs.select(aminoacid="__start__")
@@ -91,8 +92,8 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
         new_edge = graph_entry.add_edge(new_start.index, start_node.index)
         new_edge["qualifiers"] = [ _create_feature(0, 1, "FIXMOD", aa, delta) ]
 
-    if "NPEPTERM" in fix_mods:
-        aa, deltas = fix_mods["NPEPTERM"]
+    if "CPEPTERM" in fix_mods:
+        deltas = fix_mods["CPEPTERM"]
         delta = deltas[0]
         # CASE C-TERMINAL:
         [end_node] = graph_entry.vs.select(aminoacid="__end__")
@@ -112,6 +113,57 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
         # For all ingoing edges add this new qualifier
         for in_edge in end_node.in_edges():
             _append_feature_in_edge("qualifiers", in_edge, end_node["position"], end_node["position"] + 1, "FIXMOD", aa, delta)
+
+
+
+    if "NPROTERM" in fix_mods:
+        deltas = fix_mods["NPROTERM"]
+        delta = deltas[0]
+        # CASE N-TERMINAL for Protein-N
+
+        # Add new nodes
+        nodes_to_update = get_first_last_nodes_from_protein(graph_entry, start_end_aa="__start__", min_max=min)
+
+        # Updata delta masses
+        offset = 0
+        for n in nodes_to_update:
+            if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[n.index]["delta_mass"] is not None:
+                graph_entry.vs[n.index]["delta_mass"] += delta*mass_factor
+            else: 
+                graph_entry.vs[n.index]["delta_mass"] = delta*mass_factor
+            offset += 1
+
+
+        for n in nodes_to_update:
+                for e in n.in_edges():
+                    spos, epos = __get_node_pos(n)
+                    for in_edge in n.in_edges():
+                        _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", aa, delta)
+
+    if "CPROTERM" in fix_mods:
+        deltas = fix_mods["CPROTERM"]
+        delta = deltas[0]
+        # CASE C-TERMINAL for Protein-C
+
+        # Add new nodes
+        nodes_to_update = get_first_last_nodes_from_protein(graph_entry, start_end_aa="__start__", min_max=min)
+
+        # Updata delta masses
+        offset = 0
+        for n in nodes_to_update:
+            if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[n.index]["delta_mass"] is not None:
+                graph_entry.vs[n.index]["delta_mass"] += delta*mass_factor
+            else: 
+                graph_entry.vs[n.index]["delta_mass"] = delta*mass_factor
+            offset += 1
+
+
+        for n in nodes_to_update:
+                for e in n.in_edges():
+                    spos, epos = __get_node_pos(n)
+                    for in_edge in n.in_edges():
+                        _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", aa, delta)
+
 
 def _apply_varmod(graph_entry, var_mods, mass_factor):
     for aa, deltas in var_mods.items():
@@ -148,15 +200,15 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(in_edge["cleaved"])
 
-                    for out_edge in node.out_edges():
-                        for delta_idx, delta in enumerate(deltas):
-                            edges_to_add.append((offset + len(nodes_to_clone)*delta_idx +  vc, out_edge.target))
-                            if "qualifiers" in out_edge.attributes():
-                                qualifier_info.append(out_edge["qualifiers"])
-                            else:
-                                qualifier_info.append(None)
-                            if "cleaved" in graph_entry.es[0].attributes():
-                                cleaved_info.append(out_edge["cleaved"])
+                for out_edge in node.out_edges():
+                    for delta_idx, delta in enumerate(deltas):
+                        edges_to_add.append((offset + len(nodes_to_clone)*delta_idx +  vc, out_edge.target))
+                        if "qualifiers" in out_edge.attributes():
+                            qualifier_info.append(out_edge["qualifiers"])
+                        else:
+                            qualifier_info.append(None)
+                        if "cleaved" in graph_entry.es[0].attributes():
+                            cleaved_info.append(out_edge["cleaved"])
             # Add edges in bulk
             ec = graph_entry.ecount()
             graph_entry.add_edges(edges_to_add)
@@ -165,7 +217,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                 graph_entry.es[ec:]["cleaved"] = cleaved_info
 
     if "NPEPTERM" in var_mods:
-        aa, deltas = var_mods["NPEPTERM"]
+        deltas = var_mods["NPEPTERM"]
         # CASE N-TERMINAL:
         # Clone the start node and create new start nodes
         [start_node] = graph_entry.vs.select(aminoacid="__start__")
@@ -219,7 +271,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
             graph_entry.es[ec:]["cleaved"] = cleaved_info
 
     if "CPEPTERM" in var_mods:
-        aa, deltas = var_mods["CPEPTERM"]
+        deltas = var_mods["CPEPTERM"]
         # CASE N-TERMINAL:
         # Clone the end node and create a new end node
         [end_node] = graph_entry.vs.select(aminoacid="__end__")
@@ -264,6 +316,113 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
         if "cleaved" in graph_entry.es[0].attributes():
             cleaved_info.append(None)
 
+        # Add edges in bulk
+        ec = graph_entry.ecount()
+        graph_entry.add_edges(edges_to_add)
+        graph_entry.es[ec:]["qualifiers"] = qualifier_info
+        if "cleaved" in graph_entry.es[0].attributes():
+            graph_entry.es[ec:]["cleaved"] = cleaved_info
+
+    if "NPROTERM" in var_mods:
+        deltas = var_mods["NPROTERM"]
+        # CASE N-TERMINAL for Protein-N
+
+        # Add new nodes
+        nodes_to_clone = get_first_last_nodes_from_protein(graph_entry, start_end_aa="__start__", min_max=min)
+        vc = graph_entry.vcount()
+        graph_entry.add_vertices(len(nodes_to_clone) * len(deltas))
+
+        # Copy values to new end nodes and update the delta_mass
+        offset = 0
+        for n in nodes_to_clone:
+            for delta in deltas:
+                for key, val in n.attributes().items():
+                    graph_entry.vs[vc + offset][key] = val
+                if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[vc + offset]["delta_mass"] is not None:
+                    graph_entry.vs[vc + offset]["delta_mass"] += delta*mass_factor
+                else: 
+                    graph_entry.vs[vc + offset]["delta_mass"] = delta*mass_factor
+                offset += 1
+
+        # Clone edges
+        edges_to_add = []
+        qualifier_info = []
+        cleaved_info = []
+
+        offset = 0
+        for n in nodes_to_clone:
+            for delta in deltas:
+                for e in n.in_edges():
+                    spos, epos = __get_node_pos(n)
+                    for in_edge in n.in_edges():
+                        edges_to_add.append((in_edge.source, vc + offset))
+                        qualifier_info.append( [_create_feature(spos, epos, "VARMOD", aa, delta)] )
+                        if "cleaved" in graph_entry.es[0].attributes():
+                            cleaved_info.append(in_edge["cleaved"])
+
+                    for out_edge in n.out_edges():
+                        edges_to_add.append((vc + offset, out_edge.target))
+                        if "qualifiers" in out_edge.attributes():
+                            qualifier_info.append(out_edge["qualifiers"])
+                        else:
+                            qualifier_info.append(None)
+                        if "cleaved" in graph_entry.es[0].attributes():
+                            cleaved_info.append(out_edge["cleaved"])
+                offset += 1 
+
+        # Add edges in bulk
+        ec = graph_entry.ecount()
+        graph_entry.add_edges(edges_to_add)
+        graph_entry.es[ec:]["qualifiers"] = qualifier_info
+        if "cleaved" in graph_entry.es[0].attributes():
+            graph_entry.es[ec:]["cleaved"] = cleaved_info
+
+    if "CPROTERM" in var_mods:
+        deltas = var_mods["CPROTERM"]
+        # CASE C-TERMINAL for Protein-C
+
+        # Add new nodes
+        nodes_to_clone = get_first_last_nodes_from_protein(graph_entry, start_end_aa="__end__", min_max=max)
+        vc = graph_entry.vcount()
+        graph_entry.add_vertices(len(nodes_to_clone) * len(deltas))
+
+        # Copy values to new end nodes and update the delta_mass
+        offset = 0
+        for n in nodes_to_clone:
+            for delta in deltas:
+                for key, val in n.attributes().items():
+                    graph_entry.vs[vc + offset][key] = val
+                if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[vc + offset]["delta_mass"] is not None:
+                    graph_entry.vs[vc + offset]["delta_mass"] += delta*mass_factor
+                else: 
+                    graph_entry.vs[vc + offset]["delta_mass"] = delta*mass_factor
+                offset += 1
+
+        # Clone edges
+        edges_to_add = []
+        qualifier_info = []
+        cleaved_info = []
+
+        offset = 0
+        for n in nodes_to_clone:
+            for delta in deltas:
+                for e in n.in_edges():
+                    spos, epos = __get_node_pos(n)
+                    for in_edge in n.in_edges():
+                        edges_to_add.append((in_edge.source, vc + offset))
+                        qualifier_info.append( [_create_feature(spos, epos, "VARMOD", aa, delta)] )
+                        if "cleaved" in graph_entry.es[0].attributes():
+                            cleaved_info.append(in_edge["cleaved"])
+
+                    for out_edge in n.out_edges():
+                        edges_to_add.append((vc + offset, out_edge.target))
+                        if "qualifiers" in out_edge.attributes():
+                            qualifier_info.append(out_edge["qualifiers"])
+                        else:
+                            qualifier_info.append(None)
+                        if "cleaved" in graph_entry.es[0].attributes():
+                            cleaved_info.append(out_edge["cleaved"])
+                offset += 1 
 
         # Add edges in bulk
         ec = graph_entry.ecount()
@@ -273,8 +432,34 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
             graph_entry.es[ec:]["cleaved"] = cleaved_info
 
 
-
-
+def get_first_last_nodes_from_protein(graph_entry, start_end_aa:"__start__", min_max=min):
+    ''' Get the beginning of the protein ''' 
+    if "isoform_position" in graph_entry.vs[0].attributes():
+        # Get maximum for each isoform end
+        isos = list(set(graph_entry.vs["isoform_accession"]))
+        nodes = set()
+        for iso in isos:
+            vseq = graph_entry.vs.select(isoform_accession=iso)
+            pos =  "position" if iso is None else "isoform_position"  # Decide which position to use
+            highetst_num = min_max(
+                [
+                    x 
+                    for x, aa in zip(vseq[pos], vseq["aminoacid"]) 
+                    if x and aa != "" and aa != start_end_aa
+                ]
+            )
+            nodes.update(vseq.select(**{pos : highetst_num}))
+        return list(nodes)
+    else:
+        # Get maximum position and just report this
+        highetst_num = min_max(
+            [
+                x 
+                for x, aa in zip(graph_entry.vs["position"], graph_entry.vs["aminoacid"]) 
+                if x and aa != "" and aa != start_end_aa
+            ]
+        )
+        return list(graph_entry.vs.select(position=highetst_num))
 
 
 
