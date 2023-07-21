@@ -125,14 +125,11 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
         nodes_to_update = get_first_last_nodes_from_protein(graph_entry, start_end_aa="__start__", min_max=min)
 
         # Updata delta masses
-        offset = 0
         for n in nodes_to_update:
             if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[n.index]["delta_mass"] is not None:
                 graph_entry.vs[n.index]["delta_mass"] += delta*mass_factor
             else: 
                 graph_entry.vs[n.index]["delta_mass"] = delta*mass_factor
-            offset += 1
-
 
         for n in nodes_to_update:
                 for e in n.in_edges():
@@ -146,17 +143,14 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
         # CASE C-TERMINAL for Protein-C
 
         # Add new nodes
-        nodes_to_update = get_first_last_nodes_from_protein(graph_entry, start_end_aa="__start__", min_max=min)
+        nodes_to_update = get_first_last_nodes_from_protein(graph_entry, start_end_aa="__end__", min_max=max)
 
         # Updata delta masses
-        offset = 0
         for n in nodes_to_update:
             if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[n.index]["delta_mass"] is not None:
                 graph_entry.vs[n.index]["delta_mass"] += delta*mass_factor
             else: 
                 graph_entry.vs[n.index]["delta_mass"] = delta*mass_factor
-            offset += 1
-
 
         for n in nodes_to_update:
                 for e in n.in_edges():
