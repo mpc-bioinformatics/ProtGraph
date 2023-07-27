@@ -156,17 +156,20 @@ def add_graph_generation(group):
         "--fixed_mod", "-fm", type=_parse_mod, action="append",
         help="Apply a fixed modification on a special aminoacid."
         " You can apply multiple fix modifications BUT only one modification per aminoacid is currently allowed."
-        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a"
-        " fixed oxidation of M. Note: modifications on the same aminoacid are superseeded."
-        " For the N- and C-Terminus use \"nterm\" or \"cterm\""
+        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'C:57.021464'\" would indicate a"
+        " fixed carbamidomethylation of C."
+        " Note: for fixed modifications on the same aminoacid, we only consider the first one."
+        " For the N- and C-Terminus (for protein or peptide) use \"npepterm\", \"nproterm\" or \"cpepterm\", "
+        "\"cproterm\""
     )
     group.add_argument(
         "--variable_mod", "-vm", type=_parse_mod, action="append",
         help="Apply a variable modification on a special aminoacid."
         " You can apply multiple variable modifications BUT only one modification per aminoacid is currently allowed."
-        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-fm 'M:15.994915'\" would indicate a fixed oxidation"
-        " of M. Note: modifications on the same aminoacid are superseeded."
-        " For the N- and C-Terminus use \"nterm\" or \"cterm\""
+        " The form should be '<AminoAcid>:<DeltaMass>' e.g. \"-vm 'M:15.994915'\" would indicate a variable oxidation"
+        " of M."
+        " For the N- and C-Terminus (for protein or peptide) use \"npepterm\", \"nproterm\" or \"cpepterm\", "
+        "\"cproterm\""
     )
 
     # Flag to check if generated graphs are correctly generated

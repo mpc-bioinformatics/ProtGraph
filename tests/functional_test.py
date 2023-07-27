@@ -29,8 +29,8 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-ft", "none", "-fm", "c:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_fm_nterm(self):
-        args = protgraph.parse_args(["-fm", "ntErm:57.021464"] + self.procs_num + self.example_files)
+    def test_fm_npepterm(self):
+        args = protgraph.parse_args(["-fm", "nPePtErm:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_fm_none_cterm(self):
@@ -41,8 +41,8 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-vm", "ctErm:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_vm_none_nterm(self):
-        args = protgraph.parse_args(["-ft", "none", "-vm", "ntERM:57.021464"] + self.procs_num + self.example_files)
+    def test_vm_none_npepterm(self):
+        args = protgraph.parse_args(["-ft", "none", "-vm", "nPePtERM:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_vm(self):
@@ -53,8 +53,8 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-ft", "none", "-vm", "c:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_vm_nterm(self):
-        args = protgraph.parse_args(["-vm", "ntErm:57.021464"] + self.procs_num + self.example_files)
+    def test_vm_nproterm(self):
+        args = protgraph.parse_args(["-vm", "nPRotErm:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_vm_none_cterm(self):
