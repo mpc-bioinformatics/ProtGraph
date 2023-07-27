@@ -90,7 +90,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
 
         # Append qualifier
         new_edge = graph_entry.add_edge(new_start.index, start_node.index)
-        new_edge["qualifiers"] = [ _create_feature(0, 1, "FIXMOD", aa, delta) ]
+        new_edge["qualifiers"] = [ _create_feature(0, 1, "FIXMOD", "NPEPTERM", delta) ]
 
     if "CPEPTERM" in fix_mods:
         deltas = fix_mods["CPEPTERM"]
@@ -112,7 +112,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
 
         # For all ingoing edges add this new qualifier
         for in_edge in end_node.in_edges():
-            _append_feature_in_edge("qualifiers", in_edge, end_node["position"], end_node["position"] + 1, "FIXMOD", aa, delta)
+            _append_feature_in_edge("qualifiers", in_edge, end_node["position"], end_node["position"] + 1, "FIXMOD", "CPEPTERM", delta)
 
 
 
@@ -135,7 +135,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
                 for e in n.in_edges():
                     spos, epos = __get_node_pos(n)
                     for in_edge in n.in_edges():
-                        _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", aa, delta)
+                        _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", "NPROTERM", delta)
 
     if "CPROTERM" in fix_mods:
         deltas = fix_mods["CPROTERM"]
@@ -156,7 +156,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
                 for e in n.in_edges():
                     spos, epos = __get_node_pos(n)
                     for in_edge in n.in_edges():
-                        _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", aa, delta)
+                        _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", "CPROTERM", delta)
 
 
 def _apply_varmod(graph_entry, var_mods, mass_factor):
@@ -246,7 +246,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
         # new_start --> second_cloned_start_nodes etc..
         for offset in range(len(deltas)): 
             edges_to_add.append((vc + len(deltas), vc + offset))
-            qualifier_info.append([ _create_feature(0, 1, "VARMOD", aa, delta) ])
+            qualifier_info.append([ _create_feature(0, 1, "VARMOD", "NPEPTERM", delta) ])
             if "cleaved" in graph_entry.es[0].attributes():
                 cleaved_info.append(None)
 
@@ -290,7 +290,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
         for e in end_node.in_edges():
             for offset in range(len(deltas)):
                 edges_to_add.append((e.source, vc + offset))
-                _append_feature_in_edge("qualifiers", e, end_node["position"], end_node["position"]+1, "VARMOD", aa, delta)
+                _append_feature_in_edge("qualifiers", e, end_node["position"], end_node["position"]+1, "VARMOD", "CPEPTERM", delta)
                 if "cleaved" in graph_entry.es[0].attributes():
                     cleaved_info.append(e["cleaved"])
 
@@ -350,7 +350,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                     spos, epos = __get_node_pos(n)
                     for in_edge in n.in_edges():
                         edges_to_add.append((in_edge.source, vc + offset))
-                        qualifier_info.append( [_create_feature(spos, epos, "VARMOD", aa, delta)] )
+                        qualifier_info.append( [_create_feature(spos, epos, "VARMOD", "NPROTERM", delta)] )
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(in_edge["cleaved"])
 
@@ -404,7 +404,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                     spos, epos = __get_node_pos(n)
                     for in_edge in n.in_edges():
                         edges_to_add.append((in_edge.source, vc + offset))
-                        qualifier_info.append( [_create_feature(spos, epos, "VARMOD", aa, delta)] )
+                        qualifier_info.append( [_create_feature(spos, epos, "VARMOD", "CPROTERM", delta)] )
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(in_edge["cleaved"])
 
