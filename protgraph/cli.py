@@ -1,4 +1,6 @@
 import os
+import string
+from itertools import product
 from argparse import ArgumentTypeError
 
 
@@ -139,7 +141,10 @@ def add_graph_generation(group):
         s, t = input.split(":", 1)
 
         s = s.strip().upper()
-        if not (s.isalpha() and (len(s) == 1 or s == "CPEPTERM" or s == "NPEPTERM" or s == "NPROTERM" or s == "CPROTERM")):
+        if s not in [
+                "CPEPTERM", "NPEPTERM", "NPROTERM", "CPROTERM",
+                *[x+y for x,y in list(product(["NPEP", "CPEP", ""], string.ascii_uppercase))]
+            ]:  # Checks for C-/N-Term for Peptide/Protein as well as for [A-Z], NPEP[A-Z] and CPEP[A-Z]
             raise ArgumentTypeError(
                 "The amino acid which gets replaced can only be set to: [A-Z] (1 letter)! Found: '{}'".format(s)
             )
