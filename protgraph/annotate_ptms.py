@@ -61,7 +61,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
     # Apply for each aminoa acid fixed modification
     for aa, delta in fix_mods.items():
         delta = delta[0]  # We only take the first fix modification. Only a single fixed modification can be applied
-        if aa not in ["NPEPTERM", "CPEPTERM", "NPROTERM", "CPROTERM"]:
+        if aa not in ["NPEPTERM", "CPEPTERM", "NPROTERM", "CPROTERM"] and not (aa.startswith("NPEP") or aa.startswith("CPEP"):
             # CASE AAs:
             # Simply search for every aminoacid and set its delta_mass statically!
             graph_entry.vs.select(aminoacid=aa)["delta_mass"] = delta*mass_factor
