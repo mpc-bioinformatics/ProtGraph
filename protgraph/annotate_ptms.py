@@ -1,4 +1,5 @@
 from collections import defaultdict
+import igraph
 import itertools
 
 from Bio.SeqFeature import FeatureLocation, UnknownPosition
@@ -161,7 +162,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
 
 def _apply_varmod(graph_entry, var_mods, mass_factor):
     for aa, deltas in var_mods.items():
-        if aa not in ["NPEPTERM", "CPEPTERM", "NPROTERM", "CPROTERM"]:
+        if aa not in ["NPEPTERM", "CPEPTERM", "NPROTERM", "CPROTERM"] and not (aa.startswith("NPEP") or aa.startswith("CPEP")):
             # Search for every aminoacid and set for the new nodes the delta_mass!
             nodes_to_clone = graph_entry.vs.select(aminoacid=aa)
 
@@ -189,7 +190,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                 for in_edge in node.in_edges():
                     for delta_idx, delta in enumerate(deltas):
                         edges_to_add.append((in_edge.source, offset + len(nodes_to_clone)*delta_idx + vc))
-                        _append_feature_in_edge("qualifiers", in_edge, spos, epos, "VARMOD", aa, delta)
+                        qualifier_info.append(_create_feature(spos, epos, "VARMOD", aa, delta))
 
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(in_edge["cleaved"])
@@ -203,6 +204,81 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                             qualifier_info.append(None)
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(out_edge["cleaved"])
+            # Add edges in bulk
+            ec = graph_entry.ecount()
+            graph_entry.add_edges(edges_to_add)
+            graph_entry.es[ec:]["qualifiers"] = qualifier_info
+            if "cleaved" in graph_entry.es[0].attributes():
+                graph_entry.es[ec:]["cleaved"] = cleaved_info
+
+
+
+
+        if aa.startswith("NPEP") or aa.startswith("CPEP"):
+            # CASE AAs on C-Term or N-Term
+            [start_node] = graph_entry.vs.select(aminoacid="__start__")
+            [end_node] = graph_entry.vs.select(aminoacid="__end__")
+
+            if aa.startswith("NPEP"):
+                filter_expression_for_cloning = lambda node: any([x["position"] == 0 for x in node.neighbors(mode="in")])
+                filter_ingoing_edges = lambda x: x == 0  # x --> position of Node
+                filter_outgoing_edges = lambda _: True  # No Filtering of outgoing edges
+            else:
+                filter_expression_for_cloning = lambda node: any([x["position"] == end_node["position"] for x in node.neighbors(mode="out")])
+                filter_ingoing_edges = lambda _: True  # No Filtering of ingoing edges
+                filter_outgoing_edges = lambda x: x == end_node["position"] # x --> position of Node
+            
+            # Filter Nodes which should be cloned
+            nodes_to_check = graph_entry.vs.select(aminoacid=aa[4:])
+            nodes_to_clone = []
+            for n in nodes_to_check:
+                if filter_expression_for_cloning(n):
+                    nodes_to_clone.append(n)
+            nodes_to_clone = igraph.VertexSeq(graph_entry, [n.index for n in nodes_to_clone])
+
+            # Clone Nodes
+            vc = graph_entry.vcount()
+            graph_entry.add_vertices(len(nodes_to_clone)*len(deltas))
+            graph_entry.vs[vc:]["aminoacid"] = nodes_to_clone["aminoacid"]*len(deltas)
+            graph_entry.vs[vc:]["position"] = nodes_to_clone["position"]*len(deltas)
+            graph_entry.vs[vc:]["accession"] = nodes_to_clone["accession"]*len(deltas)
+            if "isoform_accession" in graph_entry.vs[0].attributes():
+                graph_entry.vs[vc:]["isoform_accession"] = nodes_to_clone["isoform_accession"]*len(deltas)
+            if "isoform_position" in graph_entry.vs[0].attributes():
+                graph_entry.vs[vc:]["isoform_position"] = nodes_to_clone["isoform_position"]*len(deltas)
+
+            # Add Delta Mass to cloned nodes
+            graph_entry.vs[vc:]["delta_mass"] = _flatten_list([[delta*mass_factor]*len(nodes_to_clone) for delta in deltas])
+
+            # Clone the edges
+            edges_to_add = []
+            qualifier_info = []
+            cleaved_info = []
+            for offset, node in enumerate(nodes_to_clone):
+                spos, epos = __get_node_pos(node)
+
+                # Only a connection from the "start_node"
+                for in_edge in node.in_edges():
+                    if filter_ingoing_edges(in_edge.source_vertex["position"]):
+                        for delta_idx, delta in enumerate(deltas):
+                            edges_to_add.append((in_edge.source, offset + len(nodes_to_clone)*delta_idx + vc))
+                            qualifier_info.append(_create_feature(spos, epos, "VARMOD", aa, delta))
+                            
+                            if "cleaved" in graph_entry.es[0].attributes():
+                                cleaved_info.append(in_edge["cleaved"])
+
+                # connection to all outgoing edges
+                for out_edge in node.out_edges():
+                    if filter_outgoing_edges(out_edge.target_vertex["position"]):
+                        for delta_idx, delta in enumerate(deltas):
+                            edges_to_add.append((offset + len(nodes_to_clone)*delta_idx +  vc, out_edge.target))
+                            if "qualifiers" in out_edge.attributes():
+                                qualifier_info.append(out_edge["qualifiers"])
+                            else:
+                                qualifier_info.append(None)
+                            if "cleaved" in graph_entry.es[0].attributes():
+                                cleaved_info.append(out_edge["cleaved"])
+
             # Add edges in bulk
             ec = graph_entry.ecount()
             graph_entry.add_edges(edges_to_add)
@@ -290,13 +366,13 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
         for e in end_node.in_edges():
             for offset in range(len(deltas)):
                 edges_to_add.append((e.source, vc + offset))
-                _append_feature_in_edge("qualifiers", e, end_node["position"], end_node["position"]+1, "VARMOD", "CPEPTERM", delta)
+                qualifier_info.append(_create_feature(end_node["position"], end_node["position"]+1, "VARMOD", "CPEPTERM", delta))
                 if "cleaved" in graph_entry.es[0].attributes():
                     cleaved_info.append(e["cleaved"])
 
         # connect the new ends together:
         # cloned_end_node --> new_end_node
-        # scond_cloned_end_node --> new_end_node
+        # second_cloned_end_node --> new_end_node
         # ...
         for offset in range(len(deltas)): 
             edges_to_add.append((vc + offset, vc + len(deltas)))
