@@ -70,23 +70,28 @@ def main():
         headers = next(csv_in)
 
         # Set up summation method depending on type
-        first = next(csv_in)[column_index]
-        if not first:
-            raise Exception("Column '{}' (on index {}) contains no entries".format(headers[column_index], column_index))
         try:
-            parsed_entry = ast.literal_eval(first)
-        except Exception:
-            raise Exception("Column '{}' (on index {}) cannot be evaluated".format(headers[column_index], column_index))
-        if type(parsed_entry) == int:
-            exe_func = add
-            summation = 0
-        elif type(parsed_entry) == list:
-            exe_func = _add_lists
-            summation = []
-        else:
-            raise Exception("Column '{}' (on index {}) cannot be summed, type is not list or int".format(
-                headers[column_index], column_index)
-            )
+            while True:
+                first = next(csv_in)[column_index]
+                if not first:
+                    continue
+                parsed_entry = ast.literal_eval(first)
+                if type(parsed_entry) == int:
+                    exe_func = add
+                    summation = 0
+                    break
+                elif type(parsed_entry) == list:
+                    exe_func = _add_lists
+                    summation = []
+                    break
+                else:
+                    raise Exception("Column '{}' (on index {}) cannot be summed, type is not list or int".format(
+                        headers[column_index], column_index)
+                    )
+        except StopIteration:
+            raise Exception("Column '{}' (on index {}) cannot be summed. All cells are empty!".format(
+                    headers[column_index], column_index)
+                )
 
         # Sum all entries depending on type
         try:
