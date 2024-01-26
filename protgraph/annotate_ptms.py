@@ -1,7 +1,6 @@
 from collections import defaultdict
-import igraph
-import itertools
 
+import igraph
 from Bio.SeqFeature import FeatureLocation, UnknownPosition
 from Bio.SwissProt import FeatureTable
 
@@ -37,8 +36,8 @@ def annotate_ptms(graph_entry, var_mods: list, fix_mods: list, mass_factor: int)
     _apply_varmod(graph_entry, d_var_mods, mass_factor)
 
 
-def _flatten_list(l: list):
-    return [x for sl in l for x in sl]
+def _flatten_list(double_list: list):
+    return [x for sl in double_list for x in sl]
 
 
 def _create_feature(start_pos, end_pos, mod_type, amino_acid, delta):
@@ -52,16 +51,17 @@ def _create_feature(start_pos, end_pos, mod_type, amino_acid, delta):
 def _append_feature_in_edge(attribute, edge, start_pos, end_pos, mod_type, amino_acid, delta):
     ''' Wrapper function to append an feature '''
     if attribute not in edge.attributes() or edge[attribute] is None:
-        edge[attribute] = [ _create_feature(start_pos, end_pos, mod_type, amino_acid, delta) ]
+        edge[attribute] = [_create_feature(start_pos, end_pos, mod_type, amino_acid, delta)]
     else:
-        edge[attribute].append( _create_feature(start_pos, end_pos, mod_type, amino_acid, delta) )
+        edge[attribute].append(_create_feature(start_pos, end_pos, mod_type, amino_acid, delta))
 
 
 def _apply_fixmod(graph_entry, fix_mods, mass_factor):
     # Apply for each aminoa acid fixed modification
     for aa, delta in fix_mods.items():
         delta = delta[0]  # We only take the first fix modification. Only a single fixed modification can be applied
-        if aa not in ["NPEPTERM", "CPEPTERM", "NPROTERM", "CPROTERM"] and not (aa.startswith("NPEP") or aa.startswith("CPEP")):
+        if aa not in ["NPEPTERM", "CPEPTERM", "NPROTERM", "CPROTERM"] \
+                and not (aa.startswith("NPEP") or aa.startswith("CPEP")):
             # CASE AAs:
             # Simply search for every aminoacid and set its delta_mass statically!
             graph_entry.vs.select(aminoacid=aa)["delta_mass"] = delta*mass_factor
@@ -91,7 +91,7 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
 
         # Append qualifier
         new_edge = graph_entry.add_edge(new_start.index, start_node.index)
-        new_edge["qualifiers"] = [ _create_feature(0, 1, "FIXMOD", "NPEPTERM", delta) ]
+        new_edge["qualifiers"] = [_create_feature(0, 1, "FIXMOD", "NPEPTERM", delta)]
 
     if "CPEPTERM" in fix_mods:
         deltas = fix_mods["CPEPTERM"]
@@ -113,9 +113,9 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
 
         # For all ingoing edges add this new qualifier
         for in_edge in end_node.in_edges():
-            _append_feature_in_edge("qualifiers", in_edge, end_node["position"], end_node["position"] + 1, "FIXMOD", "CPEPTERM", delta)
-
-
+            _append_feature_in_edge(
+                "qualifiers", in_edge, end_node["position"], end_node["position"] + 1, "FIXMOD", "CPEPTERM", delta
+            )
 
     if "NPROTERM" in fix_mods:
         deltas = fix_mods["NPROTERM"]
@@ -129,14 +129,14 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
         for n in nodes_to_update:
             if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[n.index]["delta_mass"] is not None:
                 graph_entry.vs[n.index]["delta_mass"] += delta*mass_factor
-            else: 
+            else:
                 graph_entry.vs[n.index]["delta_mass"] = delta*mass_factor
 
         for n in nodes_to_update:
-                for e in n.in_edges():
-                    spos, epos = __get_node_pos(n)
-                    for in_edge in n.in_edges():
-                        _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", "NPROTERM", delta)
+            for e in n.in_edges():
+                spos, epos = __get_node_pos(n)
+                for in_edge in n.in_edges():
+                    _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", "NPROTERM", delta)
 
     if "CPROTERM" in fix_mods:
         deltas = fix_mods["CPROTERM"]
@@ -150,19 +150,20 @@ def _apply_fixmod(graph_entry, fix_mods, mass_factor):
         for n in nodes_to_update:
             if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[n.index]["delta_mass"] is not None:
                 graph_entry.vs[n.index]["delta_mass"] += delta*mass_factor
-            else: 
+            else:
                 graph_entry.vs[n.index]["delta_mass"] = delta*mass_factor
 
         for n in nodes_to_update:
-                for e in n.in_edges():
-                    spos, epos = __get_node_pos(n)
-                    for in_edge in n.in_edges():
-                        _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", "CPROTERM", delta)
+            for e in n.in_edges():
+                spos, epos = __get_node_pos(n)
+                for in_edge in n.in_edges():
+                    _append_feature_in_edge("qualifiers", e, spos, epos, "FIXMOD", "CPROTERM", delta)
 
 
 def _apply_varmod(graph_entry, var_mods, mass_factor):
     for aa, deltas in var_mods.items():
-        if aa not in ["NPEPTERM", "CPEPTERM", "NPROTERM", "CPROTERM"] and not (aa.startswith("NPEP") or aa.startswith("CPEP")):
+        if aa not in ["NPEPTERM", "CPEPTERM", "NPROTERM", "CPROTERM"] \
+                and not (aa.startswith("NPEP") or aa.startswith("CPEP")):
             # Search for every aminoacid and set for the new nodes the delta_mass!
             nodes_to_clone = graph_entry.vs.select(aminoacid=aa)
 
@@ -178,7 +179,9 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                 graph_entry.vs[vc:]["isoform_position"] = nodes_to_clone["isoform_position"]*len(deltas)
 
             # Add Delta Mass to cloned nodes
-            graph_entry.vs[vc:]["delta_mass"] = _flatten_list([[delta*mass_factor]*len(nodes_to_clone) for delta in deltas])
+            graph_entry.vs[vc:]["delta_mass"] = _flatten_list(
+                [[delta*mass_factor]*len(nodes_to_clone) for delta in deltas]
+            )
 
             # Clone the edges
             edges_to_add = []
@@ -197,7 +200,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
 
                 for out_edge in node.out_edges():
                     for delta_idx, delta in enumerate(deltas):
-                        edges_to_add.append((offset + len(nodes_to_clone)*delta_idx +  vc, out_edge.target))
+                        edges_to_add.append((offset + len(nodes_to_clone)*delta_idx + vc, out_edge.target))
                         if "qualifiers" in out_edge.attributes():
                             qualifier_info.append(out_edge["qualifiers"])
                         else:
@@ -211,23 +214,20 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
             if "cleaved" in graph_entry.es[0].attributes():
                 graph_entry.es[ec:]["cleaved"] = cleaved_info
 
-
-
-
         if aa.startswith("NPEP") or aa.startswith("CPEP"):
             # CASE AAs on C-Term or N-Term
             [start_node] = graph_entry.vs.select(aminoacid="__start__")
             [end_node] = graph_entry.vs.select(aminoacid="__end__")
 
             if aa.startswith("NPEP"):
-                filter_expression_for_cloning = lambda node: any([x["position"] == 0 for x in node.neighbors(mode="in")])
-                filter_ingoing_edges = lambda x: x == 0  # x --> position of Node
-                filter_outgoing_edges = lambda _: True  # No Filtering of outgoing edges
+                filter_expression_for_cloning = lambda node: any([x["position"] == 0 for x in node.neighbors(mode="in")])  # noqa: E731,E501
+                filter_ingoing_edges = lambda x: x == 0  # x --> position of Node # noqa: E731,E501
+                filter_outgoing_edges = lambda _: True  # No Filtering of outgoing edges # noqa: E731,E501
             else:
-                filter_expression_for_cloning = lambda node: any([x["position"] == end_node["position"] for x in node.neighbors(mode="out")])
-                filter_ingoing_edges = lambda _: True  # No Filtering of ingoing edges
-                filter_outgoing_edges = lambda x: x == end_node["position"] # x --> position of Node
-            
+                filter_expression_for_cloning = lambda node: any([x["position"] == end_node["position"] for x in node.neighbors(mode="out")])  # noqa: E731,E501
+                filter_ingoing_edges = lambda _: True  # No Filtering of ingoing edges # noqa: E731,E501
+                filter_outgoing_edges = lambda x: x == end_node["position"]  # x --> position of Node # noqa: E731,E501
+
             # Filter Nodes which should be cloned
             nodes_to_check = graph_entry.vs.select(aminoacid=aa[4:])
             nodes_to_clone = []
@@ -248,7 +248,9 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                 graph_entry.vs[vc:]["isoform_position"] = nodes_to_clone["isoform_position"]*len(deltas)
 
             # Add Delta Mass to cloned nodes
-            graph_entry.vs[vc:]["delta_mass"] = _flatten_list([[delta*mass_factor]*len(nodes_to_clone) for delta in deltas])
+            graph_entry.vs[vc:]["delta_mass"] = _flatten_list(
+                [[delta*mass_factor]*len(nodes_to_clone) for delta in deltas]
+            )
 
             # Clone the edges
             edges_to_add = []
@@ -263,7 +265,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                         for delta_idx, delta in enumerate(deltas):
                             edges_to_add.append((in_edge.source, offset + len(nodes_to_clone)*delta_idx + vc))
                             qualifier_info.append(_create_feature(spos, epos, "VARMOD", aa, delta))
-                            
+
                             if "cleaved" in graph_entry.es[0].attributes():
                                 cleaved_info.append(in_edge["cleaved"])
 
@@ -271,7 +273,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                 for out_edge in node.out_edges():
                     if filter_outgoing_edges(out_edge.target_vertex["position"]):
                         for delta_idx, delta in enumerate(deltas):
-                            edges_to_add.append((offset + len(nodes_to_clone)*delta_idx +  vc, out_edge.target))
+                            edges_to_add.append((offset + len(nodes_to_clone)*delta_idx + vc, out_edge.target))
                             if "qualifiers" in out_edge.attributes():
                                 qualifier_info.append(out_edge["qualifiers"])
                             else:
@@ -320,9 +322,9 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
         # connect the new starts together:
         # new_start --> cloned_start_node
         # new_start --> second_cloned_start_nodes etc..
-        for offset in range(len(deltas)): 
+        for offset in range(len(deltas)):
             edges_to_add.append((vc + len(deltas), vc + offset))
-            qualifier_info.append([ _create_feature(0, 1, "VARMOD", "NPEPTERM", delta) ])
+            qualifier_info.append([_create_feature(0, 1, "VARMOD", "NPEPTERM", delta)])
             if "cleaved" in graph_entry.es[0].attributes():
                 cleaved_info.append(None)
 
@@ -366,7 +368,9 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
         for e in end_node.in_edges():
             for offset in range(len(deltas)):
                 edges_to_add.append((e.source, vc + offset))
-                qualifier_info.append(_create_feature(end_node["position"], end_node["position"]+1, "VARMOD", "CPEPTERM", delta))
+                qualifier_info.append(
+                    _create_feature(end_node["position"], end_node["position"]+1, "VARMOD", "CPEPTERM", delta)
+                )
                 if "cleaved" in graph_entry.es[0].attributes():
                     cleaved_info.append(e["cleaved"])
 
@@ -374,7 +378,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
         # cloned_end_node --> new_end_node
         # second_cloned_end_node --> new_end_node
         # ...
-        for offset in range(len(deltas)): 
+        for offset in range(len(deltas)):
             edges_to_add.append((vc + offset, vc + len(deltas)))
             qualifier_info.append(None)
             if "cleaved" in graph_entry.es[0].attributes():
@@ -408,9 +412,10 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
             for delta in deltas:
                 for key, val in n.attributes().items():
                     graph_entry.vs[vc + offset][key] = val
-                if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[vc + offset]["delta_mass"] is not None:
+                if "delta_mass" in graph_entry.vs[0].attributes() \
+                        and graph_entry.vs[vc + offset]["delta_mass"] is not None:
                     graph_entry.vs[vc + offset]["delta_mass"] += delta*mass_factor
-                else: 
+                else:
                     graph_entry.vs[vc + offset]["delta_mass"] = delta*mass_factor
                 offset += 1
 
@@ -426,7 +431,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                     spos, epos = __get_node_pos(n)
                     for in_edge in n.in_edges():
                         edges_to_add.append((in_edge.source, vc + offset))
-                        qualifier_info.append( [_create_feature(spos, epos, "VARMOD", "NPROTERM", delta)] )
+                        qualifier_info.append([_create_feature(spos, epos, "VARMOD", "NPROTERM", delta)])
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(in_edge["cleaved"])
 
@@ -438,7 +443,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                             qualifier_info.append(None)
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(out_edge["cleaved"])
-                offset += 1 
+                offset += 1
 
         # Add edges in bulk
         ec = graph_entry.ecount()
@@ -462,9 +467,10 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
             for delta in deltas:
                 for key, val in n.attributes().items():
                     graph_entry.vs[vc + offset][key] = val
-                if "delta_mass" in graph_entry.vs[0].attributes() and graph_entry.vs[vc + offset]["delta_mass"] is not None:
+                if "delta_mass" in graph_entry.vs[0].attributes() \
+                        and graph_entry.vs[vc + offset]["delta_mass"] is not None:
                     graph_entry.vs[vc + offset]["delta_mass"] += delta*mass_factor
-                else: 
+                else:
                     graph_entry.vs[vc + offset]["delta_mass"] = delta*mass_factor
                 offset += 1
 
@@ -480,7 +486,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                     spos, epos = __get_node_pos(n)
                     for in_edge in n.in_edges():
                         edges_to_add.append((in_edge.source, vc + offset))
-                        qualifier_info.append( [_create_feature(spos, epos, "VARMOD", "CPROTERM", delta)] )
+                        qualifier_info.append([_create_feature(spos, epos, "VARMOD", "CPROTERM", delta)])
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(in_edge["cleaved"])
 
@@ -492,7 +498,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                             qualifier_info.append(None)
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(out_edge["cleaved"])
-                offset += 1 
+                offset += 1
 
         # Add edges in bulk
         ec = graph_entry.ecount()
@@ -502,36 +508,34 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
             graph_entry.es[ec:]["cleaved"] = cleaved_info
 
 
-def get_first_last_nodes_from_protein(graph_entry, start_end_aa:"__start__", min_max=min):
-    ''' Get the beginning of the protein ''' 
+def get_first_last_nodes_from_protein(graph_entry, start_end_aa="__start__", min_max=min):
+    ''' Get the beginning of the protein '''
     if "isoform_position" in graph_entry.vs[0].attributes():
         # Get maximum for each isoform end
         isos = list(set(graph_entry.vs["isoform_accession"]))
         nodes = set()
         for iso in isos:
             vseq = graph_entry.vs.select(isoform_accession=iso)
-            pos =  "position" if iso is None else "isoform_position"  # Decide which position to use
+            pos = "position" if iso is None else "isoform_position"  # Decide which position to use
             highetst_num = min_max(
                 [
-                    x 
-                    for x, aa in zip(vseq[pos], vseq["aminoacid"]) 
+                    x
+                    for x, aa in zip(vseq[pos], vseq["aminoacid"])
                     if x and aa != "" and aa != start_end_aa
                 ]
             )
-            nodes.update(vseq.select(**{pos : highetst_num}))
+            nodes.update(vseq.select(**{pos: highetst_num}))
         return list(nodes)
     else:
         # Get maximum position and just report this
         highetst_num = min_max(
             [
-                x 
-                for x, aa in zip(graph_entry.vs["position"], graph_entry.vs["aminoacid"]) 
+                x
+                for x, aa in zip(graph_entry.vs["position"], graph_entry.vs["aminoacid"])
                 if x and aa != "" and aa != start_end_aa
             ]
         )
         return list(graph_entry.vs.select(position=highetst_num))
-
-
 
 
 def __get_node_pos(n):

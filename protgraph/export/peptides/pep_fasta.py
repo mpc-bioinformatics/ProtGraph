@@ -136,11 +136,11 @@ class PepFasta(APeptideExporter):
         return str_qualifiers
 
     def _get_location(self, feature):
-        if type(feature.location.start) == UnknownPosition:
+        if type(feature.location.start) is UnknownPosition:
             spos = "?"
         else:
             spos = str(feature.location.start + 1)
-        if type(feature.location.end) == UnknownPosition:
+        if type(feature.location.end) is UnknownPosition:
             epos = "?"
         else:
             epos = str(feature.location.end)
@@ -180,7 +180,7 @@ class PepFasta(APeptideExporter):
         else:
             val = "?"
 
-        if type(val) != str and end:
+        if type(val) is not str and end:
             return val + len(node["aminoacid"]) - 1
         else:
             return val

@@ -58,7 +58,7 @@ class BinaryPCSR(PCSR):
                 ])
                 b.extend(uint_bytes)
 
-            elif type(self.ctype_mapping[key]) == int:
+            elif type(self.ctype_mapping[key]) is int:
                 uint_bytes = b"".join([
                     (x).to_bytes(int(self.ctype_mapping[key]/8), byteorder="big", signed=False)
                     if x >= 0
