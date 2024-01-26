@@ -76,11 +76,11 @@ def main():
                 if not first:
                     continue
                 parsed_entry = ast.literal_eval(first)
-                if type(parsed_entry) == int:
+                if type(parsed_entry) is int:
                     exe_func = add
                     summation = 0
                     break
-                elif type(parsed_entry) == list:
+                elif type(parsed_entry) is list:
                     exe_func = _add_lists
                     summation = []
                     break
@@ -106,7 +106,7 @@ def main():
             )
 
         # Print results
-        if type(summation) == int:
+        if type(summation) is int:
             summation = [summation]
         idx_len = str(int(math.log10(len(summation)))+1)
         entry_len = str(int(math.log10(max(summation)))+1)
