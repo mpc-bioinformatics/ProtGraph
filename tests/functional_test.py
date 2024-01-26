@@ -33,12 +33,20 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-fm", "nPePtErm:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_fm_none_cterm(self):
-        args = protgraph.parse_args(["-ft", "none", "-fm", "CtERM:57.021464"] + self.procs_num + self.example_files)
+    def test_fm_none_cpepterm(self):
+        args = protgraph.parse_args(["-ft", "none", "-fm", "CPePtERM:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_vm_cterm(self):
-        args = protgraph.parse_args(["-vm", "ctErm:57.021464"] + self.procs_num + self.example_files)
+    def test_fm_none_cprotterm(self):
+        args = protgraph.parse_args(["-ft", "none", "-fm", "CPRotERM:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm_cpepterm(self):
+        args = protgraph.parse_args(["-vm", "cPEPtErm:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm_cproterm(self):
+        args = protgraph.parse_args(["-vm", "cprotErm:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
     def test_vm_none_npepterm(self):
@@ -57,9 +65,18 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-vm", "nPRotErm:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-    def test_vm_none_cterm(self):
-        args = protgraph.parse_args(["-ft", "none", "-vm", "CtERM:57.021464"] + self.procs_num + self.example_files)
+    def test_vm_npepterm(self):
+        args = protgraph.parse_args(["-vm", "nPePtErm:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
+
+    def test_vm_none_cpepterm(self):
+        args = protgraph.parse_args(["-ft", "none", "-vm", "CprotERM:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_vm_none_cproterm(self):
+        args = protgraph.parse_args(["-ft", "none", "-vm", "CpeptERM:57.021464"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
 
     def test_none(self):
         args = protgraph.parse_args(["-ft", "NoNE"] + self.procs_num + self.example_files)
