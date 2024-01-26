@@ -77,7 +77,6 @@ class FunctionalTest(unittest.TestCase):
         args = protgraph.parse_args(["-ft", "none", "-vm", "CpeptERM:57.021464"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
 
-
     def test_none(self):
         args = protgraph.parse_args(["-ft", "NoNE"] + self.procs_num + self.example_files)
         protgraph.prot_graph(**args)
