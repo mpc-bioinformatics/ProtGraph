@@ -53,7 +53,7 @@ def _append_feature_in_edge(attribute, edge, start_pos, end_pos, mod_type, amino
     if attribute not in edge.attributes() or edge[attribute] is None:
         edge[attribute] = [_create_feature(start_pos, end_pos, mod_type, amino_acid, delta)]
     else:
-        edge[attribute].append([_create_feature(start_pos, end_pos, mod_type, amino_acid, delta)])
+        edge[attribute].append(_create_feature(start_pos, end_pos, mod_type, amino_acid, delta))
 
 
 def _apply_fixmod(graph_entry, fix_mods, mass_factor):
