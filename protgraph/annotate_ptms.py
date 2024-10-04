@@ -43,7 +43,7 @@ def _flatten_list(double_list: list):
 def _create_feature(start_pos, end_pos, mod_type, amino_acid, delta):
     ''' A wrapper to return a VARMOD or FIXMOD feature '''
     return FeatureTable(
-        location=FeatureLocation(start_pos, end_pos), type=mod_type, strand=None, id=None,
+        location=FeatureLocation(start_pos, end_pos), type=mod_type, id=None,
         qualifiers=dict(note="{}:{}".format(amino_acid, delta))
     )
 
@@ -193,7 +193,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                 for in_edge in node.in_edges():
                     for delta_idx, delta in enumerate(deltas):
                         edges_to_add.append((in_edge.source, offset + len(nodes_to_clone)*delta_idx + vc))
-                        qualifier_info.append(_create_feature(spos, epos, "VARMOD", aa, delta))
+                        qualifier_info.append([_create_feature(spos, epos, "VARMOD", aa, delta)])
 
                         if "cleaved" in graph_entry.es[0].attributes():
                             cleaved_info.append(in_edge["cleaved"])
@@ -264,7 +264,7 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
                     if filter_ingoing_edges(in_edge.source_vertex["position"]):
                         for delta_idx, delta in enumerate(deltas):
                             edges_to_add.append((in_edge.source, offset + len(nodes_to_clone)*delta_idx + vc))
-                            qualifier_info.append(_create_feature(spos, epos, "VARMOD", aa, delta))
+                            qualifier_info.append([_create_feature(spos, epos, "VARMOD", aa, delta)])
 
                             if "cleaved" in graph_entry.es[0].attributes():
                                 cleaved_info.append(in_edge["cleaved"])
@@ -368,9 +368,9 @@ def _apply_varmod(graph_entry, var_mods, mass_factor):
         for e in end_node.in_edges():
             for offset in range(len(deltas)):
                 edges_to_add.append((e.source, vc + offset))
-                qualifier_info.append(
+                qualifier_info.append([
                     _create_feature(end_node["position"], end_node["position"]+1, "VARMOD", "CPEPTERM", delta)
-                )
+                ])
                 if "cleaved" in graph_entry.es[0].attributes():
                     cleaved_info.append(e["cleaved"])
 
