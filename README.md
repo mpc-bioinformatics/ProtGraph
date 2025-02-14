@@ -6,7 +6,7 @@
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/protgraph/README.html)
 ![Conda](https://img.shields.io/conda/dn/bioconda/protgraph?label=BioConda%20-%20Downloads)
 
-![Static Badge](https://img.shields.io/badge/publication-10.1093%2Fbib%2Fbbae671-blue?link=https%3A%2F%2Facademic.oup.com%2Fbib%2Farticle%2F26%2F1%2Fbbae671%2F7942791) 
+[![Static Badge](https://img.shields.io/badge/publication-10.1093%2Fbib%2Fbbae671-blue?link=https%3A%2F%2Facademic.oup.com%2Fbib%2Farticle%2F26%2F1%2Fbbae671%2F7942791)](https://doi.org/10.1093/bib/bbae671)
 
 ## Summary
 
