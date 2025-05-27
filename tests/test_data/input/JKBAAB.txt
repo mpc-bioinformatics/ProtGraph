@@ -1,5 +1,5 @@
-ID   MY_CUSTOM_PROTEIN             Reviewed;         1 AA.
-AC   JKBAAA   
+ID   MY_CUSTOM_PROTEIN             Reviewed;         3 AA.
+AC   JKBAAB    
 DT   03-MAY-2011, integrated into UniProtKB/TrEMBL.
 DT   22-NOV-2017, sequence version 2.
 DT   02-DEC-2020, entry version 69.
@@ -106,6 +106,6 @@ KW   Phosphoprotein {ECO:0000256|HAMAP-Rule:MF_03009};
 KW   Protein biosynthesis {ECO:0000256|HAMAP-Rule:MF_03009};
 KW   Proteomics identification {ECO:0000213|PeptideAtlas:F1SN05};
 KW   Reference proteome {ECO:0000313|Proteomes:UP000008227}.
-SQ   SEQUENCE   1 AA;  988 MW;  XXXXXXXXXXXXXXXX CRC64;
-     A
+SQ   SEQUENCE   3 AA;  988 MW;  XXXXXXXXXXXXXXXX CRC64;
+     ABC
 //
