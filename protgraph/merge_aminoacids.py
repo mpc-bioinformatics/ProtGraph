@@ -132,13 +132,24 @@ def merge_aminoacids(graph_entry):
         else:
             m_qualifiers = None
 
+        if "isoforms" in sorted_nodes_attrs[0]:
+            m_isoforms = [
+                y
+                for x in sorted_edges
+                if x.attributes().get("isoforms") is not None
+                for y in (x.attributes()["isoforms"] if isinstance(x.attributes()["isoforms"], list) else [x.attributes()["isoforms"]])
+            ]
+        else:
+            m_isoforms = None
+        
+
         # Generate new node/edge dict attrs
         # Here we set all available! (So this may need to be appended for new attrs)
         new_node_attrs = dict(
             accession=m_accession, isoform_accession=m_isoform_accession, position=m_position,
             isoform_position=m_isoform_position, aminoacid=m_aminoacid, delta_mass=m_delta_mass
         )
-        new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers)
+        new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers, isoforms=m_isoforms)
 
         # Save merged information back to list
         merged_nodes.append(
@@ -212,6 +223,8 @@ def merge_aminoacids(graph_entry):
     graph_entry.add_edges([x[0] for x in new_edges_with_attrs])
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "qualifiers")
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "cleaved")
+    _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "isoforms")
+
 
     #####################################
     # 3. remove removable edges (then removable nodes) at once
@@ -235,6 +248,8 @@ def _get_edge_attrs(edge_attrs, concat_qualifiers):
 
     # add here the qualifiers afterwards from merged supernodes
     if concat_qualifiers is not None:
+        print("sheeessh", attrs["qualifiers"], type(attrs["qualifiers"]))
+        print("biiiinggg", concat_qualifiers, type(concat_qualifiers))
         attrs["qualifiers"] += concat_qualifiers
 
     for key in edge_attrs.keys():

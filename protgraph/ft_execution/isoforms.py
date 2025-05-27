@@ -2,22 +2,7 @@ from protgraph.ft_execution import _get_qualifiers, get_content
 from protgraph.unexpected_exception import UnexpectedException
 
 
-def execute_variant(graph, variant_feature):
-    """ Wrapper for VARIANT """
-    _execute_generic_feature(graph, variant_feature, "(")
-
-
-def execute_mutagen(graph, mutagen_feature):
-    """ Wrapper for MUTAGEN """
-    _execute_generic_feature(graph, mutagen_feature, ":")
-
-
-def execute_conflict(graph, conflict_feature):
-    """ Wrapper for CONFLICT """
-    _execute_generic_feature(graph, conflict_feature, "(")
-
-
-def _execute_generic_feature(graph, generic_feature, beginning):
+def execute_isoform(graph, generic_feature, beginning="("):
     """
     This function adds vertices and edges depending on the feature variant.
     Effectively, the variant information get executed. This method can skip
@@ -63,11 +48,6 @@ def _execute_generic_feature(graph, generic_feature, beginning):
     # Assign attributes
     graph.es[cur_edges:]["qualifiers"] = qualifiers_vals
     graph.es[cur_edges:]["isoforms"] = isoforms_vals
-    #graph.es[cur_edges:]["qualifiers"] = [x[1] for x in edge_list]
-    #print("Hallo", edge_list[0][1][0].type)
-    #graph.es[cur_edges:]["qualifiers"] = [edge_list[0][1][0].type]
-    #graph.es[cur_edges:]["type"] = [edge_list[0][1][0].type]
-
 
 def _get_vertices_before_after(graph, generic_feature):
     """ TODO DESC """
@@ -117,8 +97,10 @@ def _append_edge_list_chain(
                 y_idcs.append(vertex.index)
 
             # Add edges between them (if needed)
+            cur_edges = graph.ecount()
             for idx, n in enumerate(y_idcs[:-1]):
                 graph.add_edges([(n, y_idcs[idx + 1])])
+            #TODO: use cur edges like in the function above, create a list of the ingoing isofrom attributes with  the help of the loop under this.
 
             # Get the first and last node index
             first_node, last_node = y_idcs[0], y_idcs[-1]
@@ -247,3 +229,4 @@ def _combine_vertices(list_a, list_b):
     a_s = [x[1]["inn"] if "inn" in x[1] else [] for x in k]
     b_s = [x[1]["out"] if "out" in x[1] else [] for x in k]
     return a_s, b_s
+

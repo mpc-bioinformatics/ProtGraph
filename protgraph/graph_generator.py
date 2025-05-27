@@ -15,6 +15,7 @@ from protgraph.ft_execution.generic_cleaved_peptide import (execute_chain,
                                                             execute_peptide,
                                                             execute_propeptide)
 from protgraph.ft_execution.init_met import execute_init_met
+from protgraph.ft_execution.isoforms import execute_isoform
 from protgraph.ft_execution.signal import execute_signal
 from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
                                             execute_var_seq)
@@ -44,6 +45,8 @@ def _generate_canonical_graph(sequence: str, acc: str):
     graph.vs["position"] = list(range(len(sequence) + 2))  # Set position of aa on every node!
     graph.vs["accession"] = [acc, *[acc] * len(sequence), acc]  # Set accession on every node!
 
+    graph.es["isoforms"] = ["hallo", *["sheesh"] * len(sequence)]
+
     return graph
 
 
@@ -56,6 +59,7 @@ def _sort_entry_features(entry):
         sorted_features[f.type].append(f)
 
     # Return the dictionary
+    print("Sorted:", sorted_features)
     return sorted_features
 
 
@@ -99,7 +103,8 @@ def _include_ft_information(entry, graph, ft_dict, entry_dict):
         # Get isoform information of entry as a dict
         isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
         entry_dict["num_var_seq"] = num_of_isoforms
-        execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
+        _include_spefic_ft(graph, "VAR_SEQ", execute_isoform, sorted_features, ft_dict)
+        #execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
 
     # Execute the other features tables, per feature
     for (feature, method, entry_dict_key) in FT_SINGLE_EXECUTION:
@@ -139,6 +144,9 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
 
             # Parse entry in graph generation process, so that more work is done in the consumer
             entry = SwissProt.read(io.BytesIO(io_entry))
+            print("En0try", entry)
+            print("Typ vom Entry", type(entry))
+            print("Liste:", entry.accessions)
 
             if kwargs["exclude_accessions"] and entry.accessions[0] in kwargs["exclude_accessions"]:
                 # This effectively skips an entry at the cost to check whether to skip in EACH entry!
