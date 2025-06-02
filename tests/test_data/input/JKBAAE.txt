@@ -107,7 +107,7 @@ KW   Protein biosynthesis {ECO:0000256|HAMAP-Rule:MF_03009};
 KW   Proteomics identification {ECO:0000213|PeptideAtlas:F1SN05};
 KW   Reference proteome {ECO:0000313|Proteomes:UP000008227}.
 FT   CONFLICT        29
-FT                   /note="E -> G (in Ref. 2; BAA12564)"
+FT                   /note="B -> O (in Ref. 2; BAA12564)"
 FT                   /evidence="Imadeitup"
 SQ   SEQUENCE   3 AA;  988 MW;  XXXXXXXXXXXXXXXX CRC64;
      ABC
