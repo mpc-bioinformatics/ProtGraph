@@ -8,7 +8,9 @@ import protgraph
 class FunctionalTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.test_cases_base = os.path.join(os.path.dirname(__file__), "data")
+        base_dir = os.path.dirname(__file__)
+        cls.input_dir = os.path.join(base_dir, "data", "input")
+        cls.expected_dir = os.path.join(base_dir, "data", "expected")
         cls.output_file = "output.graphml"
         cls.procs_num = ["-n", "1"]
 
@@ -23,25 +25,61 @@ class FunctionalTest(unittest.TestCase):
                 "name": "Canonical-Merge",
                 "input_files": ["JKBAAB.txt"],
                 "expected": "expected_JKBAAB.graphml",
-                "extra_args": ["-fm", "C:57.021464"],
+                "extra_args": ["-egraphml"],
             },
             {
                 "name": "Variant",
-                "input_files": ["e_coli.dat", "p53_human.txt"],
-                "expected": "expected_fm_none.graphml",
-                "extra_args": ["-ft", "none", "-fm", "c:57.021464"],
+                "input_files": ["JKBAAC.txt"],
+                "expected": "expected_JKBAAC.graphml",
+                "extra_args": ["-egraphml"],
             },
             {
                 "name": "Mutation",
-                "input_files": ["e_coli.dat", "p53_human.txt"],
+                "input_files": ["JKBAAD.txt"],
                 "expected": "expected_fm_npepterm.graphml",
-                "extra_args": ["-fm", "nPePtErm:57.021464"],
+                "extra_args": ["-egraphml"],
             },
             {
-                "name": "Mutation",
-                "input_files": ["e_coli.dat", "p53_human.txt"],
+                "name": "Conflict",
+                "input_files": ["JKBAAE.txt"],
                 "expected": "expected_fm_npepterm.graphml",
-                "extra_args": ["-fm", "nPePtErm:57.021464"],
+                "extra_args": ["-egraphml"],
+            },
+            {
+                "name": "Isoform",
+                "input_files": ["JKBAIA.txt"],
+                "expected": "expected_fm_npepterm.graphml",
+                "extra_args": ["-egraphml"],
+            },
+            {
+                "name": "Isoform-Canonical-Merge",
+                "input_files": ["JKBAIB.txt"],
+                "expected": "expected_fm_npepterm.graphml",
+                "extra_args": ["-egraphml"],
+            },
+            {
+                "name": "Shared-VARSEQ",
+                "input_files": ["JKBAIC.txt"],
+                "expected": "expected_fm_npepterm.graphml",
+                "extra_args": ["-egraphml"],
+            },
+            {
+                "name": "Isoform-into-Variant",
+                "input_files": ["JKBAID.txt"],
+                "expected": "expected_fm_npepterm.graphml",
+                "extra_args": ["-egraphml"],
+            },
+            {
+                "name": "Partially-Shared-VARSEQs",
+                "input_files": ["JKBAIE.txt"],
+                "expected": "expected_fm_npepterm.graphml",
+                "extra_args": ["-egraphml"],
+            },
+            {
+                "name": "Isoform-and-Variant-Simultaneous",
+                "input_files": ["JKBAIF.txt"],
+                "expected": "expected_fm_npepterm.graphml",
+                "extra_args": ["-egraphml"],
             },
         ]
 
@@ -50,8 +88,8 @@ class FunctionalTest(unittest.TestCase):
             os.remove(self.output_file)
 
     def run_test_case(self, case):
-        input_paths = [os.path.join(self.test_cases_base, fname) for fname in case["input_files"]]
-        expected_path = os.path.join(self.test_cases_base, case["expected"])
+        input_paths = [os.path.join(self.input_dir, fname) for fname in case["input_files"]]
+        expected_path = os.path.join(self.expected_dir, case["expected_file"])
 
         args = protgraph.parse_args(case["extra_args"] + self.procs_num + input_paths)
         protgraph.prot_graph(**args)
