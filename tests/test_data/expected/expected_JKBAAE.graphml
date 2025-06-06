@@ -59,6 +59,7 @@
       <data key="e_isoforms">Canonical</data>
       <data key="e_generic">CONFLICT</data>
     </edge>
+    <edge source="n5" target="n3">
       <data key="e_isoforms">Canonical</data>
       <data key="e_generic">CONFLICT</data>
     </edge>
