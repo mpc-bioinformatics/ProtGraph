@@ -25,7 +25,7 @@ from protgraph.merge_aminoacids import merge_aminoacids
 from protgraph.verify_graphs import verify_graph
 
 
-def _generate_canonical_graph(sequence: str, acc: str):
+def _generate_canonical_graph(sequence: str, acc: str, isoforms: dict, use_isoforms: bool):
     """
     Generates the canonical directed graph from a sequence.
     This simply generates a chain of nodes and edges and sets
@@ -45,7 +45,13 @@ def _generate_canonical_graph(sequence: str, acc: str):
     graph.vs["position"] = list(range(len(sequence) + 2))  # Set position of aa on every node!
     graph.vs["accession"] = [acc, *[acc] * len(sequence), acc]  # Set accession on every node!
 
-    graph.es["isoforms"] = ["hallo", *["sheesh"] * len(sequence)]
+    all_isoforms = "Canonical"
+    if len(isoforms) > 1 and use_isoforms:
+        for isoform in list(isoforms.values())[1:]:
+            all_isoforms + ", " + (isoform[0])
+        
+
+    graph.es["isoforms"] = [all_isoforms, *[all_isoforms] * len(sequence)]
 
     return graph
 
@@ -86,7 +92,7 @@ FT_SINGLE_EXECUTION = [
 ]
 
 
-def _include_ft_information(entry, graph, ft_dict, entry_dict):
+def _include_ft_information(entry, graph, ft_dict, entry_dict, num_of_isoforms):
     """
     Apply feature (first isoform, then others as specified in order) on the graph.
 
@@ -100,8 +106,6 @@ def _include_ft_information(entry, graph, ft_dict, entry_dict):
     if "VAR_SEQ" in ft_dict:
         entry_dict["num_var_seq"] = 0
     if "VAR_SEQ" in sorted_features and "VAR_SEQ" in ft_dict:
-        # Get isoform information of entry as a dict
-        isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
         entry_dict["num_var_seq"] = num_of_isoforms
         _include_spefic_ft(graph, "VAR_SEQ", execute_isoform, sorted_features, ft_dict)
         #execute_var_seq(isoforms, graph, entry.sequence, sorted_features["VAR_SEQ"], entry.accessions[0])
@@ -158,12 +162,14 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             # Beginning of Graph-Generation
             # We also collect interesting information here!
 
+            isoforms, num_of_isoforms = _get_isoforms_of_entry(entry.comments, entry.accessions[0])
+
             # Generate canonical graph (initialization of the graph)
-            graph = _generate_canonical_graph(entry.sequence, entry.accessions[0])
+            graph = _generate_canonical_graph(entry.sequence, entry.accessions[0], isoforms, ft_dict["VAR_SEQ"])
 
             # FT parsing and appending of nodes and edges into the graph
             # The amount of isoforms, etc.. can be retrieved on the fly
-            _include_ft_information(entry, graph, ft_dict, entry_dict)
+            _include_ft_information(entry, graph, ft_dict, entry_dict, num_of_isoforms)
 
             # Replace Amino Acids based on user defined rules: E.G.: "X -> A,B,C"
             replace_aa(graph, kwargs["replace_aa"])
