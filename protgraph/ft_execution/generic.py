@@ -63,6 +63,9 @@ def _execute_generic_feature(graph, generic_feature, beginning):
     # Assign attributes
     graph.es[cur_edges:]["qualifiers"] = qualifiers_vals
     graph.es[cur_edges:]["isoforms"] = isoforms_vals
+
+    number_new_edges = graph.ecount() - cur_edges
+    graph.es[cur_edges:]["generic"] = [*[generic_feature.type] * number_new_edges]
     #graph.es[cur_edges:]["qualifiers"] = [x[1] for x in edge_list]
     #print("Hallo", edge_list[0][1][0].type)
     #graph.es[cur_edges:]["qualifiers"] = [edge_list[0][1][0].type]
