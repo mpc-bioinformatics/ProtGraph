@@ -155,6 +155,16 @@ def merge_aminoacids(graph_entry):
             ]
         else:
             m_isoforms = None
+
+        if "generic" in sorted_nodes_attrs[0]:
+            m_generic = [
+                y
+                for x in sorted_edges
+                if x.attributes().get("generic") is not None
+                for y in (x.attributes()["generic"] if isinstance(x.attributes()["generic"], list) else [x.attributes()["generic"]])
+            ]
+        else:
+            m_generic = None
         
 
         # Generate new node/edge dict attrs
@@ -163,7 +173,7 @@ def merge_aminoacids(graph_entry):
             accession=m_accession, isoform_accession=m_isoform_accession, position=m_position,
             isoform_position=m_isoform_position, aminoacid=m_aminoacid, delta_mass=m_delta_mass
         )
-        new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers, isoforms=m_isoforms)
+        new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers, isoforms=m_isoforms, generic=m_generic)
 
         # Save merged information back to list
         merged_nodes.append(
@@ -238,6 +248,7 @@ def merge_aminoacids(graph_entry):
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "qualifiers")
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "cleaved")
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "isoforms")
+    _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "generic")
 
 
     #####################################
