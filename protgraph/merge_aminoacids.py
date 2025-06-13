@@ -31,24 +31,29 @@ def find_chains(graph_entry):
     """
     [__start_node__] = graph_entry.vs.select(aminoacid="__start__")
 
-    # Sort all nodes into 3 possible bins
+    # Sort all nodes into 4 possible bins
     single_nodes = set()
     single_out = set()
     single_in = set()
+    branching_nodes = set()
     for idx, (a, b) in enumerate(zip(graph_entry.vs.indegree(), graph_entry.vs.outdegree())):
         if a == 1 and b == 1:
             single_nodes.add(idx)  # case single
-        if a == 1 and b > 1:
-            single_in.add(idx)  # case one in but multiple out
+        if b > 1:
+            branching_nodes.add(idx)
+            if a == 1:
+                single_in.add(idx)  # case one in but multiple out
         if a > 1 and b == 1:
             single_out.add(idx)  # case one out but multiple in
 
+            
+            
+
     # save all chains in this list
     complete_chain = []
-    # CASE 0½: chain starts right after a branching source (in=1, out>1)
-    # to prevent errors since single_in can change during iteration.
-    for si in single_in.copy():
-        for succ in graph_entry.vs[si].neighbors(mode="OUT"):
+    # CASE 0½: chain starts right after a branching source (out>1)
+    for branching_node in branching_nodes:
+        for succ in graph_entry.vs[branching_node].neighbors(mode="OUT"):
             if succ.index not in single_in:
                 c = [succ.index]          # start of the chain
                 next_node = graph_entry.vs[succ.index].neighbors(mode="OUT")[0].index
