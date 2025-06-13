@@ -9,6 +9,16 @@ def get_content(text, beginning="(", delimiter="->"):
     y_s = xy[1].strip().replace(" ", "")
     return y_s
 
+def get_isoforms(text):
+    isoforms = text[
+        text.index("(") + 1 + 3: text.rfind(")")  # +3 to remove "in "
+    ]
+    isoforms = isoforms.replace("isoform ", "").replace(" and ", ", ")
+    output_isoforms = []
+    for isoform in isoforms.split(", "):
+        isoform = isoform.strip()
+        output_isoforms.append(", Isoform " + isoform)
+    return output_isoforms
 
 def _get_qualifiers(edge):
     """ A simple method to retrieve qualifiers. It always returns a list """

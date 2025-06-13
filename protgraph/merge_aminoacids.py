@@ -45,6 +45,15 @@ def find_chains(graph_entry):
 
     # save all chains in this list
     complete_chain = []
+    # CASE 0½: chain starts right after a branching source (in=1, out>1)
+    # to prevent errors since single_in can change during iteration.
+    for si in single_in.copy():
+        for succ in graph_entry.vs[si].neighbors(mode="OUT"):
+            if succ.index not in single_in:
+                c = [succ.index]          # start of the chain
+                next_node = graph_entry.vs[succ.index].neighbors(mode="OUT")[0].index
+                traverse_to_end(graph_entry, complete_chain,
+                                single_nodes, single_in, next_node, c)
 
     # CASE 1: Chain is starting with a single out node
     for so in single_out:

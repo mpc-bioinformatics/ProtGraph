@@ -8,6 +8,7 @@
   <key id="v_position" for="node" attr.name="position" attr.type="double"/>
   <key id="v_accession" for="node" attr.name="accession" attr.type="string"/>
   <key id="e_isoforms" for="edge" attr.name="isoforms" attr.type="string"/>
+  <key id="e_generic" for="edge" attr.name="generic" attr.type="string"/>
   <graph id="G" edgedefault="directed">
     <node id="n0">
       <data key="v_aminoacid">__start__</data>
@@ -35,11 +36,11 @@
       <data key="v_accession">JKBAID</data>
     </node>
     <node id="n5">
-      <data key="v_aminoacid">XYZ</data>
+      <data key="v_aminoacid">V</data>
       <data key="v_accession">JKBAID</data>
     </node>
     <node id="n6">
-      <data key="v_aminoacid">V</data>
+      <data key="v_aminoacid">XYZ</data>
       <data key="v_accession">JKBAID</data>
     </node>
     <edge source="n0" target="n1">
@@ -58,23 +59,23 @@
       <data key="e_isoforms">Canonical, Isoform 2</data>
       <data key="e_generic">None</data>
     </edge>
-    <edge source="n5" target="n3">
-      <data key="e_isoforms">Isoform 2</data>
-      <data key="e_generic">None</data>
-    </edge>
-    <edge source="n1" target="n5">
-      <data key="e_isoforms">Isoform 2</data>
-      <data key="e_generic">None</data>
-    </edge>
-    <edge source="n6" target="n4">
-      <data key="e_isoforms">Canonical, Isoform 2</data>
-      <data key="e_generic">VARIANT</data>
-    </edge>
-    <edge source="n2" target="n6">
+    <edge source="n2" target="n5">
       <data key="e_isoforms">Canonical</data>
       <data key="e_generic">VARIANT</data>
     </edge>
-        <edge source="n5" target="n6">
+    <edge source="n5" target="n4">
+      <data key="e_isoforms">Canonical, Isoform 2</data>
+      <data key="e_generic">VARIANT</data>
+    </edge>
+    <edge source="n1" target="n6">
+      <data key="e_isoforms">Isoform 2</data>
+      <data key="e_generic">None</data>
+    </edge>
+    <edge source="n6" target="n3">
+      <data key="e_isoforms">Isoform 2</data>
+      <data key="e_generic">None</data>
+    </edge>
+    <edge source="n6" target="n5">
       <data key="e_isoforms">Isoform 2</data>
       <data key="e_generic">VARIANT</data>
     </edge>

@@ -47,8 +47,8 @@ def _generate_canonical_graph(sequence: str, acc: str, isoforms: dict, use_isofo
 
     all_isoforms = "Canonical"
     if len(isoforms) > 1 and use_isoforms:
-        for isoform in list(isoforms.values())[1:]:
-            all_isoforms + ", " + (isoform[0])
+        for isoform in list(isoforms.keys())[1:]:
+            all_isoforms = all_isoforms + ", Isoform " + isoform
         
 
     graph.es["isoforms"] = [all_isoforms, *[all_isoforms] * len(sequence)]
