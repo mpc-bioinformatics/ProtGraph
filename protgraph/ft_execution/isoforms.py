@@ -45,7 +45,7 @@ def execute_isoform(graph, generic_feature, beginning="("):
     edge_list = []  # Here we append all edges, which should be added at the end
     if text.lower().startswith("missing"):
         _append_edge_list_missing(
-            graph, generic_feature, edge_list, vertices_before, vertices_after
+            graph, text,generic_feature, edge_list, vertices_before, vertices_after
         )
     else:
         _append_edge_list_chain(
@@ -163,12 +163,15 @@ def _append_edge_list_chain(
                     edge_list.append(((last_node, aa_edge_out.target), edge_attrs))
 
 
-def _append_edge_list_missing(graph, generic_feature, edge_list, v_before, v_after):
+def _append_edge_list_missing(graph, text, generic_feature, edge_list, v_before, v_after):
     """ TODO DESC! """
     [__start_node__] = graph.vs.select(aminoacid="__start__")
     [__stop_node__] = graph.vs.select(aminoacid="__end__")
     # A sequence is missing! Just append an edge and its information
 
+    affected_isoforms = get_isoforms(text)
+    affected_isoforms = "".join(affected_isoforms)
+    affected_isoforms = affected_isoforms.replace(", ", "", 1)
     # TODO is such a combination enough?
     # Here we iterate over all possiblites over two pairs of nodes and its edges
     for aa_in_list, aa_out_list in zip(v_before, v_after):
@@ -180,10 +183,14 @@ def _append_edge_list_missing(graph, generic_feature, edge_list, v_before, v_aft
                         # for that edge (At least the generic feature)
                         # Only if they not point to start_end directly! (#special case e.g. in P49782)
                         if aa_edge_in.source != __start_node__.index or aa_edge_out.target != __stop_node__.index:
+                            qualifiers = [*_get_qualifiers(aa_edge_in), generic_feature]
+                            isoforms = affected_isoforms
+
+                            edge_attrs = {"qualifiers": qualifiers, "isoforms": isoforms}
                             edge_list.append(
                                 (
                                     (aa_edge_in.source, aa_edge_out.target),
-                                    [*_get_qualifiers(aa_edge_in), generic_feature],
+                                    edge_attrs,
                                 )
                             )
 

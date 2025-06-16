@@ -162,10 +162,14 @@ def _append_edge_list_missing(graph, generic_feature, edge_list, v_before, v_aft
                         # for that edge (At least the generic feature)
                         # Only if they not point to start_end directly! (#special case e.g. in P49782)
                         if aa_edge_in.source != __start_node__.index or aa_edge_out.target != __stop_node__.index:
+                            qualifiers = [*_get_qualifiers(aa_edge_in), generic_feature]
+                            isoforms = aa_edge_in["isoforms"] if "isoforms" in aa_edge_in.attributes() else None
+
+                            edge_attrs = {"qualifiers": qualifiers, "isoforms": isoforms}
                             edge_list.append(
                                 (
                                     (aa_edge_in.source, aa_edge_out.target),
-                                    [*_get_qualifiers(aa_edge_in), generic_feature],
+                                    edge_attrs,
                                 )
                             )
 

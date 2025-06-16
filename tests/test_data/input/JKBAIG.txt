@@ -1,5 +1,5 @@
 ID   MY_CUSTOM_PROTEIN             Reviewed;         3 AA.
-AC   JKBAIA    
+AC   JKBAIG    
 DT   03-MAY-2011, integrated into UniProtKB/TrEMBL.
 DT   22-NOV-2017, sequence version 2.
 DT   02-DEC-2020, entry version 69.
@@ -68,9 +68,9 @@ CC       feature annotation. {ECO:0000256|HAMAP-Rule:MF_03009}.
 CC   -!- ALTERNATIVE PRODUCTS:
 CC       Event=Alternative promoter usage, Alternative splicing; Named isoforms=2;
 CC       Name=1; Synonyms=p53, p53alpha;
-CC         IsoId=JKBAIA-1; Sequence=Displayed;
+CC         IsoId=JKBAIG-1; Sequence=Displayed;
 CC       Name=2; Synonyms=I9RET, p53beta;
-CC         IsoId=JKBAIA-2; Sequence=VSP_006535, VSP_006536;
+CC         IsoId=JKBAIG-2; Sequence=VSP_006535, VSP_006536;
 CC   ---------------------------------------------------------------------------
 CC   Copyrighted by the UniProt Consortium, see https://www.uniprot.org/terms
 CC   Distributed under the Creative Commons Attribution (CC BY 4.0) License
@@ -80,8 +80,8 @@ DR   STRING; 9823.ENSSSCP00000005055; -.
 DR   PaxDb; F1SN05; -.
 DR   PeptideAtlas; F1SN05; -.
 DR   PRIDE; F1SN05; -.
-DR   ProteomicsDB; 51728; -. [JKBAIA-1]
-DR   ProteomicsDB; 51729; -. [JKBAIA-2]
+DR   ProteomicsDB; 51728; -. [JKBAIG-1]
+DR   ProteomicsDB; 51729; -. [JKBAIG-2]
 DR   Ensembl; ENSSSCT00000005181; ENSSSCP00000005055; ENSSSCG00000004691.
 DR   VGNC; VGNC:87621; EIF3J.
 DR   eggNOG; KOG4813; Eukaryota.
