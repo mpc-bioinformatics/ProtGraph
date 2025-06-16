@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns
+         http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+<!-- Created by igraph -->
+  <key id="v_aminoacid" for="node" attr.name="aminoacid" attr.type="string"/>
+  <key id="v_position" for="node" attr.name="position" attr.type="double"/>
+  <key id="v_accession" for="node" attr.name="accession" attr.type="string"/>
+  <key id="e_isoforms" for="edge" attr.name="isoforms" attr.type="string"/>
+  <key id="e_generic" for="edge" attr.name="generic" attr.type="string"/>
+  <graph id="G" edgedefault="directed">
+    <node id="n0">
+      <data key="v_aminoacid">__start__</data>
+      <data key="v_position">0</data>
+      <data key="v_accession">JKBAAF</data>
+    </node>
+    <node id="n1">
+      <data key="v_aminoacid">A</data>
+      <data key="v_position">1</data>
+      <data key="v_accession">JKBAAF</data>
+    </node>
+    <node id="n2">
+      <data key="v_aminoacid">B</data>
+      <data key="v_position">2</data>
+      <data key="v_accession">JKBAAF</data>
+    </node>
+    <node id="n3">
+      <data key="v_aminoacid">C</data>
+      <data key="v_position">3</data>
+      <data key="v_accession">JKBAAF</data>
+    </node>
+    <node id="n4">
+      <data key="v_aminoacid">__end__</data>
+      <data key="v_position">4</data>
+      <data key="v_accession">JKBAAF</data>
+    </node>
+    <edge source="n0" target="n1">
+      <data key="e_isoforms">Canonical</data>
+      <data key="e_generic">None</data>
+    </edge>
+    <edge source="n1" target="n2">
+      <data key="e_isoforms">Canonical</data>
+      <data key="e_generic">None</data>
+    </edge>
+    <edge source="n2" target="n3">
+      <data key="e_isoforms">Canonical</data>
+      <data key="e_generic">None</data>
+    </edge>
+    <edge source="n3" target="n4">
+      <data key="e_isoforms">Canonical</data>
+      <data key="e_generic">None</data>
+    </edge>
+    <edge source="n1" target="n3">
+      <data key="e_isoforms">Canonical</data>
+      <data key="e_generic">VARIANT</data>
+    </edge>
+  </graph>
+</graphml>
