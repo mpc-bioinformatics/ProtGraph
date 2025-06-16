@@ -49,6 +49,12 @@ class FunctionalTest(unittest.TestCase):
                 "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip"],
             },
             {
+                "name": "Variant-Missing",
+                "input_files": ["JKBAAF.txt"],
+                "expected": "expected_JKBAAF.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip"],
+            },
+            {
                 "name": "Isoform",
                 "input_files": ["JKBAIA.txt"],
                 "expected": "expected_JKBAIA.graphml",
@@ -82,6 +88,12 @@ class FunctionalTest(unittest.TestCase):
                 "name": "Isoform-and-Variant-Simultaneous",
                 "input_files": ["JKBAIF.txt"],
                 "expected": "expected_JKBAIF.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip"],
+            },
+            {
+                "name": "Isoform-Missing",
+                "input_files": ["JKBAIG.txt"],
+                "expected": "expected_JKBAIG.graphml",
                 "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip"],
             },
         ]
