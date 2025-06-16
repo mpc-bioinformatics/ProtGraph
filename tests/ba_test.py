@@ -50,8 +50,8 @@ class FunctionalTest(unittest.TestCase):
             },
             {
                 "name": "Variant-Missing",
-                "input_files": ["JKBAAG.txt"],
-                "expected": "expected_JKBAAG.graphml",
+                "input_files": ["JKBAAF.txt"],
+                "expected": "expected_JKBAAF.graphml",
                 "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip"],
             },
             {
