@@ -124,7 +124,9 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
     kwargs["proc_id"] = proc_id
 
     # Set feature_table dict boolean table
-    ft_dict = dict()
+    ft_dict = dict(PEPTIDE=False, PROPEP=False, VARIANT=False, CHAIN=False,
+            VAR_SEQ=False, SIGNAL=False, INIT_MET=False, MUTAGEN=False, CONFLICT=False)
+    
     if kwargs["feature_table"] is None or len(kwargs["feature_table"]) == 0 or "ALL" in kwargs["feature_table"]:
         ft_dict = dict(
             PEPTIDE=True, PROPEP=True, VARIANT=True, CHAIN=True,

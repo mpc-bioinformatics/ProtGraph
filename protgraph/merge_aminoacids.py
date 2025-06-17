@@ -56,9 +56,10 @@ def find_chains(graph_entry):
         for succ in graph_entry.vs[branching_node].neighbors(mode="OUT"):
             if succ.index not in single_in:
                 c = [succ.index]          # start of the chain
-                next_node = graph_entry.vs[succ.index].neighbors(mode="OUT")[0].index
-                traverse_to_end(graph_entry, complete_chain,
-                                single_nodes, single_in, next_node, c)
+                if len(graph_entry.vs[succ.index].neighbors(mode="OUT")) == 1:
+                    next_node = graph_entry.vs[succ.index].neighbors(mode="OUT")[0].index
+                    traverse_to_end(graph_entry, complete_chain,
+                                    single_nodes, single_in, next_node, c)
 
     # CASE 1: Chain is starting with a single out node
     for so in single_out:
