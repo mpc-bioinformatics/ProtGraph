@@ -96,6 +96,41 @@ class FunctionalTest(unittest.TestCase):
                 "expected": "expected_JKBAIG.graphml",
                 "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip"],
             },
+            {
+                "name": "Canonical-Peptide",
+                "input_files": ["JKBAAA.txt"],
+                "output_file": "JKBAAA_peptide.graphml",
+                "expected": "expected_JKBAAA_peptide.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "A", "-of", "JKBAAA_peptide"],
+            },
+            {
+                "name": "Canonical-Merge-Peptide-Single-Cut",
+                "input_files": ["JKBAAB.txt"],
+                "output_file": "JKBAAB_single.graphml",
+                "expected": "expected_JKBAAB_peptide_single.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "B", "-of", "JKBAAB_single"],
+            },
+            {
+                "name": "Canonical-Merge-Peptide-Overlapping",
+                "input_files": ["JKBAAB.txt"],
+                "output_file": "JKBAAB_overlapping.graphml",
+                "expected": "expected_JKBAAB_peptide_overlapping.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "AB", "-pep", "BC", "-of", "JKBAAB_overlapping"],
+            },
+            {
+                "name": "Canonical-Merge-Peptide-Children",
+                "input_files": ["JKBAAB.txt"],
+                "output_file": "JKBAAB_children.graphml",
+                "expected": "expected_JKBAAB_peptide_children.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "B", "-pep", "ABC", "-of", "JKBAAB_children"],
+            },
+            {
+                "name": "Variant-Spanning-Peptide",
+                "input_files": ["JKBAAC.txt"],
+                "output_file": "JKBAAC_spanning.graphml",
+                "expected": "expected_JKBAAC_peptide_spanning.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "AVC", "-of", "JKBAAC_spanning"],
+            },
         ]
 
     def tearDown(self):
@@ -105,7 +140,7 @@ class FunctionalTest(unittest.TestCase):
     def run_test_case(self, case):
         input_paths = [os.path.join(self.input_dir, fname) for fname in case["input_files"]]
         expected_path = os.path.join(self.expected_dir, case["expected"])
-        output_path = os.path.join(self.output_dir, get_file_from_name(case["input_files"]))
+        output_path = os.path.join(self.output_dir, get_file_from_name(case["input_files" if not "output_file" in case.keys() else "output_file"]))
 
         args = protgraph.parse_args(case["extra_args"] + self.procs_num + input_paths)
         protgraph.prot_graph(**args)

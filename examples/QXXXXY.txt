@@ -110,6 +110,10 @@ KW   Phosphoprotein {ECO:0000256|HAMAP-Rule:MF_03009};
 KW   Protein biosynthesis {ECO:0000256|HAMAP-Rule:MF_03009};
 KW   Proteomics identification {ECO:0000213|PeptideAtlas:F1SN05};
 KW   Reference proteome {ECO:0000313|Proteomes:UP000008227}.
+FT   VARIANT         4
+FT                   /note="D -> W (in Example)"
+FT                   /evidence="EXAMPLE Variant 2"
+FT                   /id="VAR_XXXXX2"
 SQ   SEQUENCE   5 AA;  988 MW;  XXXXXXXXXXXXXXXX CRC64;
      ABCDE
 //

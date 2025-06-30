@@ -24,10 +24,10 @@ class Exporters(ContextDecorator):
         for ec in self.export_classes:
             ec.start_up(**kwargs)
 
-    def export_graph(self, prot_graph, out_queue):
+    def export_graph(self, prot_graph, out_queue, **kwargs):
         """ Mapping to export a protein graph to all exporters """
         for ec in self.export_classes:
-            ec.export(prot_graph, out_queue)
+            ec.export(prot_graph, out_queue, **kwargs)
 
     def __exit__(self, *exc):
         """ Tear down all available exporters """

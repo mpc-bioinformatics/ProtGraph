@@ -21,10 +21,11 @@ class GenericFileExporter(AExporter):
 
         self.flat = not kwargs["export_in_directories"]
 
-    def export(self, prot_graph, _):
+    def export(self, prot_graph, _, **kwargs):
         if self.flat:
             accession = prot_graph.vs["accession"][0]
-            self.export_function(prot_graph, os.path.join(self.out_folder, accession))
+            print(not kwargs["output_file"])
+            self.export_function(prot_graph, os.path.join(self.out_folder, (accession if not kwargs["output_file"] else kwargs["output_file"])))
         else:
             accession = prot_graph.vs["accession"][0]
             out_dir = os.path.join(self.out_folder, *[x for x in accession[:-1]])
