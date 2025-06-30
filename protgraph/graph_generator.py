@@ -22,6 +22,7 @@ from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
 from protgraph.graph_collapse_edges import collapse_parallel_edges
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
+from protgraph.scripts.peptide_search import add_peptides_to_graph, contains_path_string
 from protgraph.verify_graphs import verify_graph
 
 
@@ -65,7 +66,6 @@ def _sort_entry_features(entry):
         sorted_features[f.type].append(f)
 
     # Return the dictionary
-    print("Sorted:", sorted_features)
     return sorted_features
 
 
@@ -150,9 +150,6 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
 
             # Parse entry in graph generation process, so that more work is done in the consumer
             entry = SwissProt.read(io.BytesIO(io_entry))
-            print("En0try", entry)
-            print("Typ vom Entry", type(entry))
-            print("Liste:", entry.accessions)
 
             if kwargs["exclude_accessions"] and entry.accessions[0] in kwargs["exclude_accessions"]:
                 # This effectively skips an entry at the cost to check whether to skip in EACH entry!
@@ -185,10 +182,15 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             # Collapse parallel edges in a graph
             if not kwargs["no_collapsing_edges"]:
                 collapse_parallel_edges(graph)
-
+            
+            #Search for peptides and annotate matches on the graph if wanted:
+            if kwargs["search_graph"]:
+                add_peptides_to_graph(graph, kwargs["peptide"])
+            
             # Merge (summarize) graph if wanted
             if not kwargs["no_merge"]:
                 merge_aminoacids(graph)
+            
 
             # Annotate weights for edges and nodes (maybe even the smallest weight possible to get to the end node)
             annotate_weights(graph, **kwargs)
@@ -201,7 +203,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
                 verify_graph(graph)
 
             # Persist or export graphs with speicified exporters
-            graph_exporters.export_graph(graph, common_out_queue)
+            graph_exporters.export_graph(graph, common_out_queue, **kwargs)
 
             # Output statistics we gathered during processing
             if kwargs["no_description"]:

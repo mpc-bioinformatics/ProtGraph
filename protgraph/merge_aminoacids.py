@@ -1,18 +1,26 @@
-def traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c):
+def traverse_to_end(graph_entry, complete_chain, possible_nodes, single_in, current_node, c):
     # iterate as long as possible.
-    while next_node in single_nodes:
-        single_nodes.remove(next_node)
-        c.append(next_node)
-        next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+    while current_node in possible_nodes:
+        possible_nodes.remove(current_node)
+        c.append(current_node)
+        next_node = graph_entry.vs[current_node].neighbors(mode="OUT")[0].index
+        if graph_entry.vs[current_node].attributes().get("peptides") == graph_entry.vs[next_node].attributes().get("peptides"):
+            current_node = next_node
+        else:
+            # Skip chains containing only 1 element
+            if len(c) > 1:
+                complete_chain.append(c)
+            traverse_to_end(graph_entry, complete_chain, possible_nodes, single_in, next_node, [])
+            return
 
     # Special case for single in
-    if next_node in single_in:
-        single_in.remove(next_node)
-        c.append(next_node)
-        next_node = graph_entry.vs[next_node].neighbors(mode="OUT")[0].index
+    if current_node in single_in:
+        single_in.remove(current_node)
+        c.append(current_node)
+        current_node = graph_entry.vs[current_node].neighbors(mode="OUT")[0].index
 
     # Skip chains containing only 1 element
-    if len(c) != 1:
+    if len(c) > 1:
         complete_chain.append(c)
 
 
@@ -55,18 +63,20 @@ def find_chains(graph_entry):
     for branching_node in branching_nodes:
         for succ in graph_entry.vs[branching_node].neighbors(mode="OUT"):
             if succ.index not in single_in:
-                c = [succ.index]          # start of the chain
                 if len(graph_entry.vs[succ.index].neighbors(mode="OUT")) == 1:
-                    next_node = graph_entry.vs[succ.index].neighbors(mode="OUT")[0].index
+                    c = []          # start of the chain
+                    possible_nodes = single_nodes
+                    possible_nodes.add(succ.index)
                     traverse_to_end(graph_entry, complete_chain,
-                                    single_nodes, single_in, next_node, c)
-
+                                    possible_nodes, single_in, succ.index, c)
+                    
     # CASE 1: Chain is starting with a single out node
     for so in single_out:
-        c = [so]
-        next_node = graph_entry.vs[so].neighbors(mode="OUT")[0].index
+        c = []
+        possible_nodes = single_nodes
+        possible_nodes.add(so)
 
-        traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c)
+        traverse_to_end(graph_entry, complete_chain, possible_nodes, single_in, so, c)
 
     # CASE 2: it may happen that the start node is at a beginning of chain.
     # Here we do a intersection of remaining nodes in single_nodes with the
@@ -74,13 +84,12 @@ def find_chains(graph_entry):
     start_set = {x.index for x in __start_node__.neighbors(mode="OUT")}
     single_start_points = single_nodes.intersection(start_set)
     for sn in single_start_points:
-        c = [sn]
-        next_node = graph_entry.vs[sn].neighbors(mode="OUT")[0].index
-        single_nodes.remove(sn)
+        c = []
+        possible_nodes = single_nodes
+        possible_nodes.add(sn)
 
-        traverse_to_end(graph_entry, complete_chain, single_nodes, single_in, next_node, c)
+        traverse_to_end(graph_entry, complete_chain, possible_nodes, single_in, sn, c)
 
-    # return complete chain
     return complete_chain
 
 
@@ -128,6 +137,7 @@ def merge_aminoacids(graph_entry):
         m_aminoacid = "".join([x["aminoacid"] for x in sorted_nodes])  # Concat aminoacids
         m_position = sorted_nodes[0]["position"]  # Retrieve only the first position
         m_accession = _get_single_set_element(sorted_nodes, "accession")  # Get the ONLY accession
+        m_peptides = sorted_nodes[0].get("peptides")  # Peptides should be the same for all nodes per chain
         # Now the attributes in nodes, which may be present
         m_isoform_accession = _get_single_set_element(sorted_nodes, "isoform_accession")  # Get the ONLY iso_accession
         m_isoform_position = sorted_nodes[0]["isoform_position"] if "isoform_position" in sorted_nodes[0] else None
@@ -166,15 +176,25 @@ def merge_aminoacids(graph_entry):
             ]
         else:
             m_generic = None
-        
+
+        if "peptides" in sorted_nodes_attrs[0]:
+            m_peptides_edge = [
+                y
+                for x in sorted_edges
+                if x.attributes().get("peptides") is not None
+                for y in (x.attributes()["peptides"] if isinstance(x.attributes()["peptides"], list) else [x.attributes()["peptides"]])
+            ]
+        else:
+            m_peptides_edge = None
+
 
         # Generate new node/edge dict attrs
         # Here we set all available! (So this may need to be appended for new attrs)
         new_node_attrs = dict(
             accession=m_accession, isoform_accession=m_isoform_accession, position=m_position,
-            isoform_position=m_isoform_position, aminoacid=m_aminoacid, delta_mass=m_delta_mass
+            isoform_position=m_isoform_position, aminoacid=m_aminoacid, delta_mass=m_delta_mass, peptides=m_peptides
         )
-        new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers, isoforms=m_isoforms, generic=m_generic)
+        new_edge_attrs = dict(cleaved=m_cleaved, qualifiers=m_qualifiers, isoforms=m_isoforms, generic=m_generic, peptides=m_peptides_edge)
 
         # Save merged information back to list
         merged_nodes.append(
@@ -201,6 +221,7 @@ def merge_aminoacids(graph_entry):
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "position")
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "accession")
     # Then add the possibly available attributes
+    _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "peptides")
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "isoform_accession")
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "isoform_position")
     _add_node_attributes(graph_entry, merged_nodes, cur_node_count, "delta_mass")
@@ -250,6 +271,7 @@ def merge_aminoacids(graph_entry):
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "cleaved")
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "isoforms")
     _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "generic")
+    _add_edge_attributes(graph_entry, new_edges_with_attrs, e_count, "peptides")
 
 
     #####################################
@@ -274,8 +296,6 @@ def _get_edge_attrs(edge_attrs, concat_qualifiers):
 
     # add here the qualifiers afterwards from merged supernodes
     if concat_qualifiers is not None:
-        print("sheeessh", attrs["qualifiers"], type(attrs["qualifiers"]))
-        print("biiiinggg", concat_qualifiers, type(concat_qualifiers))
         attrs["qualifiers"] += concat_qualifiers
 
     for key in edge_attrs.keys():
