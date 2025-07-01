@@ -131,6 +131,34 @@ class FunctionalTest(unittest.TestCase):
                 "expected": "expected_JKBAAC_peptide_spanning.graphml",
                 "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "AVC", "-of", "JKBAAC_spanning"],
             },
+            {
+                "name": "Peptide-CSV",
+                "input_files": ["JKBAAA.txt"],
+                "output_file": "JKBAAA_csv.graphml",
+                "expected": "expected_JKBAAA.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pf", "tests/test_data/input/peptide.csv", "-of", "JKBAAA_csv"],
+            },
+            {
+                "name": "Peptide-CSV-Multiple",
+                "input_files": ["JKBAAB.txt"],
+                "output_file": "JKBAAB_csv.graphml",
+                "expected": "expected_JKBAAB_overlapping.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pf", "tests/test_data/input/multiple_peptide.csv", "-of", "JKBAAB_csv"],
+            },
+            {
+                "name": "Peptide-CSV-Isoform",
+                "input_files": ["JKBAAA.txt"],
+                "output_file": "JKBAAA_csv.graphml",
+                "expected": "expected_JKBAAA.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pf", "tests/test_data/input/peptide_isoform.csv", "-of", "JKBAAA_csv"],
+            },
+            {
+                "name": "Peptide-Intensity-CSV",
+                "input_files": ["JKBAAA.txt"],
+                "output_file": "JKBAAA_intensity_csv.graphml",
+                "expected": "expected_JKBAAA_intensity.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pf", "tests/test_data/input/peptide_intensity.csv", "-int", "-of", "JKBAAA_intensity_csv"],
+            },
         ]
 
     def tearDown(self):
