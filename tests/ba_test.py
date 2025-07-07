@@ -159,6 +159,19 @@ class FunctionalTest(unittest.TestCase):
                 "expected": "expected_JKBAAA_intensity.graphml",
                 "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pf", "tests/test_data/input/peptide_intensity.csv", "-int", "-of", "JKBAAA_intensity_csv"],
             },
+            {
+                "name": "Isoform-Spanning-Peptide",
+                "input_files": ["JKBAIA.txt"],
+                "output_file": "JKBAIA_spanning.graphml",
+                "expected": "expected_JKBAIA_peptide_spanning_isoform.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "AXYZC", "-of", "JKBAIA_spanning"],
+            },
+            {
+                "name": "Variant-into-Isoform",
+                "input_files": ["JKXXIH.txt"],
+                "expected": "expected_JKXXIH.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip"],
+            },
         ]
 
     def tearDown(self):
