@@ -22,7 +22,7 @@ from protgraph.ft_execution.var_seq import (_get_isoforms_of_entry,
 from protgraph.graph_collapse_edges import collapse_parallel_edges
 from protgraph.graph_statistics import get_statistics
 from protgraph.merge_aminoacids import merge_aminoacids
-from protgraph.scripts.peptide_search import add_peptides_to_graph, contains_path_string
+from protgraph.scripts.peptide_search import add_peptides_to_graph, contains_path_string, get_peptides
 from protgraph.verify_graphs import verify_graph
 
 
@@ -185,7 +185,8 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             
             #Search for peptides and annotate matches on the graph if wanted:
             if kwargs["search_graph"]:
-                add_peptides_to_graph(graph, kwargs["peptide"])
+                peptides, metadata = get_peptides(entry.accessions[0], **kwargs)
+                add_peptides_to_graph(graph, peptides, metadata, kwargs["intensity"])
             
             # Merge (summarize) graph if wanted
             if not kwargs["no_merge"]:

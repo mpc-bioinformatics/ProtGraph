@@ -8,6 +8,7 @@
   <key id="v_position" for="node" attr.name="position" attr.type="double"/>
   <key id="v_accession" for="node" attr.name="accession" attr.type="string"/>
   <key id="v_peptides" for="node" attr.name="peptides" attr.type="string"/>
+  <key id="v_intensity" for="node" attr.name="intensity" attr.type="string"/>
   <key id="e_isoforms" for="edge" attr.name="isoforms" attr.type="string"/>
   <graph id="G" edgedefault="directed">
     <node id="n0">
@@ -15,18 +16,21 @@
       <data key="v_position">0</data>
       <data key="v_accession">JKBAAA</data>
       <data key="v_peptides">None</data>
+      <data key="v_intensity">None</data>
     </node>
     <node id="n1">
       <data key="v_aminoacid">A</data>
       <data key="v_position">1</data>
       <data key="v_accession">JKBAAA</data>
-      <data key="v_peptides">A - 1</data>
+      <data key="v_peptides">A</data>
+      <data key="v_intensity">1</data>
     </node>
     <node id="n2">
       <data key="v_aminoacid">__end__</data>
       <data key="v_position">2</data>
       <data key="v_accession">JKBAAA</data>
       <data key="v_peptides">None</data>
+      <data key="v_intensity">None</data>
     </node>
     <edge source="n0" target="n1">
       <data key="e_isoforms">Canonical</data>

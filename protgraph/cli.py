@@ -250,6 +250,16 @@ def add_graph_generation(group):
         "--peptide", "-pep", type=str, action="append",
         help="Set the peptide to be searched in the graph"
     )
+    group.add_argument(
+        "--peptide_file", "-pf", type=check_if_file_exists,
+        help="Set a csv file with peptide and intensity information. It should have the format: Sample,Protein ID,Sequence,Intensity,PEP"
+        "Only the peptides that belong to the protein (including isoforms) from the EMBL-Entry will searched on the graph, analog to the use of multiple --peptide flags."
+        "Intensity will not be displayed automatically, use the --intensity flag for this."
+    )
+    group.add_argument(
+        "--intensity", "-int", default=False, action="store_true",
+        help="Set if the intensities from the peptide file should be dispayled on the graph."
+    )
 
 
 def add_statistics(group):

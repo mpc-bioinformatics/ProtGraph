@@ -3,3 +3,5 @@ igraph>=0.9.11,<=0.10.4
 texttable>=1.6.4
 tqdm>=4.64.1
 biopython==1.81
+pandas==1.5.3
+numpy==1.26.4 #see https://stackoverflow.com/questions/78634235/numpy-dtype-size-changed-may-indicate-binary-incompatibility-expected-96-from
