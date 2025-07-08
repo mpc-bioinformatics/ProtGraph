@@ -118,7 +118,7 @@ class FunctionalTest(unittest.TestCase):
                 "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "AB", "-pep", "BC", "-of", "JKXXAB_overlapping"],
             },
             {
-                "name": "Canonical-Merge-Peptide-Children",
+                "name": "Canonical-Merge-Peptide-Children-False",
                 "input_files": ["JKXXAB.txt"],
                 "output_file": "JKXXAB_children.graphml",
                 "expected": "expected_JKXXAB_peptide_children.graphml",
@@ -171,6 +171,13 @@ class FunctionalTest(unittest.TestCase):
                 "input_files": ["JKXXIH.txt"],
                 "expected": "expected_JKXXIH.graphml",
                 "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip"],
+            },
+            {
+                "name": "Canonical-Merge-Peptide-Children-True",
+                "input_files": ["JKXXAB.txt"],
+                "output_file": "JKXXAB_children_true.graphml",
+                "expected": "expected_JKXXAB_peptide_children_true.graphml",
+                "extra_args": ["-egraphml", "--export_output_folder", cls.output_dir, "--digestion", "skip", "-sg", "-pep", "B", "-pep", "ABC", "-of", "JKXXAB_children_true", "-mp"],
             },
         ]
 

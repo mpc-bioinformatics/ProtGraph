@@ -260,6 +260,11 @@ def add_graph_generation(group):
         "--intensity", "-int", default=False, action="store_true",
         help="Set if the intensities from the peptide file should be dispayled on the graph."
     )
+    group.add_argument(
+        "--merge_peptides", "-mp", default=False, action="store_true",
+        help="Set if only the longest peptide sequence should be added to the peptide attribute of a node/edge when atleast one other peptide sequence starts and ends inside (including the first/last peptide) the displayed peptide sequence. This means that the longest peptide sequence will be a singular node rather than cut when a sub-sequence would start/end. E. g. given ABCD and BC would lead to a node ABCD rather than A-BC-D."
+        ""
+    )
 
 
 def add_statistics(group):

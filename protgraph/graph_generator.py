@@ -186,7 +186,7 @@ def generate_graph_consumer(entry_queue, graph_queue, common_out_queue, proc_id,
             #Search for peptides and annotate matches on the graph if wanted:
             if kwargs["search_graph"]:
                 peptides, metadata = get_peptides(entry.accessions[0], **kwargs)
-                add_peptides_to_graph(graph, peptides, metadata, kwargs["intensity"])
+                add_peptides_to_graph(graph, peptides, metadata, kwargs["intensity"], kwargs["merge_peptides"])
             
             # Merge (summarize) graph if wanted
             if not kwargs["no_merge"]:

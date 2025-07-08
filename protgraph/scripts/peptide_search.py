@@ -88,7 +88,7 @@ def get_peptides(protein_id, **kwargs):
         peptides = kwargs["peptide"]
     return peptides, metadata
 
-def add_peptides_to_graph(graph, peptides, metadata, show_intensity):
+def add_peptides_to_graph(graph, peptides, metadata, show_intensity, merge_peptides):
     node_peptides = dict()
     edge_peptides = dict()
     for peptide in peptides:
@@ -127,6 +127,13 @@ def add_peptides_to_graph(graph, peptides, metadata, show_intensity):
     for key, value in node_peptides.items():
         peptides = list(value)
         peptides.sort()
+        if merge_peptides:
+            result = []
+            peptides.sort(key = len)#sort ascending by length of the peptide to allow the intelligent skip with i>j in the loop
+            for i, peptide in enumerate(peptides):  #check for each peptide i if there is a longer peptide j which fully contains peptide i
+                if not any(peptide in possible_super_peptide for j, possible_super_peptide in enumerate(peptides) if i < j):
+                    result.append(peptide)
+            peptides = result
         peptide_string = ", ".join(peptides)
         graph.vs[key]["peptides"] = peptide_string
         if show_intensity:
