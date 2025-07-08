@@ -1,5 +1,5 @@
 ID   MY_CUSTOM_PROTEIN             Reviewed;         3 AA.
-AC   JKXXIH    
+AC   JKXXID    
 DT   03-MAY-2011, integrated into UniProtKB/TrEMBL.
 DT   22-NOV-2017, sequence version 2.
 DT   02-DEC-2020, entry version 69.
@@ -120,8 +120,8 @@ FT   VAR_SEQ         2
 FT                   /note="B -> XYZ (in isoform 2)"
 FT                   /evidence="Imadeitup"
 FT                   /id="Imadeitup"
-FT   VARIANT         1
-FT                   /note="A -> V (in Example)"
+FT   VARIANT         3
+FT                   /note="C -> V (in Example)"
 FT                   /evidence="EXAMPLE Variant 1"
 FT                   /id="VAR_XXXXX1"
 SQ   SEQUENCE   3 AA;  988 MW;  XXXXXXXXXXXXXXXX CRC64;

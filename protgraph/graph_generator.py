@@ -46,10 +46,10 @@ def _generate_canonical_graph(sequence: str, acc: str, isoforms: dict, use_isofo
     graph.vs["position"] = list(range(len(sequence) + 2))  # Set position of aa on every node!
     graph.vs["accession"] = [acc, *[acc] * len(sequence), acc]  # Set accession on every node!
 
-    all_isoforms = "Canonical"
+    all_isoforms = "canonical"
     if len(isoforms) > 1 and use_isoforms:
         for isoform in list(isoforms.keys())[1:]:
-            all_isoforms = all_isoforms + ", Isoform " + isoform
+            all_isoforms = all_isoforms + ", isoform " + isoform
         
 
     graph.es["isoforms"] = [all_isoforms, *[all_isoforms] * len(sequence)]

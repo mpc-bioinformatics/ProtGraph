@@ -17,7 +17,7 @@ def get_isoforms(text):
     output_isoforms = []
     for isoform in isoforms.split(", "):
         isoform = isoform.strip()
-        output_isoforms.append(", Isoform " + isoform)
+        output_isoforms.append(", isoform " + isoform)
     return output_isoforms
 
 def _get_qualifiers(edge):
