@@ -272,22 +272,22 @@ def add_statistics(group):
     group.add_argument(
         "--calc_num_possibilities_variant", "-cnpvar", default=False, action="store_true",
         help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
-        " be calculated for the feature VARIANT. This returns a list, sorted by the number of variants (beginning at 0). "
-        "Similar to misclavages"
+        " be calculated for the feature VARIANT. This returns a list, sorted by the number of variants (beginning at 0)"
+        ". Similar to misclavages"
     )
 
     group.add_argument(
         "--calc_num_possibilities_mutagen", "-cnpmut", default=False, action="store_true",
         help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
-        " be calculated for the feature MUTAGEN. This returns a list, sorted by the number of mutagens (beginning at 0). "
-        "Similar to misclavages"
+        " be calculated for the feature MUTAGEN. This returns a list, sorted by the number of mutagens (beginning at 0)"
+        ". Similar to misclavages"
     )
 
     group.add_argument(
         "--calc_num_possibilities_conflict", "-cnpcon", default=False, action="store_true",
         help="If this is set, the number of all possible (non repeating) paths from the start to the end node will"
-        " be calculated for the feature CONFLICT. This returns a list, sorted by the number of conflicts (beginning at 0). "
-        "Similar to misclavages"
+        " be calculated for the feature CONFLICT. This returns a list, sorted by the number of conflicts (beginning at "
+        "0). Similar to misclavages"
     )
 
     # Add replace funcitonality to CLI
@@ -304,9 +304,10 @@ def add_statistics(group):
     group.add_argument(
         "--calc_num_possibilities_or_count", "-cnp_or_count", choices=[min, max],
         type=_list_to_func_map, action="store", default=min,
-        help="This only influences the counting of the number of all possible (non repeating) paths from the start to the end node "
-        " for the VARIANT, MUTAGEN and CONFLICT features. As some edges may collapse during optimization of the graph one edge can describe "
-        " more than one way how to point to the next amino acid / node. Choose between 'min' or 'max' counting strategy (over or under couting). "
+        help="This only influences the counting of the number of all possible (non repeating) paths from the start to "
+        "the end node for the VARIANT, MUTAGEN and CONFLICT features. As some edges may collapse during optimization "
+        "of the graph one edge can describe more than one way how to point to the next amino acid / node. Choose "
+        "between 'min' or 'max' counting strategy (over or under couting). "
     )
 
 

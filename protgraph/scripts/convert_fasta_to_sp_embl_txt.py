@@ -219,11 +219,11 @@ def _validate_position(position: str, feature_type: str, accession: str) -> bool
     else:
         print(f"WARNING: Position invalid for {feature_type} in {accession} (position: '{position}').")
         return False
-    
+
     if not x_valid or not y_valid:
         print(f"WARNING: Position invalid for {feature_type} in {accession} (position: '{position}').")
         return False
-    
+
     return True
 
 
@@ -235,19 +235,19 @@ def _format_wrapped(ft_note_info: str) -> str:
     continuation_prefix = 'FT                   '
     first_line_space = 80 - len(first_line_prefix)  # should be 51 chars
     continuation_space = 80 - len(continuation_prefix)  # should be 59 chars
-    
+
     if len(ft_note_info) <= first_line_space - 1:
         # Fits and can be returned.
         return first_line_prefix + ft_note_info + "\""
-    
+
     # ELSE: we wrap
     result_lines = []
     remaining_text = ft_note_info
 
-    # Add first line    
+    # Add first line
     result_lines.append(first_line_prefix + remaining_text[:first_line_space].rstrip())
     remaining_text = remaining_text[first_line_space:].lstrip()
-    
+
     # Continue until we wrapped all the text in note
     while remaining_text:
         if len(remaining_text) <= continuation_space - 1:
@@ -259,17 +259,17 @@ def _format_wrapped(ft_note_info: str) -> str:
             part = remaining_text[:continuation_space]
             result_lines.append(continuation_prefix + part.rstrip())
             remaining_text = remaining_text[continuation_space:].lstrip()
-    
+
     return '\n'.join(result_lines)
 
 
 def _get_feature_tables_for_protein(feature_table, accession) -> str:
-    """ 
-    Generates the corresponding FT-Strings in SP-EMBL. 
-    
+    """
+    Generates the corresponding FT-Strings in SP-EMBL.
+
     Supported Features are:
     VARIANT, CONFLICT, MUTAGEN, (
-        type_specific-Syntax: "original,replacement,position" 
+        type_specific-Syntax: "original,replacement,position"
         or "Missing,position" for deletions
     ),
     SIGNAL, CHAIN, PROPEP, PEPTIDE (
@@ -378,10 +378,11 @@ def _get_feature_tables_for_protein(feature_table, accession) -> str:
                     print(
                         "WARNING: Multiple INIT_MET entries found for {accession}. "
                         "Only adding it once to the txt entry.".format(
-                        accession=accession
-                    ))
+                            accession=accession
+                        )
+                    )
                 ft_str += (
-                    f'''\nFT   INIT_MET        1\n''' +
+                    '''\nFT   INIT_MET        1\n''' +
                     f'''{_format_wrapped(ft_entry[1])}\n''' +
                     f'''FT                   /evidence="CUSTOM_{ft_entry[2]}"'''
                 )

@@ -243,7 +243,7 @@ class PepMySQL(APeptideExporter):
                 # followed by 5 bits for the n and c terminus (ascii_code - 65)
                 # The weight is disregarded, since it is composed by the aa counts
                 [format(i, 'b').zfill(17) for i in x[1:-2]] \
-                + [format(ord(i) - 65, 'b').zfill(5) for i in x[-2:]]
+                + [format(ord(i) - 65, 'b').zfill(5) for i in x[-2:]] # noqa E501
             )
             for x in l_peptides_tup
         ]

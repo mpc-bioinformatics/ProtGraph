@@ -44,7 +44,7 @@ class PCSR(GenericFileExporter):
             sorted(
                 list(set(graph.vs["isoform_accession"]).difference(set([None]))) \
                 if "isoform_accession" in graph.vs[0].attributes() \
-                else []  # Get List of Isos (Accessions)
+                else []   # noqa E501 # Get List of Isos (Accessions) 
             )
 
         NO = []  # Get List of Nodes
