@@ -35,6 +35,7 @@ KW   Generated for ProtGraph{FT}
 def parse_args():
     """ Parse Arguments """
     parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter,
         description="Small script to create a SP-EMBL-txt-Entries from FASTA-entries."
         "This can be very useful for FASTA-database and -entries, which are NOT in UniProt but should be utilized by "
         "ProtGraph. Currently only a plain conversion from FASTA to SP-EMBL is provided. However this could be "
@@ -58,7 +59,22 @@ def parse_args():
     # Feature-Table-Mapping
     parser.add_argument(
         "--feature_tables", "-ft", type=str, default=None,
-        help="Feature-Table-Mapping, to add additional information into the SP-EMBL, TODO"
+        help="TSV file with feature annotations.\n"
+             "Required columns: accession, type, type_specific, description\n"
+             "Supported feature types with their type_specific syntax:\n"
+             "  • VARIANT/CONFLICT/MUTAGEN:\n"
+             "    - Replacement: 'A,V,123' (original,new,position)\n"
+             "    - Deletion:    'Missing,123' (position)\n"
+             "  • SIGNAL/CHAIN/PROPEP/PEPTIDE:\n"
+             "    - Position range: '1..20' or single position '123'\n"
+             "  • INIT_MET:\n"
+             "    - Has no type_specific syntax (can be empty)\n\n"
+             "NOTE: Position can in all cases either be X..Y or a single position X.\n\n"
+             "Examples:\n"
+             "  P12345\\tVARIANT\\tADV,V,123-125\\tReplacing ADV with V at position 123-125\n"
+             "  P12345\\tMUTAGEN\\tMissing,63\\tDeletion of Aminoacid at position 63\n"
+             "  P12345\\tCHAIN\\t1..300\\tProtein chain from residue 1 to 300\n"
+             "  P12345\\tSIGNAL\\t1..20\\tSignal peptide sequence"
     )
 
     # Output SP-EMBL-file
@@ -160,11 +176,11 @@ def _create_feature_dict(feature_table_file) -> dict:
             if line[accession_idx] not in feature_dict:
                 feature_dict[line[accession_idx]] = dict()
 
-            if line[1] not in feature_dict[line[accession_idx]]:
+            if line[type_idx] not in feature_dict[line[accession_idx]]:
                 feature_dict[line[accession_idx]][line[type_idx]] = []
 
             # Insert feature entry
-            feature_dict[line[0]][line[1]].append(
+            feature_dict[line[accession_idx]][line[type_idx]].append(
                 (line[type_specific_idx].split(","), line[description_idx], str(identifier))
             )
             identifier += 1
@@ -172,8 +188,100 @@ def _create_feature_dict(feature_table_file) -> dict:
     return feature_dict
 
 
+def _validate_position(position: str, feature_type: str, accession: str) -> bool:
+    """ Check if position is either X or X..Y """
+    x_valid = False
+    y_valid = False
+    if position:
+        if ".." in position:
+            x, y = position.split("..")
+            # Check Y if available
+            if y == "?":
+                y_valid = True
+            else:
+                try:
+                    int(y)
+                    y_valid = True
+                except ValueError:
+                    pass
+        else:
+            y_valid = True
+            x = position
+        # Check X
+        if x == "?":
+            x_valid = True
+        else:
+            try:
+                int(x)
+                x_valid = True
+            except ValueError:
+                pass
+    else:
+        print(f"WARNING: Position invalid for {feature_type} in {accession} (position: '{position}').")
+        return False
+    
+    if not x_valid or not y_valid:
+        print(f"WARNING: Position invalid for {feature_type} in {accession} (position: '{position}').")
+        return False
+    
+    return True
+
+
+def _format_wrapped(ft_note_info: str) -> str:
+    """
+    Wraps the information provided in "/note=" to be maximally 80 characters wide.
+    """
+    first_line_prefix = 'FT                   /note="'
+    continuation_prefix = 'FT                   '
+    first_line_space = 80 - len(first_line_prefix)  # should be 51 chars
+    continuation_space = 80 - len(continuation_prefix)  # should be 59 chars
+    
+    if len(ft_note_info) <= first_line_space - 1:
+        # Fits and can be returned.
+        return first_line_prefix + ft_note_info + "\""
+    
+    # ELSE: we wrap
+    result_lines = []
+    remaining_text = ft_note_info
+
+    # Add first line    
+    result_lines.append(first_line_prefix + remaining_text[:first_line_space].rstrip())
+    remaining_text = remaining_text[first_line_space:].lstrip()
+    
+    # Continue until we wrapped all the text in note
+    while remaining_text:
+        if len(remaining_text) <= continuation_space - 1:
+            # Last line
+            result_lines.append(continuation_prefix + remaining_text.rstrip() + "\"")
+            break
+        else:
+            # Further lines
+            part = remaining_text[:continuation_space]
+            result_lines.append(continuation_prefix + part.rstrip())
+            remaining_text = remaining_text[continuation_space:].lstrip()
+    
+    return '\n'.join(result_lines)
+
+
 def _get_feature_tables_for_protein(feature_table, accession) -> str:
-    """ Generate the corresponding FT-String in SP-EMBL. Currently only supports VARIANTs """
+    """ 
+    Generates the corresponding FT-Strings in SP-EMBL. 
+    
+    Supported Features are:
+    VARIANT, CONFLICT, MUTAGEN, (
+        type_specific-Syntax: "original,replacement,position" 
+        or "Missing,position" for deletions
+    ),
+    SIGNAL, CHAIN, PROPEP, PEPTIDE (
+        type_specific-Syntax: "position"
+    ),
+    and INIT_MET (
+        type_specific-Syntax: "<None/Ignored>"
+    ).
+
+    The Position parameter needs to be formatted either as "X", or "X..Y".
+    """
+
     if not feature_table:
         return ""
 
@@ -185,31 +293,105 @@ def _get_feature_tables_for_protein(feature_table, accession) -> str:
         if key == "VARIANT":
             for ft_var in feature_table[accession][key]:
                 if len(ft_var[0]) == 3:  # CASE Replacement
+                    if not _validate_position(ft_var[0][2], "VARIANT", accession):
+                        continue
+                    note = f"{ft_var[0][0]} -> {ft_var[0][1]} (in GEN_BY_PG; {ft_var[1]})"
                     ft_str += (
-                        ('''\nFT   VARIANT         {position}\n''' +
-                            '''FT                   /note="{from_aa} -> {to_aa} (in GEN_BY_PG; {desc})"\n''' +
-                            '''FT                   /id="CUSTOM_{id}"''').format(
-                                position=ft_var[0][2], from_aa=ft_var[0][0], to_aa=ft_var[0][1],
-                                desc=ft_var[1], id=ft_var[2]
-                            )
+                        f'''\nFT   VARIANT         {ft_var[0][2]}\n''' +
+                        f'''{_format_wrapped(note)}\n''' +
+                        f'''FT                   /id="CUSTOM_{ft_var[2]}"'''
                     )
-                elif len(ft_var[0]) == 2:  # CASE Replacement
+                elif len(ft_var[0]) == 2:  # CASE Deletion
+                    if not _validate_position(ft_var[0][1], "VARIANT", accession):
+                        continue
+                    note = f"Missing (in GEN_BY_PG; {ft_var[1]})"
                     ft_str += (
-                        ('''\nFT   VARIANT         {position}\n''' +
-                            '''FT                   /note="Missing (in GEN_BY_PG; {desc})"\n''' +
-                            '''FT                   /id="CUSTOM_{id}"''').format(
-                                position=ft_var[0][1],
-                                desc=ft_var[1], id=ft_var[2]
-                            )
+                        f'''\nFT   VARIANT         {ft_var[0][1]}\n''' +
+                        f'''{_format_wrapped(note)}\n''' +
+                        f'''FT                   /id="CUSTOM_{ft_var[2]}"'''
                     )
+        elif key == "MUTAGEN":
+            for ft_var in feature_table[accession][key]:
+                if len(ft_var[0]) == 3:  # CASE Replacement
+                    if not _validate_position(ft_var[0][2], "MUTAGEN", accession):
+                        continue
+                    note = f"{ft_var[0][0]} -> {ft_var[0][1]}: in GEN_BY_PG; {ft_var[1]}"
+                    ft_str += (
+                        f'''\nFT   MUTAGEN         {ft_var[0][2]}\n''' +
+                        f'''{_format_wrapped(note)}\n''' +
+                        f'''FT                   /evidence="CUSTOM_{ft_var[2]}"'''
+                    )
+                elif len(ft_var[0]) == 2:  # CASE Deletion
+                    if not _validate_position(ft_var[0][1], "MUTAGEN", accession):
+                        continue
+                    note = f"Missing: in GEN_BY_PG; {ft_var[1]}"
+                    ft_str += (
+                        f'''\nFT   MUTAGEN         {ft_var[0][1]}\n''' +
+                        f'''{_format_wrapped(note)}\n''' +
+                        f'''FT                   /evidence="CUSTOM_{ft_var[2]}"'''
+                    )
+        elif key == "CONFLICT":
+            for ft_var in feature_table[accession][key]:
+                if len(ft_var[0]) == 3:  # CASE Replacement
+                    if not _validate_position(ft_var[0][2], "CONFLICT", accession):
+                        continue
+                    note = f"{ft_var[0][0]} -> {ft_var[0][1]} (in GEN_BY_PG; {ft_var[1]})"
+                    ft_str += (
+                        f'''\nFT   CONFLICT        {ft_var[0][2]}\n''' +
+                        f'''{_format_wrapped(note)}\n''' +
+                        f'''FT                   /evidence="CUSTOM_{ft_var[2]}"'''
+                    )
+                elif len(ft_var[0]) == 2:  # CASE Deletion
+                    if not _validate_position(ft_var[0][1], "CONFLICT", accession):
+                        continue
+                    note = f"Missing (in GEN_BY_PG; {ft_var[1]})"
+                    ft_str += (
+                        f'''\nFT   CONFLICT        {ft_var[0][1]}\n''' +
+                        f'''{_format_wrapped(note)}\n''' +
+                        f'''FT                   /evidence="CUSTOM_{ft_var[2]}"'''
+                    )
+        elif key in ["CHAIN", "PROPEP", "PEPTIDE"]:
+            for ft_cleaved in feature_table[accession][key]:
+                position = ft_cleaved[0][0]  # Can only be X..Y
+                if not _validate_position(position, key, accession):
+                    continue
+                ft_str += (
+                    f'''\nFT   {key:<15} {position}\n''' +
+                    f'''{_format_wrapped(ft_cleaved[1])}\n''' +
+                    f'''FT                   /id="CUSTOM_{ft_cleaved[2]}"'''
+                )
+        elif key == "SIGNAL":
+            for ft_cleaved in feature_table[accession][key]:
+                position = ft_cleaved[0][0]  # Can only be X..Y
+                if not _validate_position(position, "SIGNAL", accession):
+                    continue
+                ft_str += (
+                    f'''\nFT   SIGNAL          {position}\n''' +
+                    f'''{_format_wrapped(ft_cleaved[1])}\n''' +
+                    f'''FT                   /evidence="CUSTOM_{ft_cleaved[2]}"'''
+                )
+        elif key == "INIT_MET":
+            # Only process the first INIT_MET since it can only be applied once.
+            if feature_table[accession][key]:
+                ft_entry = feature_table[accession][key][0]  # Take only the first entry
+                if len(feature_table[accession][key]) > 1:
+                    print(
+                        "WARNING: Multiple INIT_MET entries found for {accession}. "
+                        "Only adding it once to the txt entry.".format(
+                        accession=accession
+                    ))
+                ft_str += (
+                    f'''\nFT   INIT_MET        1\n''' +
+                    f'''{_format_wrapped(ft_entry[1])}\n''' +
+                    f'''FT                   /evidence="CUSTOM_{ft_entry[2]}"'''
+                )
 
     return ft_str
 
 
 def generate_sp_embl_enty(sequence, accession, opt_feature) -> str:
-    """ Generates a valid SP-EMBL using sequence, accession and optional features. """
+    """ Generates a valid SP-EMBL using sequence, accession and optional features if provided. """
 
-    # TODO DL add optional Features for FT
     return SWISS_EMBL_SKELETON.format(
         ID_AC=_get_id_ac_string(accession, accession, len(sequence)),
         DAY=date.today().day,
