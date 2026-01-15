@@ -21,7 +21,6 @@ def execute_peptide(graph, peptide_feature):
 
 def execute_chain(graph, chain_feature):
     """ Wrapper function to execute chain_features"""
-    # TODO
     execute_generic_cleaved_peptide(graph, chain_feature)
 
 
@@ -55,7 +54,7 @@ def execute_generic_cleaved_peptide(graph, generic_cleaved_feature):
     # Get the corrsponding start and end nodes of the referenced peptide
     # (including isoforms, if not specified or only isoforms)
     start_nodes, end_nodes = _get_all_vertices_before_after(
-        graph, start_position, end_position, generic_cleaved_feature.ref
+        graph, start_position, end_position, generic_cleaved_feature.location.ref
     )
 
     # Create the edge-list (cleaving the referenced peptide)

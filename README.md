@@ -18,7 +18,7 @@ So, what can we do with ProtGraph? First, the protein-graphs can be saved by Pro
 generated, containing various on-the-fly retrievable information about the protein-graph. We can calculate the number of nodes/edges/features within a protein-graph, the number of protein-/peptide-sequences contained and even binned by specific attributes. These can give a quick overview e.g. of the tryptic search space while considering all feature-information of the provided species-proteome.
 Lastly, the protein-graphs per se are not useful, especially in identification. Therefore, we extended ProtGraph to optionally convert protein-graph into FASTA-entries, to be used for identification and to enable searches of feature-induced-peptides.
 
-Curious what we do with ProtGraph and its output? Check out `materials_and_posters` for an explanation of the protein-graph-generation and further materials. Below in the README.md, additional examples are provided.
+Curious what we do with ProtGraph and its output? Check out `materials_and_posters` for an explanation of the protein-graph-generation and further materials. Below in the README.md, additional examples are provided. For a full list of CLI commands, check out [this code part](https://github.com/mpc-bioinformatics/ProtGraph/blob/master/protgraph/cli.py)
 
 ### Setting up ProtGraph
 

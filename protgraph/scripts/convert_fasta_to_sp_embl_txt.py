@@ -73,7 +73,10 @@ def parse_args():
 def get_next_fasta_entry(fasta) -> tuple:
     """ Generator, returning parsed FASTA-entries """
     get_sequence = False  # Flag to stop after the sequence was retrieved
-    sequence, pre, accession, description = ""
+    sequence = ""
+    pre = ""
+    accession = ""
+    description = ""
     for line in fasta:
         # Iterate over each line of the FASTA-database
         if line.startswith(">"):

@@ -32,7 +32,7 @@ class PCSR(GenericFileExporter):
             out.write(out_str)
 
     def _build_csr_entry(self, graph):
-        # The CSR is reordered in Top Order in favor on going through the RAM sequentially. To be tested...
+        # The CSR is reordered in Top Order in favor on going through the RAM sequentially.
 
         # get the topological order
         TO = self.__get_protein_graph_specific_top_order(graph)  # The Topological Order
@@ -41,9 +41,11 @@ class PCSR(GenericFileExporter):
         # get Accessions (including isoforms)
         AC = graph.vs[0]["accession"]
         IA = \
-            list(set(graph.vs["isoform_accession"]).difference(set([None]))) \
-            if "isoform_accession" in graph.vs[0].attributes() \
-            else []  # Get List of Isos (Accessions)
+            sorted(
+                list(set(graph.vs["isoform_accession"]).difference(set([None]))) \
+                if "isoform_accession" in graph.vs[0].attributes() \
+                else []  # Get List of Isos (Accessions)
+            )
 
         NO = []  # Get List of Nodes
         ED = []  # Get List of Edges

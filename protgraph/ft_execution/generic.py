@@ -62,12 +62,12 @@ def _get_vertices_before_after(graph, generic_feature):
     # Get all vertices which are at beginning (before)
     # and all vertices which are at the end (after)
     vertices_before, vertices_after = _get_all_vertices_before_after(
-        graph, aa_before, aa_after, generic_feature.ref
+        graph, aa_before, aa_after, generic_feature.location.ref
     )
     if len(vertices_before) == 0 or len(vertices_after) == 0:
         # Check if we have vertices, if not simply skip
         print("No Vertices retrieved for protein {}, using {}: {} (referencing: {}). Skipping...".format(
-            graph.vs[0]["accession"], generic_feature.type, generic_feature.id, generic_feature.ref))
+            graph.vs[0]["accession"], generic_feature.type, generic_feature.id, generic_feature.location.ref))
         return None, None
 
     return vertices_before, vertices_after
