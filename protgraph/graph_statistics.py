@@ -15,7 +15,7 @@ STATISTICS_METHOD_LIST = [
 
 def get_statistics(graph, entry_dict, **kwargs):
     """
-    TODO can we retrieve even more information!?
+    Calculates Statistics based on the provided statistics method list and fills final result dictionary.
     returns #Node, #Edges, #Num_Of_Paths
     """
 
@@ -25,9 +25,7 @@ def get_statistics(graph, entry_dict, **kwargs):
 
     for calculate_bool, method, entry_dict_key in STATISTICS_METHOD_LIST:
         if kwargs[calculate_bool]:
-            entry_dict[entry_dict_key] = method(graph, kwargs["calc_num_possibilites_or_count"])
-
-    # TODO can we calculate more statistics?
+            entry_dict[entry_dict_key] = method(graph, kwargs["calc_num_possibilities_or_count"])
 
 
 def _get_edge_count(graph_entry):

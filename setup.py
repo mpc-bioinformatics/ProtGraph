@@ -11,7 +11,7 @@ with open("README.md", "r", encoding="utf-8") as long_desc:
 
 setup(
     name='protgraph',
-    version='0.3.11',
+    version='0.3.12',
     author="Dominik Lux",
     description="ProtGraph, a graph generator for proteins.",
     long_description=long_description,
@@ -19,13 +19,15 @@ setup(
     url="https://github.com/mpc-bioinformatics/ProtGraph",
     project_urls={
         "Bugs": "https://github.com/mpc-bioinformatics/ProtGraph/issues",
+        "Publication": "https://doi.org/10.1093/bib/bbae671",
+        "ProGFASTAGen": "https://github.com/mpc-bioinformatics/ProGFASTAGen",
     },
     classifiers=[
         "Programming Language :: Python :: 3",
         'License :: OSI Approved :: BSD License',
     ],
     license="BSD",
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     entry_points=dict(console_scripts=[
         'protgraph = protgraph.protgraph:main',
         'protgraph_pepsqlite_to_fasta = protgraph.scripts.pepsqlite_to_fasta:main [sqlite]',

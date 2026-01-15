@@ -61,7 +61,7 @@ def _get_methionines(graph, pos_first_aas, init_met_feature):
         "isoform_position" in graph.vs[0].attributes() else False
 
     _aas_set = True  # Bool to check if we were able to retrieve aminoacids from the graph
-    if init_met_feature.ref is None:
+    if init_met_feature.location.ref is None:
         # Canonical M
         if not has_isoforms:
             # for no isoforms
@@ -84,13 +84,13 @@ def _get_methionines(graph, pos_first_aas, init_met_feature):
             x
             for x in pos_first_aas
             if graph.vs[x]["aminoacid"] == "M" and graph.vs[x]["isoform_position"] == 1 and
-            graph.vs[x]["isoform_accession"] == init_met_feature.ref
+            graph.vs[x]["isoform_accession"] == init_met_feature.location.ref
         ]
     else:
-        if init_met_feature.ref is not None and not has_isoforms:
+        if init_met_feature.location.ref is not None and not has_isoforms:
             print(
                 "Warning, INIT_MET could not applied on isoform {} (isoform is missing in graph)"
-                .format(init_met_feature.ref)
+                .format(init_met_feature.location.ref)
             )
             met_aas = []
             _aas_set = False
