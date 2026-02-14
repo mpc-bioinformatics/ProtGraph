@@ -8,6 +8,9 @@
 
 [![Static Badge](https://img.shields.io/badge/publication-10.1093%2Fbib%2Fbbae671-blue?link=https%3A%2F%2Facademic.oup.com%2Fbib%2Farticle%2F26%2F1%2Fbbae671%2F7942791)](https://doi.org/10.1093/bib/bbae671)
 
+![de.NBI Logo](https://raw.githubusercontent.com/mpc-bioinformatics/ProtGraph/master/resources/denbi-logo-color.svg)
+
+If you used ProtGraph please take the time to answer [our short survey](https://de.surveymonkey.com/r/denbi-service?sc=bioinfra-prot&tool=ProtGraph) to help us improve de.NBI services.
 ## Summary
 
 ProtGraph in short is a python-package, which allows to convert protein-entries from the [UniProtKB](https://www.uniprot.org/) to so-called protein-graphs. We use the [SP-EMBL-Entries](https://web.expasy.org/docs/userman.html), provided by UniProtKB via `*.txt` or `*.dat`-files, and parse the available feature-information. In contrast to a FASTA-file-entry of a protein, a SP-EMBL-file-entry is

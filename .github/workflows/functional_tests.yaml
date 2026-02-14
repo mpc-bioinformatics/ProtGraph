@@ -33,7 +33,6 @@ jobs:
           pip install psycopg
           pip install gremlinpython
           pip install mysql-connector-python
-          pip install cassandra-driver
           pip install apsw
 
       - name: Run Complete tests
