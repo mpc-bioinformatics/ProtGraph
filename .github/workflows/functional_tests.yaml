@@ -32,7 +32,7 @@ jobs:
           pip install redisgraph
           pip install psycopg
           pip install gremlinpython
-          pip install mysql-connector-python
+          pip install mysql-connector-python<=9.50
           pip install cassandra-driver
           pip install apsw
 
