@@ -32,8 +32,7 @@ jobs:
           pip install redisgraph
           pip install psycopg
           pip install gremlinpython
-          pip install "mysql-connector-python<=9.50"
-          pip install cassandra-driver
+          pip install mysql-connector-python<=9.50
           pip install apsw
 
       - name: Run Complete tests
