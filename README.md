@@ -11,6 +11,28 @@
 ![de.NBI Logo](https://raw.githubusercontent.com/mpc-bioinformatics/ProtGraph/master/resources/denbi-logo-color.svg)
 
 If you used ProtGraph please take the time to answer [our short survey](https://de.surveymonkey.com/r/denbi-service?sc=bioinfra-prot&tool=ProtGraph) to help us improve de.NBI services.
+
+
+## Citing / Publication
+
+If you use ProtGraph in your work, please cite: [https://doi.org/10.1093/bib/bbae671](https://doi.org/10.1093/bib/bbae671)
+
+> Lux, Dominik, et al. "ProtGraph: a tool for the quick and comprehensive exploration and exploitation of the peptide search space derived from protein sequence databases using graphs." Briefings in Bioinformatics 26.1 (2025): bbae671.
+
+```bibtex
+@article{lux2025protgraph,
+  title={ProtGraph: a tool for the quick and comprehensive exploration and exploitation of the peptide search space derived from protein sequence databases using graphs},
+  author={Lux, Dominik and Marcus-Alic, Katrin and Eisenacher, Martin and Uszkoreit, Julian},
+  journal={Briefings in Bioinformatics},
+  volume={26},
+  number={1},
+  pages={bbae671},
+  year={2025},
+  publisher={Oxford University Press}
+}
+```
+
+
 ## Summary
 
 ProtGraph in short is a python-package, which allows to convert protein-entries from the [UniProtKB](https://www.uniprot.org/) to so-called protein-graphs. We use the [SP-EMBL-Entries](https://web.expasy.org/docs/userman.html), provided by UniProtKB via `*.txt` or `*.dat`-files, and parse the available feature-information. In contrast to a FASTA-file-entry of a protein, a SP-EMBL-file-entry is
