@@ -1,0 +1,16 @@
+ID   TEST_HUMAN              Reviewed;           8 AA.
+AC   X9TEST;
+DT   01-JAN-2020, integrated into UniProtKB/Swiss-Prot.
+DT   01-JAN-2020, sequence version 1.
+DT   01-JAN-2020, entry version 1.
+DE   RecName: Full=Minimal test protein;
+GN   Name=TEST;
+OS   Homo sapiens (Human).
+OC   Eukaryota; Metazoa; Chordata.
+OX   NCBI_TaxID=9606;
+FT   VARIANT         4
+FT                   /note="T -> M (test variant)"
+FT                   /id="VAR_900001"
+SQ   SEQUENCE   8 AA;  920 MW;  0123456789ABCDEF CRC64;
+     MKCTMSAK
+//

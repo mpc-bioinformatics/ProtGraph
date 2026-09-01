@@ -79,6 +79,7 @@ class Exporters(ContextDecorator):
 
             # Peptide Exporter to local filesystem (no setup required)
             (kwargs["export_peptide_fasta"], "protgraph.export.peptides.pep_fasta", "PepFasta"),
+            (kwargs["export_peptide_proforma"], "protgraph.export.peptides.pep_proforma", "PepProForma"),
             (kwargs["export_peptide_trie"], "protgraph.export.peptides.pep_trie", "PepTrie"),
             (kwargs["export_peptide_sqlite"], "protgraph.export.peptides.pep_sqlite", "PepSQLite"),
         ]

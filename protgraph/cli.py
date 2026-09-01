@@ -662,6 +662,52 @@ def add_fasta_peptide_export(group):
     )
 
 
+def add_proforma_peptide_export(group):
+    group.add_argument(
+        "--export_peptide_proforma", "-epepproforma", default=False, action="store_true",
+        help="Set this flag to export peptides as ProForma 2.0 strings (PSI standard) "
+        "into a single tab-separated file (accession, start, end, misscleavages, proforma). "
+        "Modifications from -fm/-vm are written as mass-delta tags (e.g. 'S[+79.966]')."
+    )
+    group.add_argument(
+        "--pep_proforma_out", default=os.path.join(os.getcwd(), "peptides.proforma.tsv"),
+        type=str,
+        help="Set the output file for the ProForma peptide export. "
+        "Default: '${pwd}/peptides.proforma.tsv'. NOTE: This will overwrite existing files."
+    )
+
+    def _parse_mod_name(input: str):
+        if "=" not in input:
+            raise ArgumentTypeError(
+                "A modification name mapping needs the form '<DeltaMass>=<Name>', "
+                "e.g. '79.966=UNIMOD:21'. Received: '{}'".format(input)
+            )
+        delta, name = input.split("=", 1)
+        try:
+            delta = float(delta)
+            finite = delta == delta and abs(delta) != float("inf")
+        except ValueError:
+            finite = False
+        if not finite:
+            raise ArgumentTypeError(
+                "The DeltaMass of a name mapping is not a finite number. Received: '{}'".format(input)
+            )
+        name = name.strip()
+        if not name or any(c in name for c in "[]\t\n\r"):
+            raise ArgumentTypeError(
+                "The Name of a name mapping is empty or contains brackets/whitespace "
+                "that would corrupt the output. Received: '{}'".format(input)
+            )
+        return delta, name
+    group.add_argument(
+        "--pep_proforma_mod_names", type=_parse_mod_name, action="append", default=None,
+        help="Optionally map a delta mass used in -fm/-vm to a named ProForma tag, "
+        "e.g. --pep_proforma_mod_names '79.966=UNIMOD:21' writes 'S[UNIMOD:21]' instead "
+        "of 'S[+79.966]'. Can be provided multiple times. No mass lookup is performed; "
+        "the name is taken as declared."
+    )
+
+
 def add_trie_peptide_export(group):
     group.add_argument(
         "--export_peptide_trie", "-epeptrie", default=False, action="store_true",
