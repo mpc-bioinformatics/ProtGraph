@@ -214,3 +214,53 @@ class FunctionalTest(unittest.TestCase):
     def test_issue41(self):
         args = protgraph.parse_args(["-n", "1", "-epepfasta", os.path.join(self.examples_path, "P49782.txt")])
         protgraph.prot_graph(**args)
+
+    def _run_proforma(self, extra_args, out):
+        """ ProForma export of tests/fixtures/minimal.txt (MKCTMSAK, VARIANT T4M). """
+        fixture = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures", "minimal.txt"))
+        args = protgraph.parse_args(
+            ["-epepproforma", "--pep_proforma_out", out, "--pep_hops", "10", "-d", "trypsin"]
+            + extra_args + self.procs_num + [fixture]
+        )
+        protgraph.prot_graph(**args)
+        with open(out) as f:
+            return [ln.rstrip("\n").split("\t") for ln in f if ln.strip()]
+
+    def test_export_pep_proforma_smoke(self):
+        args = protgraph.parse_args(["-epepproforma", "--pep_hops", "2"] + self.procs_num + self.example_files)
+        protgraph.prot_graph(**args)
+
+    def test_export_pep_proforma_pins_mod_placement(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            lines = self._run_proforma(
+                ["-ft", "VARIANT", "-fm", "C:57.021464", "-vm", "M:15.994915",
+                 "--pep_proforma_mod_names", "15.994915=UNIMOD:35"],
+                os.path.join(tmp, "p.tsv"),
+            )
+            assert all(len(x) == 5 for x in lines)
+            rows = {tuple(x) for x in lines}
+            proformas = {x[4] for x in lines}
+            # exact placement with coordinates: the fixed mod sits on the C
+            assert ("X9TEST", "3", "8", "0", "C[+57.021464]TMSAK") in rows
+            # a variable mod on a VARIANT-introduced residue (no reference
+            # position!) is placed on that residue, not dropped
+            assert "C[+57.021464]M[UNIMOD:35]MSAK" in proformas
+            # variable mods also export their unmodified counterparts
+            assert {"MK", "M[UNIMOD:35]K"} <= proformas
+            # the fixed mod is applied to every C, always signed
+            assert all("C[+57.021464]" in p for p in proformas if "C" in p)
+
+    def test_export_pep_proforma_terminal_mods_and_overwrite(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "p.tsv")
+            lines = self._run_proforma(["-fm", "NPEPTERM:42.010565", "-vm", "CPEPTERM:79.966"], out)
+            proformas = {x[4] for x in lines}
+            assert all(p.startswith("[+42.010565]-") for p in proformas)
+            # variable C-terminal: modified and unmodified paths both exported
+            assert any(p.endswith("-[+79.966]") for p in proformas)
+            assert any(not p.endswith("-[+79.966]") for p in proformas)
+            # a rerun overwrites instead of appending stale results
+            again = self._run_proforma(["-fm", "NPEPTERM:42.010565", "-vm", "CPEPTERM:79.966"], out)
+            assert len(again) == len(lines)

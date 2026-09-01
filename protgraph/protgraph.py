@@ -184,6 +184,7 @@ def create_parser():
         ("citus_peptide_export", cli.add_citus_peptide_export),
         ("sqlite_peptide_export", cli.add_sqlite_peptide_export),
         ("fasta_peptide_export", cli.add_fasta_peptide_export),
+        ("proforma_peptide_export", cli.add_proforma_peptide_export),
         ("trie_peptide_export", cli.add_trie_peptide_export),
         ("gremlin_graph_export", cli.add_gremlin_graph_export),
     ]
