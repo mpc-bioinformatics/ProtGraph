@@ -1,0 +1,12 @@
+ID   MERGED_TEST             Reviewed;          11 AA.
+AC   X9MRG0;
+DT   01-JAN-2020, integrated into UniProtKB/Swiss-Prot.
+DT   01-JAN-2020, sequence version 1.
+DT   01-JAN-2020, entry version 1.
+DE   RecName: Full=Merged node modification test;
+OS   Homo sapiens (Human).
+OC   Eukaryota; Metazoa; Chordata.
+OX   NCBI_TaxID=9606;
+SQ   SEQUENCE   11 AA;  1200 MW;  0123456789ABCDEF CRC64;
+     KEINKACKACK
+//

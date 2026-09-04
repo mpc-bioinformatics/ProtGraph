@@ -265,3 +265,50 @@ class FunctionalTest(unittest.TestCase):
             # a rerun overwrites instead of appending stale results
             again = self._run_proforma(["-fm", "NPEPTERM:42.010565", "-vm", "CPEPTERM:79.966"], out)
             assert len(again) == len(lines)
+
+    def test_export_pep_proforma_places_mods_inside_merged_nodes_exactly_once(self):
+        import re
+        import tempfile
+        fixture = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures", "merged.txt"))
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "p.tsv")
+            args = protgraph.parse_args(
+                [
+                    "-epepproforma", "--pep_proforma_out", out, "--pep_hops", "10",
+                    "-d", "trypsin", "--pep_miscleavages", "2",
+                    "-fm", "I:23.123", "-fm", "C:57.021464",
+                ] + self.procs_num + [fixture]
+            )
+            protgraph.prot_graph(**args)
+            with open(out) as f:
+                next(f)  # header
+                proformas = {ln.rstrip("\n").split("\t")[1] for ln in f if ln.strip()}
+            # a mod on an interior residue of a merged node sits on that residue
+            assert "EI[+23.123]NK" in proformas
+            # a miscleaved peptide spanning two nodes that EACH carry the same
+            # fixed mod gets one tag per residue, not the pooled duplicates
+            assert "AC[+57.021464]KAC[+57.021464]K" in proformas
+            for p in proformas:
+                assert "[+57.021464][+57.021464]" not in p and "[+23.123][+23.123]" not in p
+                assert not re.search(r"\[[^]]*\[", p), p  # no tag nested inside a tag
+
+    def test_export_pep_proforma_qualifiers_is_one_column(self):
+        import tempfile
+        fixture = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures", "merged.txt"))
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "p.tsv")
+            args = protgraph.parse_args(
+                [
+                    "-epepproforma", "--pep_proforma_out", out, "--pep_hops", "10",
+                    "-d", "trypsin", "--pep_miscleavages", "2",
+                    "-fm", "C:57.021464", "--pep_proforma_write_qualifiers",
+                ] + self.procs_num + [fixture]
+            )
+            protgraph.prot_graph(**args)
+            with open(out) as f:
+                widths = {len(ln.rstrip("\n").split("\t")) for ln in f if ln.strip()}
+                f.seek(0)
+                next(f)
+                quals = [ln.rstrip("\n").split("\t")[5] for ln in f if ln.strip()]
+            assert widths == {6}  # header and every row: exactly one qualifiers column
+            assert any("FIXMOD" in q for q in quals)
