@@ -1,6 +1,8 @@
 from decimal import Decimal
 from math import isfinite
 
+from Bio.SeqFeature import UnknownPosition
+
 from protgraph.export.peptides.pep_fasta import PepFasta
 from protgraph.graph_collapse_edges import Or
 
@@ -59,10 +61,13 @@ class PepProForma(PepFasta):
             start_pos = self._get_position_or_isoform_position(prot_graph.vs[first])
             end_pos = self._get_position_or_isoform_position(prot_graph.vs[last], end=True)
             proforma = self._build_proforma(prot_graph, nodes[1:-1], edges)
-            l_str_qualifiers = self._get_qualifiers(prot_graph, edges)
             entries += "\t".join(
                 [acc, proforma, str(start_pos), str(end_pos), str(misses)]
-                + (l_str_qualifiers if self.write_qualifiers else [])
+                # one 'qualifiers' COLUMN, matching the header: the individual
+                # qualifier strings are comma-joined (as in the FASTA headers),
+                # and the field is present, possibly empty, on every row
+                + ([",".join(self._get_qualifiers(prot_graph, edges))]
+                   if self.write_qualifiers else [])
             ) + "\n"
 
         # w: ensures to have no stale entries, overwriting the file, if it exists.
@@ -74,14 +79,14 @@ class PepProForma(PepFasta):
         n_term, c_term, by_residue = [], [], {}
         for edge_id in edges:
             edge = prot_graph.es[edge_id]
-            for key, delta in self._edge_mods(edge):
+            for key, delta, loc_end in self._edge_mods(edge):
                 tag = self.mod_names.get(float(delta)) or self._delta_tag(delta)
                 if key in ("NPEPTERM", "NPROTERM"):
                     n_term.append(tag)
                 elif key in ("CPEPTERM", "CPROTERM"):
                     c_term.append(tag)
                 else:
-                    by_residue.setdefault(edge.target, []).append((key, tag))
+                    by_residue.setdefault(edge.target, []).append((key, tag, loc_end))
 
         # Build the final proforma sequence
         parts = []
@@ -89,29 +94,46 @@ class PepProForma(PepFasta):
             parts.append("".join("[{}]".format(t) for t in n_term) + "-")
         for ie in inner_nodes:
             aas = prot_graph.vs[ie]["aminoacid"]
-            if len(aas) == 1:
+            node_mods = by_residue.get(ie, ())
+            if not node_mods:
+                parts.append(aas)
+            elif len(aas) == 1:
                 # Simply append UniMod
                 parts.append(aas)
-                parts.extend("[{}]".format(t[1]) for t in by_residue.get(ie, ()))
+                parts.extend("[{}]".format(t) for _, t, _ in node_mods)
             else:
-                # We need to add PTM on correct position in merged node:
-                # E.G.  Merged node "EIN", Modification I->+23.123
-                # should yield "EI[+23.123]N"  and NOT "EIN[+23.123]"!
-                by_aa = {}
-                for mods in by_residue.values():
-                    for aa, mod in mods:
-                        by_aa.setdefault(aa, []).append(mod)
-                for aa, mod in by_aa.items():
-                    # We can savely use replace as this case only can happen in FIXMODs
-                    aas = aas.replace(aa, aa + "".join("[{}]".format(t) for t in mod))
-                parts.append(aas)
+                # We need to add each PTM on its correct position in the merged
+                # node: e.g. merged node "EIN", modification I->+23.123 should
+                # yield "EI[+23.123]N" and NOT "EIN[+23.123]". Only THIS node's
+                # modifications are placed (pooling across the whole path
+                # duplicated same-letter tags), each exactly once, located via
+                # the feature's position relative to the node start; a feature
+                # without a usable position (e.g. on a variant residue) falls
+                # back to the first matching residue letter.
+                node_pos = self._get_position_or_isoform_position(prot_graph.vs[ie])
+                tags_at = {}
+                for key, tag, loc_end in node_mods:
+                    idx = None
+                    if loc_end is not None and isinstance(node_pos, int):
+                        offset = loc_end - node_pos
+                        if 0 <= offset < len(aas):
+                            idx = offset
+                    if idx is None:
+                        idx = aas.find(key[-1])  # positional keys end in the residue letter
+                        if idx == -1:
+                            idx = 0  # never drop a modification the path carries
+                    tags_at.setdefault(idx, []).append(tag)
+                parts.append("".join(
+                    aa + "".join("[{}]".format(t) for t in tags_at.get(i, ()))
+                    for i, aa in enumerate(aas)
+                ))
 
         if c_term:
             parts.append("-" + "".join("[{}]".format(t) for t in c_term))
         return "".join(parts)
 
     def _edge_mods(self, edge):
-        """ Deduplicated (key, delta) modifications of one traversed edge.
+        """ Deduplicated (key, delta, position) modifications of one traversed edge.
 
         Or-wrapped qualifiers (collapsed parallel edges) are alternatives, not
         a conjunction: only modifications present in EVERY branch are certain
@@ -149,7 +171,8 @@ class PepProForma(PepFasta):
 
     def _feature_mod(self, feature):
         key, _, delta = feature.qualifiers["note"].rpartition(":")
-        return key, delta
+        end = feature.location.end
+        return key, delta, None if isinstance(end, UnknownPosition) else int(end)
 
     def _delta_tag(self, delta):
         """ '79.966' -> '+79.966': explicitly signed, plain decimal notation.
