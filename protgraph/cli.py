@@ -666,7 +666,7 @@ def add_proforma_peptide_export(group):
     group.add_argument(
         "--export_peptide_proforma", "-epepproforma", default=False, action="store_true",
         help="Set this flag to export peptides as ProForma 2.0 strings (PSI standard) "
-        "into a single tab-separated file (accession, start, end, misscleavages, proforma). "
+        "into a single tab-separated file (accession, proforma, start, end, misscleavages, qualifiers). "
         "Modifications from -fm/-vm are written as mass-delta tags (e.g. 'S[+79.966]')."
     )
     group.add_argument(
@@ -705,6 +705,12 @@ def add_proforma_peptide_export(group):
         "e.g. --pep_proforma_mod_names '79.966=UNIMOD:21' writes 'S[UNIMOD:21]' instead "
         "of 'S[+79.966]'. Can be provided multiple times. No mass lookup is performed; "
         "the name is taken as declared."
+    )
+    group.add_argument(
+        "--pep_proforma_write_qualifiers",
+        action="store_true",
+        help="Adds the column 'qualifiers' into the ProForma table for tracing back how the peptide "
+        "was retrieved from the protein entry (e.g., 'VARIANT[22:22, T->L, REFERENCE]))."
     )
 
 

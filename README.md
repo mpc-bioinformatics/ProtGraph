@@ -366,28 +366,6 @@ $ cat e_coli_with_selected_features_limited.fasta| grep "^>" | wc -l
 648551
 ```
 
-### Exporting peptides as ProForma 2.0
-
-Peptides can also be exported in [ProForma 2.0](https://github.com/HUPO-PSI/ProForma)
-notation (the HUPO-PSI standard for writing peptidoforms/proteoforms) into a
-tab-separated file with the columns accession, start, end, misscleavages and
-proforma:
-
-```shell
-$ protgraph -d trypsin --pep_hops 3 -fm "C:57.021464" -vm "M:15.994915" -epepproforma --pep_proforma_out peptides.proforma.tsv examples/e_coli.dat
-$ grep -m 2 "\[" peptides.proforma.tsv
-P0A884	49	53	1	RC[+57.021464]HLR
-P0A884	1	2	0	M[+15.994915]K
-```
-
-Modifications applied via `-fm`/`-vm` are known to ProtGraph only by their
-delta mass, so they are written as mass-delta tags (`C[+57.021464]`), which is
-valid ProForma. If you want named tags instead, declare a mapping for a delta
-you passed: `--pep_proforma_mod_names "15.994915=UNIMOD:35"` then writes
-`M[UNIMOD:35]`. Terminal modifications (`NPEPTERM` etc.) use the ProForma
-terminal syntax (`[+42.010565]-PEPTIDE`).
-
-
 We can see that the number peptides within this FASTA is significantly reduced (to ~650 000 entries). **NOTE:** for setting an upper length-limit of peptides we need to set `-nm`. In case of not setting this parameter, longer peptides may be exported. Finally, since the FASTA-file still contains for some entries same sequences, we can concatenate these by using a different (and more
 sophisticated) FASTA-exporter:
 
@@ -417,5 +395,26 @@ $ cat e_coli_compact.fasta | grep "^>" | wc -l
 Instead of directly generating a FASTA-file we first create a database, summarizing same sequences and headers. As a post-processing step, the database-entries are exported into FASTA. The generated FASTA has unique sequence as entries and offers some additionally insights. From the first entries we see peptides shared by exactly 2 proteins. Looking at the difference between the compact and
 non-compact FASTA, we see that ~244 000 entries could be summarized into already included entries in the FASTA. This generated FASTA-file can be used for identification.
 
-**NOTE:** Protein-Graphs can contain large amounts of peptides/proteins. Do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) WITHOUT the export functionality first and examine the statistics output if it is feasible to generate a FASTA-file. Without a dry run it may happen that a protein like P04637 (P53 Human) with all possible peptides and variants is exported, which will
+### Exporting peptides as ProForma 2.0
+
+Peptides can also be exported in [ProForma 2.0](https://github.com/HUPO-PSI/ProForma)
+notation (the HUPO-PSI standard for writing peptidoforms/proteoforms) into a
+tab-separated file with the columns accession, start, end, misscleavages and
+proforma:
+
+```shell
+$ protgraph -d trypsin --pep_hops 3 -fm "C:57.021464" -vm "M:15.994915" -epepproforma --pep_proforma_out peptides.proforma.tsv examples/e_coli.dat
+$ grep -m 2 "\[" peptides.proforma.tsv
+P0A884	49	53	1	RC[+57.021464]HLR
+P0A884	1	2	0	M[+15.994915]K
+```
+
+Modifications applied via `-fm`/`-vm` are known to ProtGraph only by their
+delta mass, so they are written as mass-delta tags (`C[+57.021464]`), which is
+valid ProForma. If you want named tags instead, declare a mapping for a delta
+you passed: `--pep_proforma_mod_names "15.994915=UNIMOD:35"` then writes
+`M[UNIMOD:35]`. Terminal modifications (`NPEPTERM` etc.) use the ProForma
+terminal syntax (`[+42.010565]-PEPTIDE`).
+
+**NOTE:** Protein-Graphs can contain large amounts of peptides/proteins. Do a dry run with the flags `-cnp`, `-cnpm` or `cnph` (or all of them) WITHOUT the export functionality first and examine the statistics output if it is feasible to generate a peptide output file (e.g., fasta or proforma). Without a dry run it may happen that a protein like P04637 (P53 Human) with all possible peptides and variants is exported, which will
 very likely take up all your disk space.
