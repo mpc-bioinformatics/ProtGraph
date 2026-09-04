@@ -240,9 +240,9 @@ class FunctionalTest(unittest.TestCase):
             )
             assert all(len(x) == 5 for x in lines)
             rows = {tuple(x) for x in lines}
-            proformas = {x[4] for x in lines}
+            proformas = {x[1] for x in lines}
             # exact placement with coordinates: the fixed mod sits on the C
-            assert ("X9TEST", "3", "8", "0", "C[+57.021464]TMSAK") in rows
+            assert ("X9TEST", "C[+57.021464]TMSAK", "3", "8", "0",) in rows
             # a variable mod on a VARIANT-introduced residue (no reference
             # position!) is placed on that residue, not dropped
             assert "C[+57.021464]M[UNIMOD:35]MSAK" in proformas
@@ -256,7 +256,8 @@ class FunctionalTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             out = os.path.join(tmp, "p.tsv")
             lines = self._run_proforma(["-fm", "NPEPTERM:42.010565", "-vm", "CPEPTERM:79.966"], out)
-            proformas = {x[4] for x in lines}
+            proformas = {x[1] for x in lines}
+            proformas.discard("proforma")
             assert all(p.startswith("[+42.010565]-") for p in proformas)
             # variable C-terminal: modified and unmodified paths both exported
             assert any(p.endswith("-[+79.966]") for p in proformas)

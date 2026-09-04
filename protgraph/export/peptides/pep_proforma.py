@@ -10,16 +10,15 @@ class PepProForma(PepFasta):
     Peptide exporter emitting ProForma 2.0 strings (HUPO-PSI standard notation
     for proteoforms and peptidoforms, LeDuc et al., J. Proteome Res. 2022).
 
-    Writes one tab-separated line per exported peptide path:
-
-        accession <TAB> start <TAB> end <TAB> misscleavages <TAB> proforma
+    Writes one tab-separated line per exported peptide path with columns:
+        accession, proforma, start, end, misscleavages, qualifiers
 
     ProtGraph knows modifications only by their delta mass (-fm/-vm), so
     modifications are emitted as mass-delta tags by default ("S[+79.966]"),
     which is valid ProForma. A user-declared mapping (--pep_proforma_mod_names
     "79.966=UNIMOD:21") replaces a delta by a named tag ("S[UNIMOD:21]").
     Terminal modifications (NPEPTERM etc.) use ProForma terminal syntax
-    ("[+42.010565]-PEPTIDE").
+    ("[+42.010565]-PEPTIDE" or "[UNIMOD:1]-PEPTIDE").
 
     A modification is placed on the residue its edge points at: FIXMOD/VARMOD
     features are attached to the in-edges of the (cloned) modified node when
@@ -37,34 +36,37 @@ class PepProForma(PepFasta):
         self.output_file = kwargs["pep_proforma_out"]
         self.mod_names = dict(kwargs["pep_proforma_mod_names"] or [])
         self.warned_or_once = False
+        self.write_qualifiers = kwargs["pep_proforma_write_qualifiers"]
+
+    def export(self, prot_graph, queue):
+        tsv_header = [
+            "accession", "proforma", "start", "end", "misscleavages"
+        ] + (["qualifiers"] if self.write_qualifiers else [])
+
+        queue.put((self.output_file, "\t".join(tsv_header) + "\n", True, "w"))
+        super().export(prot_graph, queue)
 
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, queue):
         entries = ""
-        for peptide, nodes, edges, misses in zip(l_peptide, l_path_nodes, l_path_edges, l_miscleavages):
+        for nodes, edges, misses in zip(l_path_nodes, l_path_edges, l_miscleavages):
             # the first/last node carrying sequence; with terminal modifications
             # applied, nodes[1] can be an empty helper node (see annotate_ptms)
-            inner = [n for n in nodes[1:-1] if prot_graph.vs[n]["aminoacid"]]
-            acc = self._get_accession_or_isoform(prot_graph.vs[inner[0]])
-            start_pos = self._get_position_or_isoform_position(prot_graph.vs[inner[0]])
-            end_pos = self._get_position_or_isoform_position(prot_graph.vs[inner[-1]], end=True)
-            proforma = self._build_proforma(prot_graph, inner, edges, peptide)
+            acc = self._get_accession_or_isoform(prot_graph.vs[nodes[1]])
+            start_pos = self._get_position_or_isoform_position(prot_graph.vs[nodes[1]])
+            end_pos = self._get_position_or_isoform_position(prot_graph.vs[nodes[-2]], end=True)
+            proforma = self._build_proforma(prot_graph, nodes[1:-1], edges)
+            l_str_qualifiers = self._get_qualifiers(prot_graph, edges)
             entries += "\t".join(
-                [acc, str(start_pos), str(end_pos), str(misses), proforma]
+                [acc, proforma, str(start_pos), str(end_pos), str(misses)]
+                + (l_str_qualifiers if self.write_qualifiers else [])
             ) + "\n"
 
-        # "w": the (single) writer process truncates on its first open of the
-        # run and appends afterwards, so a rerun cannot mix in stale results
+        # w: ensures to have no stale entries, overwriting the file, if it exists.
         queue.put((self.output_file, entries, False, "w"))
 
-    def _build_proforma(self, prot_graph, inner_nodes, edges, peptide):
+    def _build_proforma(self, prot_graph, inner_nodes, edges):
         """ ProForma string for one peptide path. """
-        # peptide index of the first residue of every sequence-bearing node
-        first_residue_index = {}
-        offset = 0
-        for ni in inner_nodes:
-            first_residue_index[ni] = offset
-            offset += len(prot_graph.vs[ni]["aminoacid"])
-
+        # Get all modifications by iterating over the edges
         n_term, c_term, by_residue = [], [], {}
         for edge_id in edges:
             edge = prot_graph.es[edge_id]
@@ -74,18 +76,32 @@ class PepProForma(PepFasta):
                     n_term.append(tag)
                 elif key in ("CPEPTERM", "CPROTERM"):
                     c_term.append(tag)
-                elif edge.target in first_residue_index:
-                    by_residue.setdefault(first_residue_index[edge.target], []).append(tag)
-                # else: the edge points at a helper/terminal node and the key is
-                # not terminal — nothing to place (does not occur in generated
-                # graphs); never guess a position
+                else:
+                    by_residue.setdefault(edge.target, []).append((key, tag))
 
+        # Build the final proforma sequence
         parts = []
         if n_term:
             parts.append("".join("[{}]".format(t) for t in n_term) + "-")
-        for idx, aa in enumerate(peptide):
-            parts.append(aa)
-            parts.extend("[{}]".format(t) for t in by_residue.get(idx, ()))
+        for ie in inner_nodes:
+            aas = prot_graph.vs[ie]["aminoacid"]
+            if len(aas) == 1:
+                # Simply append UniMod
+                parts.append(aas)
+                parts.extend("[{}]".format(t[1]) for t in by_residue.get(ie, ()))
+            else:
+                # We need to add PTM on correct position in merged node:
+                # E.G.  Merged node "EIN", Modification I->+23.123
+                # should yield "EI[+23.123]N"  and NOT "EIN[+23.123]"!
+                by_aa = {}
+                for mods in by_residue.values():
+                    for aa, mod in mods:
+                        by_aa.setdefault(aa, []).append(mod)
+                for aa, mod in by_aa.items():
+                    # We can savely use replace as this case only can happen in FIXMODs
+                    aas = aas.replace(aa, aa + "".join("[{}]".format(t) for t in mod))
+                parts.append(aas)
+
         if c_term:
             parts.append("-" + "".join("[{}]".format(t) for t in c_term))
         return "".join(parts)
