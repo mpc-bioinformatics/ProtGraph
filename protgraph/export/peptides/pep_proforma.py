@@ -49,11 +49,15 @@ class PepProForma(PepFasta):
     def export_peptides(self, prot_graph, l_path_nodes, l_path_edges, l_peptide, l_miscleavages, queue):
         entries = ""
         for nodes, edges, misses in zip(l_path_nodes, l_path_edges, l_miscleavages):
-            # the first/last node carrying sequence; with terminal modifications
-            # applied, nodes[1] can be an empty helper node (see annotate_ptms)
-            acc = self._get_accession_or_isoform(prot_graph.vs[nodes[1]])
-            start_pos = self._get_position_or_isoform_position(prot_graph.vs[nodes[1]])
-            end_pos = self._get_position_or_isoform_position(prot_graph.vs[nodes[-2]], end=True)
+            # start/end come from the first/last node carrying sequence: with
+            # terminal modifications applied, nodes[1] (or nodes[-2]) can be an
+            # empty helper node (see annotate_ptms) whose position 0 does not
+            # exist in 1-based protein coordinates
+            first = next(n for n in nodes[1:-1] if prot_graph.vs[n]["aminoacid"])
+            last = next(n for n in nodes[-2:0:-1] if prot_graph.vs[n]["aminoacid"])
+            acc = self._get_accession_or_isoform(prot_graph.vs[first])
+            start_pos = self._get_position_or_isoform_position(prot_graph.vs[first])
+            end_pos = self._get_position_or_isoform_position(prot_graph.vs[last], end=True)
             proforma = self._build_proforma(prot_graph, nodes[1:-1], edges)
             l_str_qualifiers = self._get_qualifiers(prot_graph, edges)
             entries += "\t".join(
